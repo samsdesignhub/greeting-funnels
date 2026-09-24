@@ -1,0 +1,1223 @@
+<title>Email Writing Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#F5F6FD; --band:#E9EAFB; --surface:#FFFFFF; --surface-2:#F6F7FC; --ink:#1A1D3A; --ink-2:#4F5475; --muted:#858AA8;
+  --line:#E4E6F3; --line-2:#D5D8EC; --brand:#5457EE; --brand-2:#7A55F3; --brand-ink:#FFFFFF; --brand-soft:#EEEFFE; --brand-line:#B9BCF7;
+  --good:#23945A; --good-soft:#DDF3E6; --warn:#B86E0B; --warn-soft:#FDF0DA; --bad:#CC3D56; --bad-soft:#FCE5EA;
+  --shadow:0 1px 2px rgba(30,34,90,.04),0 8px 28px rgba(40,44,120,.07);
+  --shadow-lg:0 12px 32px rgba(84,87,238,.28);
+  --skel:#ECEEF8; --skel-hi:#F7F8FD;
+  --radius:20px; --radius-sm:12px;
+  --font:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1022; --band:#1A1C3C; --surface:#161931; --surface-2:#1C203D; --ink:#ECEDFB; --ink-2:#B7BADA; --muted:#8589AE;
+    --line:#282C4E; --line-2:#363B66; --brand:#7E81FF; --brand-2:#9A7BFF; --brand-ink:#FFFFFF; --brand-soft:#23265A; --brand-line:#4A4FA8;
+    --good:#52CB88; --good-soft:#15352A; --warn:#EDAA4A; --warn-soft:#3A2A12; --bad:#F07088; --bad-soft:#3D1A24;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.25); --shadow-lg:0 12px 32px rgba(80,84,230,.35);
+    --skel:#22264A; --skel-hi:#2B3060;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1022; --band:#1A1C3C; --surface:#161931; --surface-2:#1C203D; --ink:#ECEDFB; --ink-2:#B7BADA; --muted:#8589AE;
+  --line:#282C4E; --line-2:#363B66; --brand:#7E81FF; --brand-2:#9A7BFF; --brand-ink:#FFFFFF; --brand-soft:#23265A; --brand-line:#4A4FA8;
+  --good:#52CB88; --good-soft:#15352A; --warn:#EDAA4A; --warn-soft:#3A2A12; --bad:#F07088; --bad-soft:#3D1A24;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.25); --shadow-lg:0 12px 32px rgba(80,84,230,.35);
+  --skel:#22264A; --skel-hi:#2B3060;
+}
+*{box-sizing:border-box}
+body{
+  font-family:var(--font); color:var(--ink); font-size:15px; line-height:1.55;
+  background:linear-gradient(180deg,var(--band) 0,var(--bg) 360px) no-repeat,var(--bg);
+  background-color:var(--bg);
+  padding-inline:16px; padding-block:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:16px;height:16px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* Header */
+.top{display:flex;align-items:flex-start;gap:20px;padding-block:40px 28px}
+.logo{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;color:#fff;flex:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:var(--shadow-lg)}
+.logo svg.i{width:30px;height:30px}
+.title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.035em;text-transform:uppercase}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.04em;
+  padding:5px 11px;border-radius:999px;background:var(--surface);color:var(--brand);border:1px solid var(--brand-line)}
+.badge svg.i{width:14px;height:14px}
+.subtitle{color:var(--ink-2);font-size:17px;margin-top:6px}
+
+/* Stepper */
+.stepper{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:24px;padding:8px;
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);list-style:none}
+.step-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;
+  background:none;cursor:pointer;text-align:left;color:var(--muted)}
+.step-btn:disabled{cursor:not-allowed;opacity:.55}
+.step-num{font-size:12px;font-weight:800;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:var(--surface-2);border:1px solid var(--line);font-variant-numeric:tabular-nums;flex:none}
+.step-label{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step-btn.done{color:var(--ink-2)}
+.step-btn.done .step-num{background:var(--good-soft);color:var(--good);border-color:transparent}
+.step-btn.current{background:var(--brand-soft);border-color:var(--brand-line);color:var(--ink)}
+.step-btn.current .step-num{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border-color:transparent}
+.step-btn:not(:disabled):not(.current):hover{background:var(--surface-2)}
+
+/* Layout */
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
+.card-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px}
+.card-head .grow{flex:1;min-width:0}
+.ico{width:44px;height:44px;border-radius:13px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;flex:none}
+h2{font-size:22px;font-weight:700}
+.sub{color:var(--ink-2);font-size:14.5px;margin-top:2px;max-width:62ch}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:18px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* Fields */
+label.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.opt{font-weight:500;color:var(--muted);font-size:12.5px;margin-left:4px}
+.field,textarea.field,select.field{width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  padding:11px 14px;outline:none;transition:border-color .15s,box-shadow .15s}
+.field::placeholder{color:var(--muted)}
+.field:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+textarea.big{min-height:190px;resize:vertical;font-size:16px;line-height:1.6;padding:16px 18px}
+select.field{appearance:none;padding-right:40px;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 52%,calc(100% - 15px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.hint{font-size:13px;color:var(--muted)}
+.meta-row{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.divider{height:1px;background:var(--line);border:0;margin:0}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px;
+  border:1px solid var(--line-2);background:var(--surface);cursor:pointer;transition:transform .12s,box-shadow .15s,background .15s,border-color .15s;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--brand-line);background:var(--surface-2)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:var(--brand-ink);border-color:transparent;box-shadow:var(--shadow-lg);
+  padding:13px 22px;font-size:15px;font-weight:700}
+.btn.primary:hover:not(:disabled){background:linear-gradient(135deg,var(--brand),var(--brand-2));filter:brightness(1.06)}
+.btn.soft{background:var(--brand-soft);border-color:transparent;color:var(--brand)}
+.btn.soft:hover:not(:disabled){border-color:var(--brand-line);background:var(--brand-soft)}
+.btn.ghost{border-color:transparent;background:none;color:var(--ink-2)}
+.btn.ghost:hover:not(:disabled){background:var(--surface-2);border-color:transparent}
+.btn.sm{padding:7px 11px;font-size:13px;border-radius:10px}
+.btn.on{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand)}
+.link{background:none;border:0;padding:0;color:var(--brand);font-weight:600;cursor:pointer;font-size:13px}
+.link:hover{text-decoration:underline}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:6px}
+
+/* Ideas */
+.ideas{display:flex;flex-direction:column;gap:14px}
+.idea{border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;
+  background:var(--surface);transition:border-color .15s,background .15s}
+.idea:hover{border-color:var(--brand-line)}
+.idea.selected{background:var(--brand-soft);border-color:var(--brand)}
+.idea-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.idea-n{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--surface-2);
+  color:var(--ink-2);border:1px solid var(--line)}
+.chip.brand{background:var(--brand-soft);color:var(--brand);border-color:transparent}
+.idea h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.idea .concept{color:var(--ink-2);font-size:14.5px}
+.idea-side{display:flex;flex-direction:column;gap:12px}
+.subj{background:var(--surface-2);border:1px dashed var(--line-2);border-radius:12px;padding:10px 12px}
+.idea.selected .subj{background:var(--surface)}
+.subj .eyebrow{font-size:10.5px;margin-bottom:3px}
+.subj p{font-weight:600;font-size:14.5px}
+.why{font-size:13.5px;color:var(--ink-2)}
+.why b{color:var(--ink);font-weight:600}
+.idea-side .btn{align-self:flex-start;margin-top:auto}
+
+/* Tones */
+.tones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tone{position:relative;text-align:left;border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;background:var(--surface);cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s}
+.tone:hover{border-color:var(--brand-line)}
+.tone[aria-checked="true"]{background:var(--brand-soft);border-color:var(--brand)}
+.tone .t-name{font-weight:700;font-size:15.5px}
+.tone .t-desc{font-size:13.5px;color:var(--ink-2)}
+.tone .t-sample{font-size:13px;color:var(--muted);font-style:italic;border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
+.tone .tick{position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line-2);color:transparent}
+.tone[aria-checked="true"] .tick{background:var(--brand);border-color:var(--brand);color:#fff}
+.tone .tick svg.i{width:13px;height:13px;stroke-width:3}
+
+/* Settings */
+.setting{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;align-items:start;padding-block:18px;border-top:1px solid var(--line)}
+.setting:first-of-type{border-top:0;padding-top:0}
+.setting .s-label{font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);padding-top:10px}
+.setting .s-label small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:12.5px;margin-top:2px}
+.pill-val{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:6px}
+.switch{display:flex;align-items:center;gap:14px;cursor:pointer;padding-top:6px}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.track{width:48px;height:28px;border-radius:999px;background:var(--line-2);position:relative;transition:background .18s;flex:none}
+.track::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .18s}
+.switch input:checked + .track{background:linear-gradient(135deg,var(--brand),var(--brand-2))}
+.switch input:checked + .track::after{transform:translateX(20px)}
+.switch input:focus-visible + .track{outline:2px solid var(--brand);outline-offset:2px}
+.switch .sw-text b{display:block;font-size:14.5px}
+.switch .sw-text span{font-size:13.5px;color:var(--ink-2)}
+.seg{display:inline-flex;padding:4px;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:9px;padding:7px 14px;font-weight:600;font-size:13.5px;cursor:pointer;color:var(--ink-2)}
+.seg button small{font-weight:500;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
+.seg button[aria-pressed="true"]{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff}
+.seg button[aria-pressed="true"] small{color:rgba(255,255,255,.8)}
+.limit-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.num{width:130px;font-variant-numeric:tabular-nums;font-weight:600}
+.approach-note{margin-top:10px;font-size:13.5px;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
+
+/* Email editor */
+.editor{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface)}
+.ed-row{display:flex;gap:14px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.ed-row .grow{flex:1;min-width:0}
+.ed-row .eyebrow{margin-bottom:4px;display:flex;gap:8px;align-items:center}
+.ed-row .eyebrow span{font-weight:600;letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.inline-field{width:100%;border:1px solid transparent;background:transparent;border-radius:8px;padding:4px 6px;margin-left:-6px;outline:none;resize:none;overflow:hidden}
+.inline-field.subject{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.inline-field.preview{color:var(--ink-2)}
+.editing .inline-field{border-color:var(--line-2);background:var(--surface)}
+.editing .inline-field:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.ed-body{padding:20px}
+textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-radius:12px;padding:6px 8px;margin-left:-8px;background:transparent;
+  font-size:16px;line-height:1.7;resize:vertical;outline:none;white-space:pre-wrap}
+.editing textarea.email{border-color:var(--line-2);background:var(--surface)}
+.editing textarea.email:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.edit-flag{display:none}
+.editing .edit-flag{display:inline-flex}
+.meter{padding:14px 20px;border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.meter-label{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.meter-label .state{font-weight:600;margin-left:6px}
+.bar{flex:1;min-width:120px;height:8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--brand-2));transition:width .25s}
+.meter.near .bar i{background:var(--warn)} .meter.near .state{color:var(--warn)}
+.meter.over .bar i{background:var(--bad)} .meter.over .state{color:var(--bad)}
+.meter.ok .state{color:var(--good)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
+.toolbar .sep{width:1px;background:var(--line-2);margin-inline:4px}
+.email-foot{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:18px}
+.versions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.vbtn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.cta-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;font-size:13.5px;color:var(--ink-2)}
+.flow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.flow .chip{font-size:11.5px;padding:2px 8px}
+.flow .arr{color:var(--muted);font-size:12px}
+
+/* Skeleton / loading */
+.skel{border-radius:8px;background:linear-gradient(90deg,var(--skel) 0,var(--skel-hi) 50%,var(--skel) 100%);background-size:200% 100%;animation:shimmer 1.3s linear infinite}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.skel-card{border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.loading-note{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--brand-soft);color:var(--ink);font-size:14px;margin-bottom:14px;flex-wrap:wrap}
+.loading-note .grow{flex:1;min-width:180px}
+.spinner{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--brand-line);border-top-color:var(--brand);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.skel,.spinner{animation:none}*{transition:none!important}}
+
+/* Empty / error */
+.empty{text-align:center;padding:40px 20px;border:1.5px dashed var(--line-2);border-radius:16px;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty .ico{width:52px;height:52px}
+.empty h3{font-size:17px;color:var(--ink)}
+.empty p{max-width:44ch;font-size:14px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:14px;background:var(--bad-soft);color:var(--ink);margin-bottom:14px}
+.alert.warn{background:var(--warn-soft)}
+.alert b{font-weight:700}
+
+/* Brief sidebar */
+.brief{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:16px}
+.hero-mini{border-radius:16px;padding:18px;background:var(--good-soft);margin-bottom:18px}
+.hero-mini .eyebrow{color:var(--good)}
+.hero-mini .big{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--good);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:4px}
+.hero-mini p{font-size:13.5px;color:var(--ink-2)}
+.brief-list{display:flex;flex-direction:column;gap:10px}
+.b-item{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+.b-item .grow{flex:1;min-width:0}
+.b-item .k{font-size:12.5px;color:var(--muted);font-weight:600}
+.b-item .v{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+.b-item .v.muted{color:var(--muted);font-weight:500}
+.b-item .v.clamp{font-weight:500;font-size:13.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.status.ready .dot{background:var(--good)} .status.unavailable .dot{background:var(--warn)}
+
+footer{padding-block:36px 40px;display:flex;justify-content:center}
+.credit{display:inline-flex;align-items:center;gap:10px;font-size:14px;color:var(--ink-2);padding:10px 18px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.credit a{color:var(--brand);font-weight:700;text-decoration:none}
+.credit a:hover{text-decoration:underline}
+.credit .heart{color:var(--brand)}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:12px;font-weight:600;font-size:14px;transition:opacity .2s,transform .2s;z-index:10;display:flex;gap:8px;align-items:center;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:980px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .brief{position:static}
+}
+@media (max-width:760px){
+  .card{padding:20px}
+  .idea{grid-template-columns:minmax(0,1fr)}
+  .tones{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+  .setting{grid-template-columns:minmax(0,1fr);gap:8px}
+  .setting .s-label{padding-top:0}
+  .step-label{display:none}
+  .step-btn{justify-content:center;padding:8px}
+  .top{padding-block:24px 20px;gap:14px}
+  .logo{width:52px;height:52px;border-radius:15px}
+}
+@media (max-width:480px){
+  .tones{grid-template-columns:minmax(0,1fr)}
+  .ed-row,.ed-body,.meter,.toolbar{padding-inline:14px}
+  .toolbar .sep{display:none}
+  .btn.primary{width:100%}
+  .subtitle{font-size:15.5px}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg></div>
+    <div>
+      <div class="title-row">
+        <h1>Email Writing Assistant</h1>
+        <span class="badge"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/><path d="M19 15l.7 1.9 1.9.7-1.9.7L19 20.2l-.7-1.9-1.9-.7 1.9-.7z"/></svg>AI-Powered</span>
+      </div>
+      <p class="subtitle">Turn your thoughts into emails people want to read.</p>
+    </div>
+  </header>
+
+  <nav aria-label="Progress"><ol class="stepper" id="stepper"></ol></nav>
+
+  <div class="app">
+    <main id="main">
+      <!-- STEP 1 -->
+      <section class="card" data-step="1" aria-labelledby="h-s1">
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s1">What do you want to say?</h2>
+            <p class="sub">Dump your thoughts here. Don't worry about structure or perfect writing. Just tell us what's on your mind.</p>
+          </div>
+        </div>
+        <div class="stack">
+          <div>
+            <textarea id="thoughts" class="field big" placeholder="I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend."></textarea>
+            <div class="meta-row">
+              <span id="thoughtsCount">0 words</span>
+              <button class="link" id="useExample" type="button">Use the example above</button>
+            </div>
+          </div>
+          <div class="grid3">
+            <div><label class="lbl" for="audience">Who is this email for?<span class="opt">Optional</span></label>
+              <input id="audience" class="field" placeholder="e.g. Coaches running paid ads"></div>
+            <div><label class="lbl" for="promoting">What are you promoting?<span class="opt">Optional</span></label>
+              <input id="promoting" class="field" placeholder="e.g. Funnel audit call"></div>
+            <div><label class="lbl" for="action">What should readers do?<span class="opt">Optional</span></label>
+              <input id="action" class="field" placeholder="e.g. Reply with the word AUDIT"></div>
+          </div>
+          <div id="s1Error"></div>
+          <div class="actions">
+            <span class="hint">We'll turn this into 5 different angles to choose from.</span>
+            <button class="btn primary" id="genIdeas" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/></svg>Generate 5 Ideas</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="card" data-step="2" aria-labelledby="h-s2" hidden>
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s2">Pick an angle</h2>
+            <p class="sub">Five different ways to tell the same story. Choose the one that feels most like you.</p>
+          </div>
+        </div>
+        <div id="ideasArea"></div>
+        <div class="actions" style="margin-top:18px">
+          <button class="btn ghost" type="button" data-go="1"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Edit thoughts</button>
+          <button class="btn" id="regenIdeas" type="button"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Regenerate Ideas</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="card" data-step="3" aria-labelledby="h-s3" hidden>
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s3">Choose your voice</h2>
+            <p class="sub">How should this email sound? Pick one.</p>
+          </div>
+        </div>
+        <div class="tones" id="tones" role="radiogroup" aria-labelledby="h-s3"></div>
+        <div class="actions" style="margin-top:22px">
+          <button class="btn ghost" type="button" data-go="2"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back to ideas</button>
+          <button class="btn primary" type="button" data-go="4">Continue<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="card" data-step="4" aria-labelledby="h-s4" hidden>
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s4">Writing Settings</h2>
+            <p class="sub">Fine-tune how the email is written. The defaults work well if you're not sure.</p>
+          </div>
+        </div>
+        <div>
+          <div class="setting">
+            <div class="s-label">Voice / Tone</div>
+            <div class="pill-val"><span class="chip brand" id="toneChip"></span><button class="link" type="button" data-go="3">Change</button></div>
+          </div>
+          <div class="setting">
+            <label class="s-label" for="approach">Copywriting Approach<small>Optional</small></label>
+            <div>
+              <select id="approach" class="field"></select>
+              <p class="approach-note" id="approachNote"></p>
+            </div>
+          </div>
+          <div class="setting">
+            <label class="s-label" for="emailType">Email Type</label>
+            <div><select id="emailType" class="field"></select></div>
+          </div>
+          <div class="setting">
+            <div class="s-label">Filler Words &amp; Emotions</div>
+            <label class="switch" for="filler">
+              <input type="checkbox" id="filler" role="switch">
+              <span class="track"></span>
+              <span class="sw-text"><b id="fillerTitle"></b><span id="fillerDesc"></span></span>
+            </label>
+          </div>
+          <div class="setting">
+            <div class="s-label">Email Length<small>Maximum characters</small></div>
+            <div>
+              <div class="seg" id="presets" role="group" aria-label="Length presets"></div>
+              <div class="limit-row">
+                <label class="lbl" for="limit" style="margin:0">Maximum Characters</label>
+                <input id="limit" class="field num" type="number" min="200" max="10000" step="50" inputmode="numeric">
+                <span class="hint" id="limitHint"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:22px">
+          <button class="btn ghost" type="button" data-go="3"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back</button>
+          <button class="btn primary" id="genEmail" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>Generate Email</button>
+        </div>
+      </section>
+
+      <!-- STEP 5 -->
+      <section class="card" data-step="5" aria-labelledby="h-s5" hidden>
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s5">Your email</h2>
+            <p class="sub">Review it, polish it with one click, or edit it yourself.</p>
+          </div>
+          <button class="btn ghost sm" type="button" data-go="4"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
+        </div>
+        <div id="emailArea"></div>
+      </section>
+    </main>
+
+    <aside class="brief" aria-label="Your brief">
+      <div class="card">
+        <div class="card-head" style="margin-bottom:18px">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
+          <div class="grow"><h2 style="font-size:19px">Your brief</h2><p class="sub">Updates as you go</p></div>
+        </div>
+        <div id="briefHero"></div>
+        <div class="brief-list" id="briefList"></div>
+      </div>
+      <div class="status" id="aiStatus"><span class="dot"></span><span id="aiStatusText">Connecting to Claude…</span></div>
+    </aside>
+  </div>
+
+  <footer>
+    <p class="credit"><span class="heart">♥</span>Designed by <a href="https://www.facebook.com/sams2410" target="_blank" rel="noopener">Sam Kushwah</a></p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* =========================================================
+   CONFIG — options shown in the UI and fed to the prompts
+   ========================================================= */
+const Config = {
+  STEPS: ["Thoughts", "Idea", "Voice", "Settings", "Email"],
+  EXAMPLE: {
+    thoughts: "I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend.",
+    audience: "Coaches and course creators running paid ads",
+    promoting: "A free funnel audit call",
+    action: "Reply to this email with the word AUDIT"
+  },
+  TONES: [
+    { id: "conversational", name: "Conversational", desc: "Sounds like you're talking directly to one person.", sample: "“Can I be honest with you for a sec?”" },
+    { id: "friendly", name: "Friendly", desc: "Warm, upbeat and easy to read.", sample: "“Hope your week's off to a good start!”" },
+    { id: "bold", name: "Bold", desc: "Confident, direct, and willing to challenge assumptions.", sample: "“More leads won't save you.”" },
+    { id: "professional", name: "Professional", desc: "Polished, credible and to the point.", sample: "“Here's what we found reviewing funnels.”" },
+    { id: "inspirational", name: "Inspirational", desc: "Uplifting and focused on what's possible.", sample: "“You're closer than you think.”" },
+    { id: "storytelling", name: "Storytelling", desc: "Personal, narrative-driven, and emotionally engaging.", sample: "“Last Tuesday, a client sent me a screenshot…”" }
+  ],
+  // Principles only. The model is told never to imitate a person's voice or reuse their phrases.
+  APPROACHES: [
+    { id: "normal", name: "Normal — Natural & Original", p: "Write naturally in the sender's own plain voice. Don't borrow any particular copywriter's style." },
+    { id: "brunson", name: "Russell Brunson — Funnel-focused direct response", p: "Hook, story, offer. Use a short 'epiphany' story that moves the reader to a new belief, then point to one next step in the funnel." },
+    { id: "edwards", name: "Jim Edwards — Conversational direct response", p: "Plain talk, reader-benefit focus, short lines, and a very clear 'here's what to do next' call to action." },
+    { id: "cattoni", name: "Alex Cattoni — Conversational, story-driven copy principles", p: "Empathetic, story-led persuasion that speaks to the reader's identity and values; warm but confident ask." },
+    { id: "wiebe", name: "Joanna Wiebe — Customer-focused conversion copy principles", p: "Describe the problem in the words the reader would use themselves, prefer clarity over cleverness, specific benefits, one low-friction CTA." },
+    { id: "medhora", name: "Neville Medhora — Simple, conversational, punchy copy", p: "Very short sentences and paragraphs, casual and scannable, a light touch of humor, gets to the point fast." },
+    { id: "ogilvy", name: "David Ogilvy — Clear, benefit-focused advertising principles", p: "Informative and benefit-first, specific rather than vague, respects the reader's intelligence; the subject line carries the main benefit." },
+    { id: "halbert", name: "Gary Halbert — Direct-response, compelling, conversational principles", p: "Personal letter feel, an opening that grabs attention, vivid everyday language, momentum that pulls the reader down, a direct ask." },
+    { id: "kennedy", name: "Dan Kennedy — Direct, offer-focused marketing principles", p: "No-nonsense: name the problem bluntly, make the offer clear, give explicit instructions for the next step. Deadlines only if the sender gave one." },
+    { id: "sugarman", name: "Joe Sugarman — Curiosity-driven, engaging direct response", p: "Every sentence exists to get the next one read. Short, curious opening lines, a slippery flow, then the payoff." },
+    { id: "schwartz", name: "Eugene Schwartz — Sophisticated awareness and market-driven messaging", p: "Match the reader's level of awareness. Channel a desire they already have instead of creating one; lead with what's new or different." },
+    { id: "caples", name: "John Caples — Headline and response-focused copy principles", p: "The subject line does the heavy lifting with self-interest, news or curiosity. Plain, specific body copy built to get a response." },
+    { id: "hopkins", name: "Claude Hopkins — Reason-based, benefit-driven advertising principles", p: "Give a concrete reason for every claim. Specific details beat generalities. Service over salesmanship, no fluff." },
+    { id: "collier", name: "Robert Collier — Personal, letter-style persuasion principles", p: "Join the conversation already in the reader's head. Personal, empathetic letter style that leads from their current desire to the action." },
+    { id: "bly", name: "Bob Bly — Clear B2B/direct-response copy principles", p: "Clear, organized and credible. Turn features into benefits, keep a logical flow, professional wording." },
+    { id: "handley", name: "Ann Handley — Human, approachable, conversational content principles", p: "Write for one person, be useful first, plain words, generous and empathetic with a light touch of personality." },
+    { id: "godin", name: "Seth Godin — Idea-driven, concise, thought-provoking principles", p: "Short and idea-driven. One sharp insight, minimal selling, leaves the reader thinking; a gentle invitation at the end." },
+    { id: "penn", name: "Joanna Penn-style educational marketing principles", p: "Teach generously. Share a useful lesson or resource, be transparent about your own experience, and make a soft invitation." },
+    { id: "storybrand", name: "StoryBrand-inspired — Clear problem, guide, solution structure", p: "The reader is the hero with a problem; the sender is the guide who shows empathy and competence, offers a simple plan and a clear call to action, and shows what success vs. failure looks like." },
+    { id: "direct", name: "Direct Response — Strong offer, urgency, and action-oriented principles", p: "One strong offer, clear benefits, a reason to act now only if the sender provided a real one, and a clear call to action repeated near the end." }
+  ],
+  EMAIL_TYPES: ["Value Email","Story Email","Sales Email","Promotional Email","Launch Email","Welcome Email","Nurture Email","Problem-Aware Email","Belief-Shifting Email","Educational Email","Product Announcement","Webinar Promotion","Course Promotion","Coaching Promotion","Follow-Up Email","Last Chance Email"],
+  PRESETS: [ { id: "short", name: "Short", value: 600 }, { id: "medium", name: "Medium", value: 1200 }, { id: "long", name: "Long", value: 2500 } ],
+  LIMIT_MIN: 200, LIMIT_MAX: 10000,
+  STRUCTURES: [
+    "Hook → Story → Problem → New perspective → Solution → Offer → CTA",
+    "Curiosity → Problem → Insight → Example → CTA",
+    "Story → Conflict → Realization → Lesson → CTA",
+    "Problem → Agitation → New belief → Solution → CTA"
+  ],
+  REFINES: {
+    shorten: { label: "Shorter", toast: "Shortened", ins: "Make it noticeably shorter (about 30% fewer characters). Cut repetition and weaker sentences first. Keep the core idea, the emotional flow and the call to action." },
+    emotional: { label: "More emotional", toast: "Made more emotional", ins: "Make it more emotionally resonant: name what the reader feels, raise the stakes honestly, use more vivid and sensory language. No melodrama, no invented stories or facts." },
+    conversational: { label: "More conversational", toast: "Made more conversational", ins: "Make it more conversational: write like you're talking to one person across a table, use contractions, shorter sentences, a question or two, natural transitions." },
+    direct: { label: "More direct", toast: "Made more direct", ins: "Make it more direct: lead with the point, cut hedging and warm-up, use active verbs and short declarative sentences, and make the call to action unmistakable." }
+  }
+};
+
+/* =========================================================
+   STORE — application state + persistence
+   ========================================================= */
+const Store = {
+  KEY: "ewa-state-v1",
+  defaults: () => ({
+    step: 1, maxStep: 1,
+    thoughts: "", audience: "", promoting: "", action: "",
+    ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
+    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, limit: 1500,
+    versions: [], active: -1
+  }),
+  state: null,
+  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "" },
+  load() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch (e) { saved = null; }
+    this.state = Object.assign(this.defaults(), saved && typeof saved === "object" ? saved : {});
+    if (!Array.isArray(this.state.versions)) this.state.versions = [];
+    if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
+  },
+  set(patch) { Object.assign(this.state, patch); this.save(); },
+  save() {
+    clearTimeout(this._t);
+    this._t = setTimeout(() => { try { localStorage.setItem(this.KEY, JSON.stringify(this.state)); } catch (e) {} }, 250);
+  },
+  currentVersion() { const s = this.state; return s.versions[s.active] || null; }
+};
+
+/* =========================================================
+   TEXT — character counting and limit enforcement
+   ========================================================= */
+const Text = {
+  count: (s) => Array.from(String(s || "")).length,
+  words: (s) => (String(s || "").trim().match(/\S+/g) || []).length,
+  fmt: (n) => Number(n).toLocaleString("en-US"),
+  clean(s) {
+    return String(s || "").replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  },
+  sentences(p) {
+    const m = p.match(/[^.!?…]+(?:[.!?…]+["'”’)\]]*|$)\s*/g);
+    return (m || [p]).map(s => s.trim()).filter(Boolean);
+  },
+  /* Last-resort fit: drops whole sentences, never cuts mid-sentence.
+     Protects the opening line and the closing CTA/sign-off paragraphs. */
+  fitToLimit(text, limit) {
+    let paras = Text.clean(text).split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    const join = () => paras.join("\n\n");
+    if (Text.count(join()) <= limit) return join();
+    const tail = paras.length > 3 ? 2 : 1;
+    let i = paras.length - tail - 1;
+    while (Text.count(join()) > limit && i >= 1) {
+      const s = Text.sentences(paras[i]);
+      if (s.length <= 1) { paras.splice(i, 1); i--; continue; }
+      s.pop(); paras[i] = s.join(" ");
+    }
+    while (Text.count(join()) > limit) {
+      const s = Text.sentences(paras[0]);
+      if (s.length <= 1) break;
+      s.pop(); paras[0] = s.join(" ");
+    }
+    let out = join();
+    if (Text.count(out) > limit) {
+      const cut = Array.from(out).slice(0, limit).join("");
+      const m = cut.match(/^[\s\S]*[.!?…]["'”’)]*(?=\s|$)/);
+      out = m ? m[0] : cut.replace(/\s+\S*$/, "");
+    }
+    return out.trim();
+  }
+};
+
+/* =========================================================
+   VALIDATE
+   ========================================================= */
+const Validate = {
+  thoughts(s) {
+    const t = s.thoughts.trim();
+    if (!t) return "Write a few sentences about what you want to say first.";
+    if (Text.words(t) < 6) return "Add a little more detail (at least a sentence or two) so the ideas have something to work with.";
+    if (Text.count(t) > 6000) return "Your notes are over 6,000 characters. Trim them to the main point.";
+    return "";
+  },
+  limit(v) {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n)) return Store.state.limit;
+    return Math.min(Config.LIMIT_MAX, Math.max(Config.LIMIT_MIN, n));
+  },
+  prereq(step) {
+    const s = Store.state;
+    if (step === 2) return s.ideas.length > 0 || Store.runtime.busy === "ideas";
+    if (step >= 3) return !!s.selectedIdea;
+    return true;
+  },
+  canVisit(step) { return step <= Store.state.maxStep && this.prereq(step); },
+  canAdvance(step) { return this.canVisit(step) || (step === Store.state.step + 1 && this.prereq(step)); }
+};
+
+/* =========================================================
+   AI — the only place that talks to the model.
+   Swap `AI.json` to connect a different backend later.
+   ========================================================= */
+const AI = {
+  status: "connecting", client: null, ready: null,
+  init() {
+    const use = window.claude && typeof window.claude.use === "function" ? window.claude.use("sample") : Promise.resolve(null);
+    this.ready = Promise.resolve(use).then(c => { this.client = c; this.status = c ? "ready" : "unavailable"; View.status(); return c; })
+      .catch(() => { this.status = "unavailable"; View.status(); return null; });
+  },
+  async json(prompt, signal) {
+    const c = await this.ready;
+    if (!c) throw { code: "unavailable" };
+    return c.json(prompt, { signal, cache: false, modelTier: "default" });
+  },
+  errorCopy(e) {
+    switch (e && e.code) {
+      case "unavailable": case "sampling_disabled": case "capability_disabled": case "not_declared": case "capability_removed":
+        return "AI writing isn't available in this view. Open this page in Claude to generate ideas and emails.";
+      case "not_granted": return "This page needs your permission to use Claude. Reload the page and choose Allow when asked.";
+      case "rate_limited": return "You've reached a usage limit for now. Wait a minute, then try again.";
+      case "session_expired": return "Your Claude session expired. Sign in again, then try again.";
+      case "refused": return "Claude declined this request. Try rephrasing your thoughts.";
+      case "invalid_json": case "bad_shape": return "The response came back in an unexpected format. Try again.";
+      case "prompt_too_large": return "Your notes are too long to send. Shorten them and try again.";
+      default: return "Something interrupted the generation. Try again.";
+    }
+  }
+};
+
+/* =========================================================
+   PROMPTS
+   ========================================================= */
+const Prompts = {
+  brief(s) {
+    return [
+      `THE SENDER'S RAW THOUGHTS (their own words):\n"""\n${s.thoughts.trim()}\n"""`,
+      `Audience: ${s.audience.trim() || "not specified"}`,
+      `What they're promoting: ${s.promoting.trim() || "nothing specific — don't invent an offer"}`,
+      `Action they want readers to take: ${s.action.trim() || "not specified — use a soft, natural CTA such as replying, and don't invent links or offers"}`
+    ].join("\n");
+  },
+  ideas(s, avoid) {
+    const avoidBlock = avoid.length
+      ? `\nThese ideas were already suggested. Propose 5 NEW ideas with different angle families and different concepts (no reworded repeats):\n${avoid.map(a => `- ${a}`).join("\n")}\n`
+      : "";
+    return `You are a senior email marketing strategist for coaches, consultants, course creators and online business owners.
+
+${this.brief(s)}
+
+TASK: Propose exactly 5 email ideas based ONLY on what the sender said. Each must be a substantially different STRATEGIC ANGLE, not a reworded subject line. Use five different angle families, chosen from options like: Story / Personal Experience, Problem / Pain, Contrarian / Belief Shift, Curiosity / Open Loop, Opportunity / Transformation, Mistake / Lesson Learned, Myth vs. Reality, Behind the Scenes, Analogy / Metaphor, Before & After, Objection Handling, Question-led, "What I'd do if I were you".
+${avoidBlock}
+RULES:
+- Never invent facts, results, client names, numbers, statistics or testimonials. For a story angle, describe the kind of story the sender could tell from their own experience instead of making one up.
+- Subject lines: under 60 characters, specific, no clickbait, no ALL CAPS, no emoji.
+- Plain, human language. No marketing jargon.
+
+Reply with only this JSON:
+{"ideas":[{"title":"short punchy idea title","angle":"angle family label, e.g. Contrarian / Belief Shift","concept":"2-3 sentences describing the email's argument and flow","subject":"suggested subject line","why":"1-2 sentences on why this angle could work for this audience"}]}`;
+  },
+  settings(s) {
+    const tone = Config.TONES.find(t => t.id === s.tone) || Config.TONES[0];
+    const ap = Config.APPROACHES.find(a => a.id === s.approach) || Config.APPROACHES[0];
+    const idea = s.selectedIdea || {};
+    return `CHOSEN IDEA:
+- Title: ${idea.title}
+- Angle: ${idea.angle}
+- Concept: ${idea.concept}
+- Suggested subject: ${idea.subject}
+
+VOICE / TONE: ${tone.name} — ${tone.desc}
+COPYWRITING APPROACH: ${ap.name}
+Apply these high-level principles: ${ap.p}
+${ap.id === "normal" ? "" : "Use only the general principles. Do NOT imitate any person's exact voice, and never reuse their signature phrases, catchphrases or recognizable passages. Let the approach shape structure, pacing, directness, persuasion strategy, storytelling, subject-line style, CTA style, sentence length and emotional intensity.\n"}EMAIL TYPE: ${s.emailType}
+FILLER WORDS & EMOTIONS: ${s.filler
+  ? "ON — allow natural conversational fillers (like \"honestly\", \"look\", \"here's the thing\"), emotional language, personality, rhetorical questions, emphasis and expressive transitions. Keep it natural, not overdone."
+  : "OFF — keep the writing tight, clean and direct. No filler words, minimal rhetorical flourishes."}`;
+  },
+  rules(limit) {
+    return `LENGTH: The email body has a HARD MAXIMUM of ${limit} characters, counting every letter, space and line break. Aim for about ${Math.round(limit * 0.82)} characters. Write a complete email that fits; never stop mid-thought.
+
+QUALITY RULES:
+- Sound like a real business owner wrote it to people they know. Human, specific, warm.
+- One core idea. One clear CTA. Don't stuff multiple offers in.
+- Short paragraphs (1-3 sentences), natural transitions, varied sentence length.
+- No generic AI phrasing ("in today's fast-paced world", "unlock", "game-changer", "dive in", "elevate", "leverage"), no jargon, no repeated phrases.
+- Never invent facts, statistics, results, client stories, testimonials, prices, dates or deadlines. No fake urgency. Only use details the sender gave.
+- Use placeholders where specifics are needed: [First name], [link], [Your name].
+- Create curiosity where it helps, and use emotion naturally.
+- Plain text only: no markdown, no bullet symbols unless a short list truly helps, no emoji.`;
+  },
+  email(s, mode, prev) {
+    let variation = "";
+    if (mode === "another" && prev) {
+      variation = `\nVARIATION REQUIRED: Write a SUBSTANTIALLY different version of this same idea. Use a different hook, a different opening line, a different structure from the list, different examples, and a different subject line. Do not reuse sentences from the previous version:\nPrevious subject: ${prev.subject}\nPrevious body:\n"""\n${prev.body}\n"""\n`;
+    } else if (mode === "regenerate" && prev) {
+      variation = `\nThis is a regeneration. Write a fresh draft with new wording and a new subject line. Don't copy sentences from the previous draft:\nPrevious subject: ${prev.subject}\n`;
+    }
+    return `You are an expert email copywriter writing a marketing email for a coach, consultant, course creator or online business owner.
+
+${this.brief(s)}
+
+${this.settings(s)}
+
+STRUCTURE: Don't force a formula. Choose the structure that best fits the chosen idea, for example:
+${Config.STRUCTURES.map(x => `- ${x}`).join("\n")}
+The email should read naturally, not like a template.
+${variation}
+${this.rules(s.limit)}
+
+Reply with only this JSON:
+{"subject":"subject line, under 60 characters","preview":"inbox preview text, 40-110 characters, complements the subject rather than repeating it","body":"the full email body as plain text with \\n\\n between paragraphs, including greeting, the call to action and sign-off","cta":"the one action you ask for, in under 12 words","structure":["the","sections","you","used"]}`;
+  },
+  refine(s, current, kind) {
+    const r = Config.REFINES[kind];
+    const target = kind === "shorten" ? Math.min(s.limit, Math.max(150, Math.round(Text.count(current.body) * 0.7))) : s.limit;
+    return `You are editing a marketing email. Keep its core idea, facts, call to action and placeholders. Don't add new facts, numbers, stories or offers.
+
+${this.settings(s)}
+
+EDIT: ${r.ins}
+
+CURRENT EMAIL
+Subject: ${current.subject}
+Body:
+"""
+${current.body}
+"""
+
+${this.rules(target)}
+
+Reply with only this JSON:
+{"body":"the revised email body as plain text with \\n\\n between paragraphs"}`;
+  },
+  fit(body, limit) {
+    return `This email body is ${Text.count(body)} characters, but the hard maximum is ${limit} characters (letters, spaces and line breaks all count). Rewrite it to about ${Math.round(limit * 0.85)} characters.
+Keep the meaning, the greeting, the emotional flow, the call to action and the sign-off. Cut repetition and weaker sentences. Never end mid-sentence. Don't add anything new.
+
+"""
+${body}
+"""
+
+Reply with only this JSON: {"body":"the shortened email body with \\n\\n between paragraphs"}`;
+  }
+};
+
+/* =========================================================
+   GENERATOR — orchestrates prompts, parsing and limits
+   ========================================================= */
+const Generator = {
+  begin(kind, note) {
+    const rt = Store.runtime;
+    if (rt.ctl) rt.ctl.abort();
+    rt.ctl = new AbortController(); rt.busy = kind; rt.note = note;
+    return rt.ctl.signal;
+  },
+  end() { const rt = Store.runtime; rt.busy = null; rt.ctl = null; rt.note = ""; },
+  cancel() { const rt = Store.runtime; if (rt.ctl) rt.ctl.abort(); },
+
+  async ideas() {
+    const s = Store.state, rt = Store.runtime;
+    const err = Validate.thoughts(s);
+    if (err) { View.s1Error(err); document.getElementById("thoughts").focus(); return; }
+    View.s1Error("");
+    const regenerating = s.ideas.length > 0 && s.ideasFor === s.thoughts.trim();
+    const avoid = regenerating ? s.pastIdeas.slice(-15) : [];
+    const signal = this.begin("ideas", regenerating ? "Finding 5 fresh angles…" : "Reading your thoughts and finding 5 angles…");
+    rt.ideasError = "";
+    Store.set({ maxStep: Math.max(s.maxStep, 2) });
+    App.goTo(2);
+    try {
+      const res = await AI.json(Prompts.ideas(s, avoid), signal);
+      const ideas = (res && Array.isArray(res.ideas) ? res.ideas : [])
+        .filter(x => x && x.title && x.concept)
+        .slice(0, 5)
+        .map(x => ({ title: String(x.title).trim(), angle: String(x.angle || "").trim(), concept: String(x.concept).trim(), subject: String(x.subject || "").trim(), why: String(x.why || "").trim() }));
+      if (ideas.length < 3) throw { code: "bad_shape" };
+      const past = (regenerating ? s.pastIdeas : []).concat(ideas.map(i => `${i.angle}: ${i.title}`));
+      Store.set({ ideas, ideasFor: s.thoughts.trim(), pastIdeas: past.slice(-20) });
+      View.toast(regenerating ? "5 new ideas ready" : "Your ideas are ready");
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.ideasError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  },
+
+  async enforceLimit(body, signal) {
+    const limit = Store.state.limit;
+    for (let i = 0; i < 2 && Text.count(body) > limit; i++) {
+      Store.runtime.note = `The draft came in ${Text.fmt(Text.count(body) - limit)} characters over your limit. Tightening it…`;
+      View.email();
+      try {
+        const r = await AI.json(Prompts.fit(body, limit), signal);
+        if (r && typeof r.body === "string" && r.body.trim()) body = Text.clean(r.body);
+      } catch (e) { if (e && e.code === "cancelled") throw e; break; }
+    }
+    return Text.count(body) > limit ? Text.fitToLimit(body, limit) : body;
+  },
+
+  addVersion(v) {
+    const s = Store.state;
+    const versions = s.versions.concat([v]).slice(-12);
+    Store.set({ versions, active: versions.length - 1, maxStep: 5 });
+  },
+
+  async email(mode) {
+    const s = Store.state, rt = Store.runtime;
+    if (!s.selectedIdea) { App.goTo(2); return; }
+    const prev = Store.currentVersion();
+    const notes = { new: "Writing your email…", regenerate: "Writing a fresh draft with the same settings…", another: "Writing a substantially different version…" };
+    const signal = this.begin("email", notes[mode] || notes.new);
+    rt.emailError = ""; rt.editing = false;
+    Store.set({ maxStep: 5 });
+    App.goTo(5);
+    try {
+      const res = await AI.json(Prompts.email(s, mode, prev), signal);
+      if (!res || typeof res.body !== "string" || !res.body.trim()) throw { code: "bad_shape" };
+      const body = await this.enforceLimit(Text.clean(res.body), signal);
+      const labels = { new: "Original", regenerate: "Regenerated", another: "New version" };
+      this.addVersion({
+        label: s.versions.length ? labels[mode] : "Original",
+        subject: String(res.subject || s.selectedIdea.subject || "").trim(),
+        preview: String(res.preview || "").trim(),
+        body,
+        cta: String(res.cta || "").trim(),
+        structure: Array.isArray(res.structure) ? res.structure.map(String).slice(0, 8) : []
+      });
+      View.toast(mode === "new" ? "Email ready" : "New version ready");
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.emailError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  },
+
+  async refine(kind) {
+    const s = Store.state, rt = Store.runtime, cur = Store.currentVersion();
+    if (!cur) return;
+    const r = Config.REFINES[kind];
+    const signal = this.begin("email", `${r.label}: rewriting your email…`);
+    rt.emailError = ""; rt.editing = false;
+    View.render();
+    try {
+      const res = await AI.json(Prompts.refine(s, cur, kind), signal);
+      if (!res || typeof res.body !== "string" || !res.body.trim()) throw { code: "bad_shape" };
+      const body = await this.enforceLimit(Text.clean(res.body), signal);
+      this.addVersion(Object.assign({}, cur, { label: r.label, body }));
+      View.toast(r.toast);
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.emailError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  }
+};
+
+/* =========================================================
+   VIEW — rendering
+   ========================================================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ICON = {
+  copy: '<svg class="i sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  refresh: '<svg class="i sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  arrow: '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>',
+  cut: '<svg class="i sm" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>',
+  heart: '<svg class="i sm" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  chat: '<svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  target: '<svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+  pen: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  layers: '<svg class="i" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>',
+  bulb: '<svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
+  mail: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>',
+  alert: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'
+};
+
+const View = {
+  render() { this.stepper(); this.panels(); this.ideas(); this.tones(); this.settings(); this.email(); this.brief(); this.buttons(); },
+
+  stepper() {
+    const s = Store.state;
+    $("#stepper").innerHTML = Config.STEPS.map((name, i) => {
+      const n = i + 1, can = Validate.canVisit(n);
+      const cls = n === s.step ? "current" : (can ? "done" : "");
+      return `<li><button type="button" class="step-btn ${cls}" data-go="${n}" ${can ? "" : "disabled"} ${n === s.step ? 'aria-current="step"' : ""} aria-label="Step ${n}: ${name}">
+        <span class="step-num">${cls === "done" ? '<svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:3"><path d="M20 6 9 17l-5-5"/></svg>' : String(n).padStart(2, "0")}</span>
+        <span class="step-label">${name}</span></button></li>`;
+    }).join("");
+  },
+
+  panels() {
+    document.querySelectorAll("[data-step]").forEach(el => { el.hidden = Number(el.dataset.step) !== Store.state.step; });
+  },
+
+  loading(note) {
+    return `<div class="loading-note"><span class="spinner" aria-hidden="true"></span><span class="grow">${esc(note)}<br><span class="hint">This usually takes 10–40 seconds.</span></span><button class="btn sm" type="button" data-act="cancel">Cancel</button></div>`;
+  },
+
+  ideas() {
+    const s = Store.state, rt = Store.runtime, el = $("#ideasArea");
+    let html = "";
+    if (rt.busy === "ideas") {
+      html = this.loading(rt.note) + `<div class="ideas" aria-hidden="true">${Array.from({ length: 5 }, () => `
+        <div class="skel-card"><div class="skel" style="height:12px;width:90px"></div><div class="skel" style="height:20px;width:60%"></div>
+        <div class="skel" style="height:12px;width:95%"></div><div class="skel" style="height:12px;width:80%"></div></div>`).join("")}</div>`;
+      el.innerHTML = html; return;
+    }
+    if (rt.ideasError) html += `<div class="alert">${ICON.alert}<div><b>Couldn't generate ideas.</b> ${esc(rt.ideasError)}</div></div>`;
+    if (s.ideas.length && s.ideasFor && s.ideasFor !== s.thoughts.trim())
+      html += `<div class="alert warn">${ICON.alert}<div>You've edited your thoughts since these ideas were made. <button class="link" type="button" data-act="ideas">Generate ideas for the new version</button></div></div>`;
+    if (!s.ideas.length) {
+      html += `<div class="empty"><div class="ico">${ICON.bulb}</div><h3>No ideas yet</h3><p>Write your thoughts in step 1, then generate 5 email angles to choose from.</p>
+        <button class="btn soft" type="button" data-go="1">Go to your thoughts</button></div>`;
+      el.innerHTML = html; return;
+    }
+    const sel = s.selectedIdea;
+    html += `<div class="ideas">${s.ideas.map((idea, i) => {
+      const on = sel && sel.title === idea.title && sel.concept === idea.concept;
+      return `<article class="idea ${on ? "selected" : ""}">
+        <div>
+          <div class="idea-top"><span class="idea-n">Idea ${i + 1}</span>${idea.angle ? `<span class="chip brand">${esc(idea.angle)}</span>` : ""}</div>
+          <h3>${esc(idea.title)}</h3>
+          <p class="concept">${esc(idea.concept)}</p>
+        </div>
+        <div class="idea-side">
+          ${idea.subject ? `<div class="subj"><div class="eyebrow">Subject line</div><p>${esc(idea.subject)}</p></div>` : ""}
+          ${idea.why ? `<p class="why"><b>Why it works:</b> ${esc(idea.why)}</p>` : ""}
+          <button class="btn ${on ? "on" : "primary"} sm" type="button" data-idea="${i}" style="${on ? "" : "padding:9px 14px;font-size:13.5px"}">
+            ${on ? ICON.check + "Selected — continue" : "Use This Idea" + ICON.arrow}</button>
+        </div>
+      </article>`;
+    }).join("")}</div>`;
+    el.innerHTML = html;
+  },
+
+  tones() {
+    const s = Store.state, el = $("#tones");
+    if (!el.childElementCount) {
+      el.innerHTML = Config.TONES.map(t => `<button type="button" class="tone" role="radio" data-tone="${t.id}">
+        <span class="tick">${ICON.check}</span><span class="t-name">${t.name}</span><span class="t-desc">${t.desc}</span><span class="t-sample">${esc(t.sample)}</span></button>`).join("");
+    }
+    el.querySelectorAll(".tone").forEach(b => {
+      const on = b.dataset.tone === s.tone;
+      b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1;
+    });
+  },
+
+  settings() {
+    const s = Store.state;
+    const tone = Config.TONES.find(t => t.id === s.tone) || Config.TONES[0];
+    $("#toneChip").textContent = tone.name;
+    const ap = $("#approach");
+    if (!ap.options.length) ap.innerHTML = Config.APPROACHES.map((a, i) => `<option value="${a.id}">${i + 1}. ${esc(a.name)}</option>`).join("");
+    ap.value = s.approach;
+    const apObj = Config.APPROACHES.find(a => a.id === s.approach) || Config.APPROACHES[0];
+    $("#approachNote").textContent = apObj.id === "normal" ? "Writes in a natural, original voice without borrowing any particular copywriter's style."
+      : `Uses the general principles only: ${apObj.p} No imitation of anyone's exact voice or phrases.`;
+    const et = $("#emailType");
+    if (!et.options.length) et.innerHTML = Config.EMAIL_TYPES.map(t => `<option>${esc(t)}</option>`).join("");
+    et.value = s.emailType;
+    $("#filler").checked = !!s.filler;
+    $("#fillerTitle").textContent = s.filler ? "On — expressive" : "Off — tight and clean";
+    $("#fillerDesc").textContent = s.filler ? "Natural fillers, emotion, rhetorical questions and personality." : "Shorter sentences, no filler, straight to the point.";
+    $("#presets").innerHTML = Config.PRESETS.map(p => `<button type="button" data-preset="${p.value}" aria-pressed="${s.limit === p.value}">${p.name}<small>${Text.fmt(p.value)}</small></button>`).join("");
+    const lim = $("#limit");
+    if (document.activeElement !== lim) lim.value = s.limit;
+    $("#limitHint").textContent = `≈ ${Text.fmt(Math.round(s.limit / 5.8))} words max`;
+  },
+
+  meter(body) {
+    const n = Text.count(body), lim = Store.state.limit, pct = n / lim;
+    const cls = pct > 1 ? "over" : pct >= 0.9 ? "near" : "ok";
+    const state = pct > 1 ? `${Text.fmt(n - lim)} over the limit` : pct >= 0.9 ? "Close to the limit" : "Within limit";
+    return { cls, html: `<span class="meter-label">Characters: ${Text.fmt(n)} / ${Text.fmt(lim)}<span class="state">· ${state}</span></span><span class="bar" aria-hidden="true"><i style="width:${Math.min(100, pct * 100).toFixed(1)}%"></i></span>` };
+  },
+
+  updateMeter() {
+    const v = Store.currentVersion(), m = $("#meter");
+    if (!v || !m) return;
+    const r = this.meter(v.body);
+    m.className = "meter " + r.cls; m.innerHTML = r.html;
+  },
+
+  email() {
+    const s = Store.state, rt = Store.runtime, el = $("#emailArea");
+    const v = Store.currentVersion();
+    let html = "";
+    if (rt.busy === "email") {
+      el.innerHTML = this.loading(rt.note) + `<div class="editor" aria-hidden="true">
+        <div class="ed-row"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><div class="skel" style="height:10px;width:90px"></div><div class="skel" style="height:20px;width:55%"></div></div></div>
+        <div class="ed-row"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><div class="skel" style="height:10px;width:90px"></div><div class="skel" style="height:14px;width:75%"></div></div></div>
+        <div class="ed-body" style="display:flex;flex-direction:column;gap:12px">${[40, 95, 88, 70, 0, 92, 84, 60, 0, 50, 30].map(w => w ? `<div class="skel" style="height:13px;width:${w}%"></div>` : `<div style="height:6px"></div>`).join("")}</div></div>`;
+      return;
+    }
+    if (rt.emailError) html += `<div class="alert">${ICON.alert}<div><b>Couldn't finish writing.</b> ${esc(rt.emailError)}${v ? " Your previous version is still below." : ""}</div></div>`;
+    if (!v) {
+      html += `<div class="empty"><div class="ico">${ICON.mail}</div><h3>Your email will appear here</h3><p>Pick an idea and a voice, check your settings, then generate.</p>
+        <button class="btn primary" type="button" data-act="email-new" ${s.selectedIdea ? "" : "disabled"}>${ICON.mail}Generate Email</button></div>`;
+      el.innerHTML = html; return;
+    }
+    const m = this.meter(v.body);
+    const flow = v.structure && v.structure.length ? `<span class="flow">${v.structure.map(x => `<span class="chip">${esc(x)}</span>`).join('<span class="arr">→</span>')}</span>` : "";
+    html += `${(v.cta || flow) ? `<div class="cta-box">${v.cta ? `<span class="chip brand">CTA</span><span>${esc(v.cta)}</span>` : ""}${flow ? `<span class="spacer"></span>${flow}` : ""}</div>` : ""}
+      <div class="editor ${rt.editing ? "editing" : ""}" id="editor">
+        <div class="ed-row">
+          <div class="grow"><div class="eyebrow"><label for="subject">Subject line</label><span id="subjCount">${Text.count(v.subject)} chars</span></div>
+            <textarea rows="1" id="subject" class="inline-field subject" ${rt.editing ? "" : "readonly"}>${esc(v.subject)}</textarea></div>
+          <button class="btn sm" type="button" data-copy="subject">${ICON.copy}Copy</button>
+        </div>
+        <div class="ed-row">
+          <div class="grow"><div class="eyebrow"><label for="preview">Preview text</label></div>
+            <textarea rows="1" id="preview" class="inline-field preview" ${rt.editing ? "" : "readonly"}>${esc(v.preview)}</textarea></div>
+          <button class="btn sm" type="button" data-copy="preview">${ICON.copy}Copy</button>
+        </div>
+        <div class="ed-body">
+          <div class="eyebrow" style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><label for="body">Email</label><span class="chip brand edit-flag">Editing</span></div>
+          <textarea id="body" class="email" ${rt.editing ? "" : "readonly"}>${esc(v.body)}</textarea>
+        </div>
+        <div class="meter ${m.cls}" id="meter" aria-live="polite">${m.html}</div>
+        <div class="toolbar">
+          <button class="btn sm soft" type="button" data-copy="body">${ICON.copy}Copy Email</button>
+          <button class="btn sm" type="button" data-act="email-regenerate">${ICON.refresh}Regenerate</button>
+          <span class="sep" aria-hidden="true"></span>
+          <button class="btn sm" type="button" data-refine="shorten">${ICON.cut}Shorten</button>
+          <button class="btn sm" type="button" data-refine="emotional">${ICON.heart}Make More Emotional</button>
+          <button class="btn sm" type="button" data-refine="conversational">${ICON.chat}Make More Conversational</button>
+          <button class="btn sm" type="button" data-refine="direct">${ICON.target}Make More Direct</button>
+          <span class="sep" aria-hidden="true"></span>
+          <button class="btn sm ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
+        </div>
+      </div>
+      <div class="email-foot">
+        <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => `<button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button>`).join("") : ""}</div>
+        <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Generate Another Version</button>
+      </div>`;
+    el.innerHTML = html;
+    ["subject", "preview"].forEach(id => this.autosize($("#" + id)));
+    this.autosize($("#body"), 360);
+  },
+
+  autosize(el, min = 0) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.max(min, el.scrollHeight + 2) + "px";
+  },
+
+  brief() {
+    const s = Store.state, v = Store.currentVersion();
+    const tone = Config.TONES.find(t => t.id === s.tone) || Config.TONES[0];
+    const ap = Config.APPROACHES.find(a => a.id === s.approach) || Config.APPROACHES[0];
+    $("#briefHero").innerHTML = v
+      ? `<div class="hero-mini"><div class="eyebrow">Email ready</div><div class="big">${Text.fmt(Text.count(v.body))}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> / ${Text.fmt(s.limit)} chars</span></div><p>${Text.fmt(Text.words(v.body))} words · ${s.versions.length} version${s.versions.length === 1 ? "" : "s"}</p></div>`
+      : "";
+    const item = (k, val, go, cls = "") => `<div class="b-item"><div class="grow"><div class="k">${k}</div><div class="v ${val ? cls : "muted"}">${val ? esc(val) : "Not set yet"}</div></div>${Validate.canVisit(go) && s.step !== go ? `<button class="link" type="button" data-go="${go}">Edit</button>` : ""}</div>`;
+    $("#briefList").innerHTML = [
+      item("Your thoughts", s.thoughts.trim(), 1, "clamp"),
+      item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 2),
+      item("Voice", s.maxStep >= 3 ? tone.name : "", 3),
+      item("Approach · Type", s.maxStep >= 4 ? `${ap.name.split(" — ")[0]} · ${s.emailType}` : "", 4),
+      item("Emotion · Length", s.maxStep >= 4 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} chars` : "", 4)
+    ].join("");
+  },
+
+  status() {
+    const el = $("#aiStatus");
+    el.className = "status " + AI.status;
+    $("#aiStatusText").textContent = AI.status === "ready" ? "Claude is connected and ready to write"
+      : AI.status === "unavailable" ? "AI writing isn't available in this view. Open it in Claude to generate."
+      : "Connecting to Claude…";
+  },
+
+  buttons() {
+    const busy = !!Store.runtime.busy;
+    ["#genIdeas", "#regenIdeas", "#genEmail"].forEach(sel => { $(sel).disabled = busy; });
+    $("#regenIdeas").hidden = !Store.state.ideas.length;
+    document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another]").forEach(b => b.disabled = busy);
+    $("#thoughtsCount").textContent = `${Text.fmt(Text.words(Store.state.thoughts))} words · ${Text.fmt(Text.count(Store.state.thoughts))} characters`;
+  },
+
+  s1Error(msg) { $("#s1Error").innerHTML = msg ? `<div class="alert" style="margin:0">${ICON.alert}<div>${esc(msg)}</div></div>` : ""; },
+
+  toast(msg) {
+    const t = $("#toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(this._tt); this._tt = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+};
+
+/* =========================================================
+   APP — controller: events and navigation
+   ========================================================= */
+const App = {
+  goTo(step) {
+    if (!Validate.canAdvance(step) && step !== Store.state.step) return;
+    Store.set({ step, maxStep: Math.max(Store.state.maxStep, step) });
+    View.render();
+    const main = $("#main");
+    if (main.getBoundingClientRect().top < 0) main.scrollIntoView({ behavior: "smooth", block: "start" });
+  },
+
+  async copy(text, label) {
+    try { await navigator.clipboard.writeText(text); View.toast(`${label} copied`); return; } catch (e) {}
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove();
+    View.toast(ok ? `${label} copied` : "Couldn't copy. Select the text and copy it manually.");
+  },
+
+  bind() {
+    const s = () => Store.state;
+    ["thoughts", "audience", "promoting", "action"].forEach(id => {
+      const el = $("#" + id);
+      el.value = s()[id] || "";
+      el.addEventListener("input", () => { Store.set({ [id]: el.value }); if (id === "thoughts") View.s1Error(""); View.buttons(); View.brief(); });
+    });
+    $("#useExample").addEventListener("click", () => {
+      Object.entries(Config.EXAMPLE).forEach(([k, v]) => { $("#" + k).value = v; });
+      Store.set(Object.assign({}, Config.EXAMPLE)); View.s1Error(""); View.render();
+    });
+    $("#genIdeas").addEventListener("click", () => {
+      const st = s();
+      if (st.ideas.length && st.ideasFor === st.thoughts.trim()) { App.goTo(2); return; }
+      Generator.ideas();
+    });
+    $("#regenIdeas").addEventListener("click", () => Generator.ideas());
+    $("#genEmail").addEventListener("click", () => Generator.email(Store.currentVersion() ? "regenerate" : "new"));
+
+    $("#approach").addEventListener("change", e => { Store.set({ approach: e.target.value }); View.settings(); View.brief(); });
+    $("#emailType").addEventListener("change", e => { Store.set({ emailType: e.target.value }); View.brief(); });
+    $("#filler").addEventListener("change", e => { Store.set({ filler: e.target.checked }); View.settings(); View.brief(); });
+    const lim = $("#limit");
+    lim.addEventListener("input", () => { const n = Number(lim.value); if (n >= Config.LIMIT_MIN && n <= Config.LIMIT_MAX) { Store.set({ limit: Math.round(n) }); View.settings(); View.brief(); View.updateMeter(); } });
+    lim.addEventListener("change", () => { Store.set({ limit: Validate.limit(lim.value) }); lim.value = s().limit; View.settings(); View.brief(); View.updateMeter(); });
+
+    $("#tones").addEventListener("keydown", e => {
+      const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+      if (!(e.key in keys)) return;
+      e.preventDefault();
+      const i = Config.TONES.findIndex(t => t.id === s().tone);
+      const next = Config.TONES[(i + keys[e.key] + Config.TONES.length) % Config.TONES.length];
+      Store.set({ tone: next.id }); View.tones(); View.settings(); View.brief();
+      $(`[data-tone="${next.id}"]`).focus();
+    });
+
+    document.addEventListener("click", e => {
+      const t = e.target.closest("button");
+      if (!t || t.disabled) return;
+      if (t.dataset.go) { App.goTo(Number(t.dataset.go)); return; }
+      if (t.dataset.idea != null) {
+        const idea = s().ideas[Number(t.dataset.idea)];
+        Store.set({ selectedIdea: Object.assign({}, idea), maxStep: Math.max(s().maxStep, 3) });
+        App.goTo(3); return;
+      }
+      if (t.dataset.tone) { Store.set({ tone: t.dataset.tone }); View.tones(); View.settings(); View.brief(); return; }
+      if (t.dataset.preset) { Store.set({ limit: Number(t.dataset.preset) }); View.settings(); View.brief(); View.updateMeter(); return; }
+      if (t.dataset.refine) { Generator.refine(t.dataset.refine); return; }
+      if (t.dataset.version != null) { Store.runtime.editing = false; Store.set({ active: Number(t.dataset.version) }); View.render(); return; }
+      if (t.dataset.copy) {
+        const v = Store.currentVersion(); if (!v) return;
+        const labels = { subject: "Subject line", preview: "Preview text", body: "Email" };
+        App.copy(v[t.dataset.copy] || "", labels[t.dataset.copy]); return;
+      }
+      switch (t.dataset.act) {
+        case "cancel": Generator.cancel(); View.toast("Stopped"); break;
+        case "ideas": Generator.ideas(); break;
+        case "email-new": Generator.email("new"); break;
+        case "email-regenerate": Generator.email("regenerate"); break;
+        case "email-another": Generator.email("another"); break;
+        case "edit":
+          Store.runtime.editing = !Store.runtime.editing;
+          View.email(); View.buttons();
+          if (Store.runtime.editing) { const b = $("#body"); b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+          else View.toast("Edits saved");
+          break;
+      }
+    });
+
+    // Live editing of the active version
+    $("#emailArea").addEventListener("input", e => {
+      const v = Store.currentVersion(); if (!v) return;
+      const id = e.target.id;
+      if (!["subject", "preview", "body"].includes(id)) return;
+      v[id] = e.target.value; Store.save();
+      if (id === "body") { View.updateMeter(); View.brief(); View.autosize(e.target, 360); }
+      else { View.autosize(e.target); if (id === "subject") $("#subjCount").textContent = `${Text.count(v.subject)} chars`; }
+    });
+    window.addEventListener("resize", () => { ["subject", "preview"].forEach(id => View.autosize($("#" + id))); });
+  },
+
+  start() {
+    Store.load();
+    if (!Validate.canVisit(Store.state.step)) Store.state.step = 1;
+    AI.init();
+    this.bind();
+    View.render(); View.status();
+  }
+};
+
+App.start();
+})();
+</script>
