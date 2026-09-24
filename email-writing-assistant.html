@@ -98,7 +98,7 @@ textarea.big{min-height:190px;resize:vertical;font-size:16px;line-height:1.6;pad
 select.field{appearance:none;padding-right:40px;cursor:pointer;
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 20px) 52%,calc(100% - 15px) 52%;background-size:5px 5px;background-repeat:no-repeat}
-.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .hint{font-size:13px;color:var(--muted)}
 .meta-row{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
@@ -178,6 +178,16 @@ select.field{appearance:none;padding-right:40px;cursor:pointer;
 .seg button small{font-weight:500;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
 .seg button[aria-pressed="true"]{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff}
 .seg button[aria-pressed="true"] small{color:rgba(255,255,255,.8)}
+.idea-count{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.idea-count .lbl{margin:0;font-size:13.5px;color:var(--ink-2)}
+.counter{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:12px;background:var(--surface);overflow:hidden}
+.counter button{width:38px;height:44px;border:0;background:none;font-size:18px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.counter button:hover:not(:disabled){background:var(--surface-2);color:var(--brand)}
+.counter button:disabled{opacity:.35;cursor:not-allowed}
+.counter input{width:42px;height:44px;text-align:center;border:0;border-inline:1px solid var(--line);background:none;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;outline:none;-moz-appearance:textfield;appearance:textfield}
+.counter input::-webkit-outer-spin-button,.counter input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.counter:focus-within{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+.gen-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto}
 .limit-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
 .num{width:130px;font-variant-numeric:tabular-nums;font-weight:600}
 .approach-note{margin-top:10px;font-size:13.5px;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
@@ -286,6 +296,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
   .ed-row,.ed-body,.meter,.toolbar{padding-inline:14px}
   .toolbar .sep{display:none}
   .btn.primary{width:100%}
+  .gen-group{width:100%}
   .subtitle{font-size:15.5px}
 }
 </style>
@@ -333,8 +344,18 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           </div>
           <div id="s1Error"></div>
           <div class="actions">
-            <span class="hint">We'll turn this into 5 different angles to choose from.</span>
-            <button class="btn primary" id="genIdeas" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/></svg>Generate 5 Ideas</button>
+            <span class="hint" id="ideasHint">We'll turn this into 5 different angles to choose from.</span>
+            <div class="gen-group">
+              <div class="idea-count">
+                <label class="lbl" for="ideaCount">Number of ideas</label>
+                <div class="counter">
+                  <button type="button" data-count="-1" aria-label="Fewer ideas">−</button>
+                  <input id="ideaCount" type="number" min="1" max="10" step="1" inputmode="numeric">
+                  <button type="button" data-count="1" aria-label="More ideas">+</button>
+                </div>
+              </div>
+              <button class="btn primary" id="genIdeas" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/></svg><span id="genIdeasLabel">Generate 5 Ideas</span></button>
+            </div>
           </div>
         </div>
       </section>
@@ -345,7 +366,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
           <div class="grow">
             <h2 id="h-s2">Pick an angle</h2>
-            <p class="sub">Five different ways to tell the same story. Choose the one that feels most like you.</p>
+            <p class="sub" id="ideasSub">Different ways to tell the same story. Choose the one that feels most like you.</p>
           </div>
         </div>
         <div id="ideasArea"></div>
@@ -405,12 +426,12 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
             </label>
           </div>
           <div class="setting">
-            <div class="s-label">Email Length<small>Maximum characters</small></div>
+            <div class="s-label">Email Length<small>Maximum words</small></div>
             <div>
               <div class="seg" id="presets" role="group" aria-label="Length presets"></div>
               <div class="limit-row">
-                <label class="lbl" for="limit" style="margin:0">Maximum Characters</label>
-                <input id="limit" class="field num" type="number" min="200" max="10000" step="50" inputmode="numeric">
+                <label class="lbl" for="limit" style="margin:0">Maximum Words</label>
+                <input id="limit" class="field num" type="number" min="30" max="1500" step="10" inputmode="numeric">
                 <span class="hint" id="limitHint"></span>
               </div>
             </div>
@@ -502,8 +523,9 @@ const Config = {
     { id: "direct", name: "Direct Response — Strong offer, urgency, and action-oriented principles", p: "One strong offer, clear benefits, a reason to act now only if the sender provided a real one, and a clear call to action repeated near the end." }
   ],
   EMAIL_TYPES: ["Value Email","Story Email","Sales Email","Promotional Email","Launch Email","Welcome Email","Nurture Email","Problem-Aware Email","Belief-Shifting Email","Educational Email","Product Announcement","Webinar Promotion","Course Promotion","Coaching Promotion","Follow-Up Email","Last Chance Email"],
-  PRESETS: [ { id: "short", name: "Short", value: 600 }, { id: "medium", name: "Medium", value: 1200 }, { id: "long", name: "Long", value: 2500 } ],
-  LIMIT_MIN: 200, LIMIT_MAX: 10000,
+  PRESETS: [ { id: "short", name: "Short", value: 100 }, { id: "medium", name: "Medium", value: 200 }, { id: "long", name: "Long", value: 400 } ],
+  LIMIT_MIN: 30, LIMIT_MAX: 1500,
+  IDEAS_MIN: 1, IDEAS_MAX: 10, IDEAS_DEFAULT: 5,
   STRUCTURES: [
     "Hook → Story → Problem → New perspective → Solution → Offer → CTA",
     "Curiosity → Problem → Insight → Example → CTA",
@@ -527,7 +549,7 @@ const Store = {
     step: 1, maxStep: 1,
     thoughts: "", audience: "", promoting: "", action: "",
     ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
-    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, limit: 1500,
+    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, limit: 200, limitUnit: "words", ideaCount: 5,
     versions: [], active: -1
   }),
   state: null,
@@ -535,6 +557,11 @@ const Store = {
   load() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch (e) { saved = null; }
+    if (saved && typeof saved === "object" && saved.limitUnit !== "words") {
+      // Older saves stored a character limit; convert it to words.
+      saved.limit = Math.min(1500, Math.max(30, Math.round((Number(saved.limit) || 1160) / 5.8 / 10) * 10));
+      saved.limitUnit = "words";
+    }
     this.state = Object.assign(this.defaults(), saved && typeof saved === "object" ? saved : {});
     if (!Array.isArray(this.state.versions)) this.state.versions = [];
     if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
@@ -548,7 +575,7 @@ const Store = {
 };
 
 /* =========================================================
-   TEXT — character counting and limit enforcement
+   TEXT — word/character counting and word-limit enforcement
    ========================================================= */
 const Text = {
   count: (s) => Array.from(String(s || "")).length,
@@ -566,24 +593,26 @@ const Text = {
   fitToLimit(text, limit) {
     let paras = Text.clean(text).split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
     const join = () => paras.join("\n\n");
-    if (Text.count(join()) <= limit) return join();
+    if (Text.words(join()) <= limit) return join();
     const tail = paras.length > 3 ? 2 : 1;
     let i = paras.length - tail - 1;
-    while (Text.count(join()) > limit && i >= 1) {
+    while (Text.words(join()) > limit && i >= 1) {
       const s = Text.sentences(paras[i]);
       if (s.length <= 1) { paras.splice(i, 1); i--; continue; }
       s.pop(); paras[i] = s.join(" ");
     }
-    while (Text.count(join()) > limit) {
+    while (Text.words(join()) > limit) {
       const s = Text.sentences(paras[0]);
       if (s.length <= 1) break;
       s.pop(); paras[0] = s.join(" ");
     }
     let out = join();
-    if (Text.count(out) > limit) {
-      const cut = Array.from(out).slice(0, limit).join("");
-      const m = cut.match(/^[\s\S]*[.!?…]["'”’)]*(?=\s|$)/);
-      out = m ? m[0] : cut.replace(/\s+\S*$/, "");
+    if (Text.words(out) > limit) {
+      const re = /\S+/g; let m, k = 0, end = 0;
+      while ((m = re.exec(out)) && k < limit) { k++; end = re.lastIndex; }
+      const cut = out.slice(0, end);
+      const mm = cut.match(/^[\s\S]*[.!?…]["'”’)]*(?=\s|$)/);
+      out = mm ? mm[0] : cut;
     }
     return out.trim();
   }
@@ -599,6 +628,11 @@ const Validate = {
     if (Text.words(t) < 6) return "Add a little more detail (at least a sentence or two) so the ideas have something to work with.";
     if (Text.count(t) > 6000) return "Your notes are over 6,000 characters. Trim them to the main point.";
     return "";
+  },
+  ideaCount(v) {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n)) return Store.state.ideaCount;
+    return Math.min(Config.IDEAS_MAX, Math.max(Config.IDEAS_MIN, n));
   },
   limit(v) {
     const n = Math.round(Number(v));
@@ -658,15 +692,15 @@ const Prompts = {
       `Action they want readers to take: ${s.action.trim() || "not specified — use a soft, natural CTA such as replying, and don't invent links or offers"}`
     ].join("\n");
   },
-  ideas(s, avoid) {
+  ideas(s, avoid, n) {
     const avoidBlock = avoid.length
-      ? `\nThese ideas were already suggested. Propose 5 NEW ideas with different angle families and different concepts (no reworded repeats):\n${avoid.map(a => `- ${a}`).join("\n")}\n`
+      ? `\nThese ideas were already suggested. Propose ${n} NEW ${n === 1 ? "idea" : "ideas"} with different angle families and different concepts (no reworded repeats):\n${avoid.map(a => `- ${a}`).join("\n")}\n`
       : "";
     return `You are a senior email marketing strategist for coaches, consultants, course creators and online business owners.
 
 ${this.brief(s)}
 
-TASK: Propose exactly 5 email ideas based ONLY on what the sender said. Each must be a substantially different STRATEGIC ANGLE, not a reworded subject line. Use five different angle families, chosen from options like: Story / Personal Experience, Problem / Pain, Contrarian / Belief Shift, Curiosity / Open Loop, Opportunity / Transformation, Mistake / Lesson Learned, Myth vs. Reality, Behind the Scenes, Analogy / Metaphor, Before & After, Objection Handling, Question-led, "What I'd do if I were you".
+TASK: Propose exactly ${n} email ${n === 1 ? "idea" : "ideas"} based ONLY on what the sender said. ${n === 1 ? "Pick the single strongest STRATEGIC ANGLE (not just a subject line), chosen from options like" : `Each must be a substantially different STRATEGIC ANGLE, not a reworded subject line. Use ${n} different angle families, chosen from options like`}: Story / Personal Experience, Problem / Pain, Contrarian / Belief Shift, Curiosity / Open Loop, Opportunity / Transformation, Mistake / Lesson Learned, Myth vs. Reality, Behind the Scenes, Analogy / Metaphor, Before & After, Objection Handling, Question-led, "What I'd do if I were you".
 ${avoidBlock}
 RULES:
 - Never invent facts, results, client names, numbers, statistics or testimonials. For a story angle, describe the kind of story the sender could tell from their own experience instead of making one up.
@@ -695,7 +729,7 @@ FILLER WORDS & EMOTIONS: ${s.filler
   : "OFF — keep the writing tight, clean and direct. No filler words, minimal rhetorical flourishes."}`;
   },
   rules(limit) {
-    return `LENGTH: The email body has a HARD MAXIMUM of ${limit} characters, counting every letter, space and line break. Aim for about ${Math.round(limit * 0.82)} characters. Write a complete email that fits; never stop mid-thought.
+    return `LENGTH: The email body has a HARD MAXIMUM of ${limit} words, counting every word including the greeting, call to action and sign-off. Aim for about ${Math.round(limit * 0.85)} words. Write a complete email that fits; never stop mid-thought.
 
 QUALITY RULES:
 - Sound like a real business owner wrote it to people they know. Human, specific, warm.
@@ -731,7 +765,7 @@ Reply with only this JSON:
   },
   refine(s, current, kind) {
     const r = Config.REFINES[kind];
-    const target = kind === "shorten" ? Math.min(s.limit, Math.max(150, Math.round(Text.count(current.body) * 0.7))) : s.limit;
+    const target = kind === "shorten" ? Math.min(s.limit, Math.max(25, Math.round(Text.words(current.body) * 0.7))) : s.limit;
     return `You are editing a marketing email. Keep its core idea, facts, call to action and placeholders. Don't add new facts, numbers, stories or offers.
 
 ${this.settings(s)}
@@ -751,7 +785,7 @@ Reply with only this JSON:
 {"body":"the revised email body as plain text with \\n\\n between paragraphs"}`;
   },
   fit(body, limit) {
-    return `This email body is ${Text.count(body)} characters, but the hard maximum is ${limit} characters (letters, spaces and line breaks all count). Rewrite it to about ${Math.round(limit * 0.85)} characters.
+    return `This email body is ${Text.words(body)} words, but the hard maximum is ${limit} words (greeting and sign-off count). Rewrite it to about ${Math.round(limit * 0.85)} words.
 Keep the meaning, the greeting, the emotional flow, the call to action and the sign-off. Cut repetition and weaker sentences. Never end mid-sentence. Don't add anything new.
 
 """
@@ -782,20 +816,22 @@ const Generator = {
     View.s1Error("");
     const regenerating = s.ideas.length > 0 && s.ideasFor === s.thoughts.trim();
     const avoid = regenerating ? s.pastIdeas.slice(-15) : [];
-    const signal = this.begin("ideas", regenerating ? "Finding 5 fresh angles…" : "Reading your thoughts and finding 5 angles…");
+    const n = Validate.ideaCount(s.ideaCount);
+    const noun = n === 1 ? "angle" : "angles";
+    const signal = this.begin("ideas", regenerating ? `Finding ${n} fresh ${noun}…` : `Reading your thoughts and finding ${n} ${noun}…`);
     rt.ideasError = "";
     Store.set({ maxStep: Math.max(s.maxStep, 2) });
     App.goTo(2);
     try {
-      const res = await AI.json(Prompts.ideas(s, avoid), signal);
+      const res = await AI.json(Prompts.ideas(s, avoid, n), signal);
       const ideas = (res && Array.isArray(res.ideas) ? res.ideas : [])
         .filter(x => x && x.title && x.concept)
-        .slice(0, 5)
+        .slice(0, n)
         .map(x => ({ title: String(x.title).trim(), angle: String(x.angle || "").trim(), concept: String(x.concept).trim(), subject: String(x.subject || "").trim(), why: String(x.why || "").trim() }));
-      if (ideas.length < 3) throw { code: "bad_shape" };
+      if (ideas.length < Math.min(n, 3)) throw { code: "bad_shape" };
       const past = (regenerating ? s.pastIdeas : []).concat(ideas.map(i => `${i.angle}: ${i.title}`));
       Store.set({ ideas, ideasFor: s.thoughts.trim(), pastIdeas: past.slice(-20) });
-      View.toast(regenerating ? "5 new ideas ready" : "Your ideas are ready");
+      View.toast(regenerating ? `${ideas.length} new ${ideas.length === 1 ? "idea" : "ideas"} ready` : "Your ideas are ready");
     } catch (e) {
       if (e && e.code !== "cancelled") rt.ideasError = AI.errorCopy(e);
     } finally {
@@ -805,15 +841,15 @@ const Generator = {
 
   async enforceLimit(body, signal) {
     const limit = Store.state.limit;
-    for (let i = 0; i < 2 && Text.count(body) > limit; i++) {
-      Store.runtime.note = `The draft came in ${Text.fmt(Text.count(body) - limit)} characters over your limit. Tightening it…`;
+    for (let i = 0; i < 2 && Text.words(body) > limit; i++) {
+      Store.runtime.note = `The draft came in ${Text.fmt(Text.words(body) - limit)} words over your limit. Tightening it…`;
       View.email();
       try {
         const r = await AI.json(Prompts.fit(body, limit), signal);
         if (r && typeof r.body === "string" && r.body.trim()) body = Text.clean(r.body);
       } catch (e) { if (e && e.code === "cancelled") throw e; break; }
     }
-    return Text.count(body) > limit ? Text.fitToLimit(body, limit) : body;
+    return Text.words(body) > limit ? Text.fitToLimit(body, limit) : body;
   },
 
   addVersion(v) {
@@ -920,7 +956,7 @@ const View = {
     const s = Store.state, rt = Store.runtime, el = $("#ideasArea");
     let html = "";
     if (rt.busy === "ideas") {
-      html = this.loading(rt.note) + `<div class="ideas" aria-hidden="true">${Array.from({ length: 5 }, () => `
+      html = this.loading(rt.note) + `<div class="ideas" aria-hidden="true">${Array.from({ length: Math.min(Validate.ideaCount(s.ideaCount), 5) }, () => `
         <div class="skel-card"><div class="skel" style="height:12px;width:90px"></div><div class="skel" style="height:20px;width:60%"></div>
         <div class="skel" style="height:12px;width:95%"></div><div class="skel" style="height:12px;width:80%"></div></div>`).join("")}</div>`;
       el.innerHTML = html; return;
@@ -929,7 +965,7 @@ const View = {
     if (s.ideas.length && s.ideasFor && s.ideasFor !== s.thoughts.trim())
       html += `<div class="alert warn">${ICON.alert}<div>You've edited your thoughts since these ideas were made. <button class="link" type="button" data-act="ideas">Generate ideas for the new version</button></div></div>`;
     if (!s.ideas.length) {
-      html += `<div class="empty"><div class="ico">${ICON.bulb}</div><h3>No ideas yet</h3><p>Write your thoughts in step 1, then generate 5 email angles to choose from.</p>
+      html += `<div class="empty"><div class="ico">${ICON.bulb}</div><h3>No ideas yet</h3><p>Write your thoughts in step 1, then generate email angles to choose from.</p>
         <button class="btn soft" type="button" data-go="1">Go to your thoughts</button></div>`;
       el.innerHTML = html; return;
     }
@@ -984,14 +1020,14 @@ const View = {
     $("#presets").innerHTML = Config.PRESETS.map(p => `<button type="button" data-preset="${p.value}" aria-pressed="${s.limit === p.value}">${p.name}<small>${Text.fmt(p.value)}</small></button>`).join("");
     const lim = $("#limit");
     if (document.activeElement !== lim) lim.value = s.limit;
-    $("#limitHint").textContent = `≈ ${Text.fmt(Math.round(s.limit / 5.8))} words max`;
+    $("#limitHint").textContent = `words · roughly ${Text.fmt(Math.round(s.limit * 5.8 / 50) * 50)} characters`;
   },
 
   meter(body) {
-    const n = Text.count(body), lim = Store.state.limit, pct = n / lim;
+    const n = Text.words(body), lim = Store.state.limit, pct = n / lim;
     const cls = pct > 1 ? "over" : pct >= 0.9 ? "near" : "ok";
     const state = pct > 1 ? `${Text.fmt(n - lim)} over the limit` : pct >= 0.9 ? "Close to the limit" : "Within limit";
-    return { cls, html: `<span class="meter-label">Characters: ${Text.fmt(n)} / ${Text.fmt(lim)}<span class="state">· ${state}</span></span><span class="bar" aria-hidden="true"><i style="width:${Math.min(100, pct * 100).toFixed(1)}%"></i></span>` };
+    return { cls, html: `<span class="meter-label">Words: ${Text.fmt(n)} / ${Text.fmt(lim)}<span class="state">· ${state}</span></span><span class="bar" aria-hidden="true"><i style="width:${Math.min(100, pct * 100).toFixed(1)}%"></i></span>` };
   },
 
   updateMeter() {
@@ -1069,7 +1105,7 @@ const View = {
     const tone = Config.TONES.find(t => t.id === s.tone) || Config.TONES[0];
     const ap = Config.APPROACHES.find(a => a.id === s.approach) || Config.APPROACHES[0];
     $("#briefHero").innerHTML = v
-      ? `<div class="hero-mini"><div class="eyebrow">Email ready</div><div class="big">${Text.fmt(Text.count(v.body))}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> / ${Text.fmt(s.limit)} chars</span></div><p>${Text.fmt(Text.words(v.body))} words · ${s.versions.length} version${s.versions.length === 1 ? "" : "s"}</p></div>`
+      ? `<div class="hero-mini"><div class="eyebrow">Email ready</div><div class="big">${Text.fmt(Text.words(v.body))}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> / ${Text.fmt(s.limit)} words</span></div><p>${Text.fmt(Text.count(v.body))} characters · ${s.versions.length} version${s.versions.length === 1 ? "" : "s"}</p></div>`
       : "";
     const item = (k, val, go, cls = "") => `<div class="b-item"><div class="grow"><div class="k">${k}</div><div class="v ${val ? cls : "muted"}">${val ? esc(val) : "Not set yet"}</div></div>${Validate.canVisit(go) && s.step !== go ? `<button class="link" type="button" data-go="${go}">Edit</button>` : ""}</div>`;
     $("#briefList").innerHTML = [
@@ -1077,7 +1113,7 @@ const View = {
       item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 2),
       item("Voice", s.maxStep >= 3 ? tone.name : "", 3),
       item("Approach · Type", s.maxStep >= 4 ? `${ap.name.split(" — ")[0]} · ${s.emailType}` : "", 4),
-      item("Emotion · Length", s.maxStep >= 4 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} chars` : "", 4)
+      item("Emotion · Length", s.maxStep >= 4 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} words` : "", 4)
     ].join("");
   },
 
@@ -1094,6 +1130,13 @@ const View = {
     ["#genIdeas", "#regenIdeas", "#genEmail"].forEach(sel => { $(sel).disabled = busy; });
     $("#regenIdeas").hidden = !Store.state.ideas.length;
     document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another]").forEach(b => b.disabled = busy);
+    const n = Validate.ideaCount(Store.state.ideaCount), plural = n === 1 ? "Idea" : "Ideas";
+    $("#genIdeasLabel").textContent = `Generate ${n} ${plural}`;
+    $("#regenIdeas").lastChild.textContent = `Regenerate ${plural}`;
+    $("#ideasHint").textContent = n === 1 ? "We'll find the single strongest angle for your email." : `We'll turn this into ${n} different angles to choose from.`;
+    const ic = $("#ideaCount");
+    if (document.activeElement !== ic) ic.value = n;
+    document.querySelectorAll("[data-count]").forEach(b => { b.disabled = Number(b.dataset.count) < 0 ? n <= Config.IDEAS_MIN : n >= Config.IDEAS_MAX; });
     $("#thoughtsCount").textContent = `${Text.fmt(Text.words(Store.state.thoughts))} words · ${Text.fmt(Text.count(Store.state.thoughts))} characters`;
   },
 
@@ -1141,10 +1184,14 @@ const App = {
     });
     $("#genIdeas").addEventListener("click", () => {
       const st = s();
-      if (st.ideas.length && st.ideasFor === st.thoughts.trim()) { App.goTo(2); return; }
+      if (st.ideas.length === st.ideaCount && st.ideasFor === st.thoughts.trim()) { App.goTo(2); return; }
       Generator.ideas();
     });
     $("#regenIdeas").addEventListener("click", () => Generator.ideas());
+    const ic = $("#ideaCount");
+    const setCount = (v) => { Store.set({ ideaCount: Validate.ideaCount(v) }); View.buttons(); };
+    ic.addEventListener("input", () => { const n = Number(ic.value); if (n >= Config.IDEAS_MIN && n <= Config.IDEAS_MAX) setCount(n); });
+    ic.addEventListener("change", () => { setCount(ic.value); ic.value = s().ideaCount; });
     $("#genEmail").addEventListener("click", () => Generator.email(Store.currentVersion() ? "regenerate" : "new"));
 
     $("#approach").addEventListener("change", e => { Store.set({ approach: e.target.value }); View.settings(); View.brief(); });
@@ -1168,6 +1215,7 @@ const App = {
       const t = e.target.closest("button");
       if (!t || t.disabled) return;
       if (t.dataset.go) { App.goTo(Number(t.dataset.go)); return; }
+      if (t.dataset.count) { const n = Validate.ideaCount(s().ideaCount + Number(t.dataset.count)); Store.set({ ideaCount: n }); $("#ideaCount").value = n; View.buttons(); return; }
       if (t.dataset.idea != null) {
         const idea = s().ideas[Number(t.dataset.idea)];
         Store.set({ selectedIdea: Object.assign({}, idea), maxStep: Math.max(s().maxStep, 3) });
