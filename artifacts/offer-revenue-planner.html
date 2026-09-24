@@ -119,7 +119,19 @@ textarea.inp{resize:vertical;min-height:62px}
 .affix i{position:absolute;top:50%;transform:translateY(-50%);font-style:normal;color:var(--ink-3);font-size:13px;pointer-events:none}
 .affix.post i{right:12px}.affix.pre i{left:12px}
 .split{display:flex;justify-content:space-between;align-items:center;gap:10px}
-input[type=range]{width:100%;accent-color:var(--accent);height:22px}
+input[type=range]{--p:50%;-webkit-appearance:none;appearance:none;width:100%;height:22px;margin:0;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;border:1px solid var(--line-strong);
+  background:linear-gradient(90deg,var(--accent),var(--accent-2)) 0/var(--p) 100% no-repeat,var(--surface-2)}
+input[type=range]::-moz-range-track{height:8px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;
+  background:var(--accent);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--accent),0 2px 6px rgba(60,64,160,.35);transition:transform .15s}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);
+  box-shadow:0 0 0 1px var(--accent),0 2px 6px rgba(60,64,160,.35)}
+input[type=range]:hover::-webkit-slider-thumb,input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px var(--accent),0 0 0 5px var(--accent-soft)}
+input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 1px var(--accent),0 0 0 5px var(--accent-soft)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2)}
@@ -181,14 +193,17 @@ input[type=range]{width:100%;accent-color:var(--accent);height:22px}
 .price-inputs .affix{width:100%}
 
 /* funnel */
-.funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
-.f-step{position:relative;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;
-  background:linear-gradient(140deg,var(--accent),var(--accent-2));color:#fff;transition:width .35s ease;max-width:100%}
-.f-step span{font-size:13px;opacity:.9}
-.f-step b{font-size:1.25rem}
-.f-rate{font-size:12.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.funnel{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.f-row{display:grid;grid-template-columns:1fr;gap:4px}
+.f-track{position:relative;height:56px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.f-step{position:absolute;inset:0 auto 0 0;border-radius:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 16px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;transition:width .45s cubic-bezier(.2,.8,.2,1);min-width:0}
+.f-step span{font-size:13px;opacity:.92;white-space:nowrap}
+.f-step b{font-size:1.2rem;white-space:nowrap}
+.f-share{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;color:var(--ink-3)}
+.f-rate{font-size:12.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px;padding-left:16px}
 .f-rate svg{width:14px;height:14px}
-
+.f-rate b{color:var(--accent-ink)}
 /* ladder */
 .ladder-svg{width:100%;height:auto;display:block}
 .rung-list{display:flex;flex-direction:column;gap:10px}
@@ -724,11 +739,13 @@ footer a:hover{text-decoration:underline}
     const overall=vis>0?cust/vis*100:0, adSpend=vis*cpc, profit=cust*p-adSpend;
     $("g-hero").innerHTML='<div class="eyebrow">To make '+money(G,0)+' a month</div><div class="big num">'+int(cust)+' customers</div><p>from <b>'+int(leads)+' leads</b> and <b>'+int(vis)+' visitors</b>. If traffic is paid: <b>'+money(adSpend,0)+'</b> ad spend, <b>'+money(profit,0)+'</b> left after ads.</p>';
     const steps=[["Visitors",vis,null],["Leads",leads,opt],["Take next step",mid,step],["Customers",cust,close]];
-    const mx=Math.max(vis,1);
+    const mx=Math.max(vis,1), lmx=Math.log10(mx+1);
     $("g-funnel").innerHTML=steps.map((s,i)=>{
-      const w=Math.max(42,Math.sqrt(s[1]/mx)*100);
-      return (s[2]!==null?'<div class="f-rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>'+pct(s[2]*100)+' convert</div>':'')+
-        '<div class="f-step num" style="width:'+w+'%"><span>'+s[0]+'</span><b>'+int(s[1])+'</b></div>';
+      // log scale keeps every step visibly shorter than the one before, left to right
+      const w=lmx>0?38+62*(Math.log10(s[1]+1)/lmx):38;
+      const share=i===0?"":pct(s[1]/mx*100)+" of visitors";
+      return (s[2]!==null?'<div class="f-rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg><b>'+pct(s[2]*100)+'</b> convert</div>':'')+
+        '<div class="f-track num"><div class="f-step" style="width:'+w.toFixed(1)+'%"><span>'+s[0]+'</span><b>'+int(s[1])+'</b></div>'+(w<82&&share?'<span class="f-share">'+share+'</span>':'')+'</div>';
     }).join("");
     const day=v=>Math.round(v/30*10)/10;
     $("g-tiles").innerHTML=[["Visitors a day",day(vis)],["Leads a day",day(leads)],["Sales a day",day(cust)],["Value per lead",null]].map(t=>
@@ -793,7 +810,14 @@ footer a:hover{text-decoration:underline}
     $("b-note").textContent="The "+money(47,0)+" row assumes 8 points fewer buyers add it, since a pricier bump usually converts a little less. Keep the bump under about half the main price.";
   }
 
+  function paintSliders(){
+    document.querySelectorAll('input[type=range]').forEach(r=>{
+      const min=n(r.min),max=n(r.max)||100,v=Math.min(max,Math.max(min,n(r.value)));
+      r.style.setProperty("--p",((v-min)/(max-min)*100)+"%");
+    });
+  }
   function renderAll(){
+    paintSliders();
     const G=goal();
     $("gYear").textContent=money(G*12,0);$("gWeek").textContent=money(G*12/52,0);$("gDay").textContent=money(G*12/365,0);
     renderPricing();renderGoal();renderLadder();renderBump();
