@@ -104,15 +104,16 @@ input[type=range]{width:100%;accent-color:var(--accent);height:22px;margin:0}
 .stat .k{font-size:12.5px;color:var(--muted);font-weight:600}
 .stat .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 
-.funnel{display:grid;gap:8px;margin-top:4px}
-.stage{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:12px}
+.funnel{display:grid;gap:6px;margin-top:4px}
+.stage{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:center;gap:12px}
 .stage .name{font-size:13px;font-weight:600;color:var(--ink-2)}
-.bar-track{position:relative;height:34px}
-.bar{position:absolute;inset:0 auto 0 50%;transform:translateX(-50%);border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent-2));min-width:56px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;transition:width .35s ease}
-.stage:nth-child(1) .bar{opacity:.55}
-.stage:nth-child(2) .bar{opacity:.78}
-.drop{font-size:12px;color:var(--muted);text-align:center;padding-left:104px}
-
+.bar-track{position:relative;height:34px;border-radius:9px;background:var(--accent-soft);display:flex;align-items:center}
+.bar{position:relative;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:flex-end;padding-right:10px;color:#fff;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.bar.out{justify-content:flex-start;padding-right:0}
+.bar.out span{position:absolute;left:calc(100% + 8px);color:var(--ink)}
+.bar.out{min-width:6px}
+.drop{font-size:12px;color:var(--muted);padding-left:96px;display:flex;align-items:center;gap:6px}
+.drop b{color:var(--ink-2);font-weight:700}
 .tips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .tips li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;font-size:14px;color:var(--ink-2)}
 .tips li i{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px}
@@ -123,7 +124,7 @@ footer{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:8px 36px
 footer a{color:var(--accent);font-weight:700;text-decoration:none}
 footer a:hover{text-decoration:underline}
 @media (prefers-reduced-motion:reduce){.bar{transition:none}}
-@media (max-width:480px){.card{padding:18px}.stage{grid-template-columns:72px minmax(0,1fr)}.drop{padding-left:84px}.num input{width:80px}}
+@media (max-width:480px){.card{padding:18px}.stage{grid-template-columns:70px minmax(0,1fr)}.drop{padding-left:82px}.num input{width:80px}}
 </style>
 
 <header class="hero">
@@ -293,13 +294,21 @@ function calc(){
   const stages = [["Visitors",s.visitors],["Leads",m.leads],["Customers",m.buyers]];
   if (s.upTake>0 && s.upPrice>0) stages.push(["Upsells",m.ups]);
   const top = Math.max(s.visitors,1);
-  let html = "";
+  const box = $("funnel");
+  if (box.dataset.n != stages.length){
+    box.innerHTML = stages.map(([name],i) => (i ? `<div class="drop"></div>` : "") +
+      `<div class="stage"><span class="name">${name}</span><div class="bar-track"><div class="bar"><span></span></div></div></div>`).join("");
+    box.dataset.n = stages.length;
+  }
+  const bars = box.querySelectorAll(".bar"), drops = box.querySelectorAll(".drop");
   stages.forEach(([name,v],i) => {
-    if (i>0){ const prev = stages[i-1][1]; const pct = prev ? v/prev*100 : 0; html += `<div class="drop">↓ ${pct.toFixed(pct<10?1:0)}% continue</div>`; }
-    const w = Math.max(Math.sqrt(v/top)*100, 0);
-    html += `<div class="stage"><span class="name">${name}</span><div class="bar-track"><div class="bar" style="width:${w}%">${fmtN(v)}</div></div></div>`;
+    if (i){ const prev = stages[i-1][1]; const pct = prev ? v/prev*100 : 0;
+      drops[i-1].innerHTML = `↓ <b>${pct.toFixed(pct<10?1:0)}%</b> of ${stages[i-1][0].toLowerCase()} continue`; }
+    const w = v > 0 ? Math.max(Math.sqrt(v/top)*100, 2) : 0;
+    const b = bars[i]; b.querySelector("span").textContent = fmtN(v);
+    b.classList.toggle("out", w < 24);
+    requestAnimationFrame(() => { b.style.width = w + "%"; });
   });
-  $("funnel").innerHTML = html;
 
   const gain = patch => model({...s, ...patch}).profit - m.profit;
   const tips = [
