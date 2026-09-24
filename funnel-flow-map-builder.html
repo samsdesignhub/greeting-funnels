@@ -1,0 +1,2135 @@
+<title>Funnel Flow Map Builder</title>
+<meta name="description" content="Visualize your funnel before you build it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#F3F4FB; --band:#ECEEFB; --surface:#FFFFFF; --surface-2:#F7F8FD; --surface-3:#EFF1F9;
+  --line:#E3E6F1; --line-2:#EDEFF7; --ink:#1C2038; --ink-2:#434866; --muted:#71769A;
+  --primary:#5B5CF0; --primary-600:#4A4BDD; --primary-soft:#EEEFFE; --primary-line:#CBCDFB; --on-primary:#FFFFFF;
+  --success:#2F9E62; --success-soft:#E3F4EA; --warn:#C27A0E; --warn-soft:#FDF3E1; --danger:#DC2645; --danger-soft:#FDECEF;
+  --shadow-sm:0 1px 2px rgba(28,32,80,.05);
+  --shadow:0 1px 2px rgba(28,32,80,.04),0 10px 30px rgba(28,32,80,.07);
+  --shadow-lg:0 20px 60px rgba(20,24,70,.18);
+  --radius:16px; --radius-sm:10px;
+  --font:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --side-w:292px; --panel-w:316px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1022; --band:#13162B; --surface:#171A30; --surface-2:#1C2039; --surface-3:#22274A;
+    --line:#2A2F52; --line-2:#232846; --ink:#ECEDF8; --ink-2:#C4C7E2; --muted:#8C91B7;
+    --primary:#7C7DF8; --primary-600:#8E8FFA; --primary-soft:rgba(124,125,248,.15); --primary-line:#474AA0; --on-primary:#FFFFFF;
+    --success:#4CC486; --success-soft:rgba(76,196,134,.14); --warn:#E7A73D; --warn-soft:rgba(231,167,61,.14); --danger:#F0556F; --danger-soft:rgba(240,85,111,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); --shadow-lg:0 20px 60px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1022; --band:#13162B; --surface:#171A30; --surface-2:#1C2039; --surface-3:#22274A;
+  --line:#2A2F52; --line-2:#232846; --ink:#ECEDF8; --ink-2:#C4C7E2; --muted:#8C91B7;
+  --primary:#7C7DF8; --primary-600:#8E8FFA; --primary-soft:rgba(124,125,248,.15); --primary-line:#474AA0; --on-primary:#FFFFFF;
+  --success:#4CC486; --success-soft:rgba(76,196,134,.14); --warn:#E7A73D; --warn-soft:rgba(231,167,61,.14); --danger:#F0556F; --danger-soft:rgba(240,85,111,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); --shadow-lg:0 20px 60px rgba(0,0,0,.55);
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.i{width:18px;height:18px;flex:none;display:block}
+.i-sm{width:15px;height:15px}
+.i-lg{width:22px;height:22px}
+
+#app{height:100%;display:grid;grid-template-rows:auto 1fr;min-height:0}
+
+/* ---------- Header ---------- */
+.topbar{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--band);border-bottom:1px solid var(--line);min-width:0}
+.brand{display:flex;align-items:center;gap:14px;min-width:0;flex:none}
+.logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#4F63F5,#7A4CF0);box-shadow:0 8px 20px rgba(91,92,240,.35);flex:none}
+.logo .i{width:22px;height:22px}
+.brand-text{min-width:0}
+.brand-text h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.15;white-space:nowrap}
+.brand-text p{margin:2px 0 0;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mapmeta{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 0;justify-content:center;overflow:hidden}
+.mapname{border:1px solid transparent;background:transparent;border-radius:10px;padding:7px 10px;font-weight:700;font-size:14px;min-width:0;max-width:300px;width:100%;text-align:center;text-overflow:ellipsis}
+.mapname:hover{border-color:var(--line);background:var(--surface)}
+.mapname:focus{border-color:var(--primary-line);background:var(--surface);outline:none;box-shadow:0 0 0 3px var(--primary-soft)}
+.savestate{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;padding:4px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.savestate::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--success)}
+.savestate.dirty::before{background:var(--warn)}
+.actions{display:flex;align-items:center;gap:8px;flex:none}
+.bgroup{display:flex;align-items:center;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 12px;border-radius:9px;border:0;background:transparent;font-weight:600;font-size:13px;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
+.btn:hover{background:var(--surface-3);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed;background:transparent}
+.btn.icon{width:34px;padding:0}
+.btn.primary{background:var(--primary);color:var(--on-primary);box-shadow:0 6px 16px rgba(91,92,240,.3);height:42px;padding:0 16px;border-radius:12px}
+.btn.primary:hover{background:var(--primary-600)}
+.btn.outline{border:1px solid var(--line);background:var(--surface)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft)}
+.btn.block{width:100%}
+.zoomval{min-width:50px;font-variant-numeric:tabular-nums;font-size:12.5px}
+.only-md,.only-sm{display:none!important}
+
+/* ---------- Work area ---------- */
+#work{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr) var(--panel-w);min-height:0;position:relative}
+
+/* ---------- Sidebar ---------- */
+#sidebar{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:30}
+.side-head{padding:14px 16px 10px;display:grid;gap:10px;border-bottom:1px solid var(--line-2)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--surface-3);padding:3px;border-radius:11px}
+.tabs button{border:0;background:transparent;border-radius:8px;padding:7px 4px;font-weight:700;font-size:12.5px;color:var(--muted)}
+.tabs button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--surface-2);color:var(--muted)}
+.search input{border:0;background:transparent;outline:none;padding:9px 0;width:100%;font-size:13px;color:var(--ink)}
+.search:focus-within{border-color:var(--primary-line);box-shadow:0 0 0 3px var(--primary-soft)}
+.side-body{overflow-y:auto;padding:8px 12px 16px;flex:1;min-height:0}
+.side-foot{padding:10px 16px;border-top:1px solid var(--line-2);font-size:12px;color:var(--muted)}
+.side-foot a,.credit a{color:var(--primary);font-weight:700;text-decoration:none}
+.side-foot a:hover,.credit a:hover{text-decoration:underline}
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin:14px 4px 8px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.sec-title span{font-weight:600;letter-spacing:0;text-transform:none}
+.hint-line{font-size:12px;color:var(--muted);margin:0 4px 10px;line-height:1.45}
+.fcard{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 11px;margin-bottom:7px;transition:border-color .15s,box-shadow .15s,transform .15s}
+.fcard:hover{border-color:var(--primary-line);box-shadow:var(--shadow);transform:translateY(-1px)}
+.fcard b{display:block;font-size:13px;font-weight:700;margin-bottom:2px}
+.fcard small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
+.fic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--primary-soft);color:var(--primary)}
+.fic .i{width:18px;height:18px}
+.tpl .fic{background:linear-gradient(135deg,#4F63F5,#7A4CF0);color:#fff}
+.badge{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--success-soft);color:var(--success);margin-left:6px;vertical-align:1px}
+details.cat{margin-bottom:4px}
+details.cat>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:8px 4px;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-radius:8px}
+details.cat>summary::-webkit-details-marker{display:none}
+details.cat>summary .dot{width:8px;height:8px;border-radius:3px;background:var(--c)}
+details.cat>summary .cnt{margin-left:auto;font-weight:600;letter-spacing:0}
+details.cat>summary .chev{transition:transform .15s}
+details.cat[open]>summary .chev{transform:rotate(90deg)}
+.lib-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;border:1px solid transparent;cursor:grab;user-select:none;position:relative}
+.lib-item:hover{background:var(--surface-2);border-color:var(--line)}
+.lib-item:active{cursor:grabbing}
+.lib-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent)}
+.lib-ic .i{width:17px;height:17px}
+.lib-text{flex:1;min-width:0}
+.lib-text b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-text small{display:block;font-size:11px;color:var(--muted)}
+.grip{color:var(--muted);opacity:.55}
+.lib-item:hover .grip{opacity:1}
+.lib-del{position:absolute;right:30px;border:0;background:var(--surface);border-radius:6px;padding:3px;color:var(--muted);display:none}
+.lib-item:hover .lib-del{display:block}
+.lib-del:hover{color:var(--danger)}
+.addcustom{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:8px 0 6px;padding:10px;border-radius:12px;border:1.5px dashed var(--primary-line);background:var(--primary-soft);color:var(--primary);font-weight:700;font-size:13px}
+.addcustom:hover{border-style:solid}
+.gcard{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:7px;border-left:4px solid var(--c);cursor:grab}
+.gcard:hover{box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--c) 45%,var(--line));border-left-color:var(--c)}
+.gcard b{font-size:13px;display:block;margin-bottom:3px}
+.gcard small{font-size:11.5px;color:var(--muted);line-height:1.4;display:block}
+.empty-lib{padding:24px 8px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ---------- Canvas ---------- */
+#canvasWrap{position:relative;overflow:hidden;min-width:0;min-height:0;touch-action:none;background-color:#F8F9FD}
+#stage{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
+#stage.tool-hand,#stage.panning{cursor:grab}
+#stage.panning:active{cursor:grabbing}
+#stage.tool-connect,#stage.tool-text{cursor:crosshair}
+#stage [data-ref^="n:"]{cursor:move}
+#stage.tool-connect [data-ref^="n:"]{cursor:crosshair}
+#stage [data-part="head"]{cursor:move}
+#stage [data-ref^="e:"]{cursor:pointer}
+#stage [data-ref^="e:"]:hover .eline{stroke-width:3}
+#stage [data-h="port"]{cursor:crosshair}
+#stage [data-h="resize-n"],#stage [data-h="resize-g"]{cursor:nwse-resize}
+#stage [data-h="collapse"]{cursor:pointer}
+#stage.drop-target{outline:3px dashed var(--primary-line);outline-offset:-6px}
+
+.floatbar{position:absolute;display:flex;align-items:center;gap:2px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);z-index:10}
+.toolbar{top:14px;left:50%;transform:translateX(-50%)}
+.tbtn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:52px;height:46px;padding:0 6px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:10.5px;font-weight:600}
+.tbtn:hover{background:var(--surface-3);color:var(--ink)}
+.tbtn.active{background:var(--primary-soft);color:var(--primary)}
+.tbtn.sq{min-width:36px;width:36px}
+.tsep{width:1px;height:28px;background:var(--line);margin:0 5px}
+.selbar{top:76px;left:50%;transform:translateX(-50%);padding:4px}
+.selbar .lbl{font-size:12px;font-weight:700;color:var(--muted);padding:0 8px;white-space:nowrap}
+.selbar .btn{height:32px}
+.selbar .btn.icon{width:32px}
+.chip-hint{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;background:var(--ink);color:var(--surface);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:99px;z-index:11;box-shadow:var(--shadow);white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+.minimap{position:absolute;right:16px;bottom:16px;width:196px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;z-index:9}
+.minimap-head{display:flex;align-items:center;justify-content:space-between;padding:5px 6px 5px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line-2)}
+.minimap-head button{border:0;background:transparent;color:var(--muted);border-radius:6px;padding:2px}
+.minimap canvas{display:block;width:196px;height:124px;cursor:pointer;touch-action:none}
+.minimap.min canvas{display:none}
+.minimap.min .minimap-head{border-bottom:0}
+.credit{position:absolute;left:16px;bottom:16px;z-index:9;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;box-shadow:var(--shadow-sm)}
+.empty{position:absolute;inset:0;display:grid;place-items:center;z-index:8;pointer-events:none;padding:16px}
+.empty-card{pointer-events:auto;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:34px 32px;max-width:440px;text-align:center}
+.empty-art{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#4F63F5,#7A4CF0);box-shadow:0 12px 30px rgba(91,92,240,.35)}
+.empty-art .i{width:30px;height:30px}
+.empty h2{margin:0 0 8px;font-size:22px;letter-spacing:-.02em;text-wrap:balance}
+.empty p{margin:0 0 22px;color:var(--muted);line-height:1.5}
+.empty .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- Panel ---------- */
+#panel{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:30}
+.panel-head{display:flex;align-items:center;gap:12px;padding:16px 18px 14px;border-bottom:1px solid var(--line-2)}
+.panel-head .hic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--primary-soft);color:var(--primary);flex:none}
+.panel-head h3{margin:0;font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+.panel-head p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.panel-head .x{margin-left:auto}
+#panelBody{overflow-y:auto;flex:1;min-height:0}
+.psec{padding:14px 18px;border-bottom:1px solid var(--line-2);display:grid;gap:12px}
+.psec h4{margin:0;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.field{display:grid;gap:6px}
+.field>label,.flabel{font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center}
+.flabel span{color:var(--muted);font-weight:500;font-size:11.5px}
+.inp{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+.inp:focus{border-color:var(--primary-line);box-shadow:0 0 0 3px var(--primary-soft)}
+textarea.inp{resize:vertical;min-height:64px;line-height:1.45}
+select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface-3);border-radius:10px}
+.seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:7px 6px;font-size:12px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.range{display:flex;align-items:center;gap:10px}
+.range input[type=range]{flex:1;accent-color:var(--primary)}
+.range .num{width:64px;text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums}
+.swatches{display:flex;flex-wrap:wrap;gap:7px}
+.sw{width:26px;height:26px;border-radius:8px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);background:var(--c)}
+.sw.on{box-shadow:0 0 0 2px var(--ink)}
+.colorrow{display:flex;align-items:center;gap:8px}
+.colorrow input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--surface)}
+.bgopts{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.bgopt{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:5px 3px 6px;display:grid;gap:5px;justify-items:center;font-size:10.5px;font-weight:600;color:var(--muted)}
+.bgopt i{display:block;width:100%;height:28px;border-radius:6px;border:1px solid var(--line)}
+.bgopt.on{border-color:var(--primary);color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.toggle input{appearance:none;width:36px;height:21px;border-radius:99px;background:var(--line);position:relative;transition:background .15s;cursor:pointer;flex:none}
+.toggle input::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.toggle input:checked{background:var(--primary)}
+.toggle input:checked::after{transform:translateX(15px)}
+.icongrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:5px;max-height:196px;overflow-y:auto;padding:2px}
+.icongrid button{height:36px;border:1px solid var(--line);border-radius:9px;background:var(--surface);display:grid;place-items:center;color:var(--ink-2)}
+.icongrid button:hover{border-color:var(--primary-line);color:var(--primary)}
+.icongrid button.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow .btn{flex:1;border:1px solid var(--line);background:var(--surface)}
+.btnrow .btn:hover{background:var(--surface-3)}
+.alignrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.alignrow .btn{border:1px solid var(--line);background:var(--surface);width:auto;height:36px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.chips button:hover{border-color:var(--primary-line);color:var(--primary)}
+.mlist{display:grid;gap:4px}
+.mlist button{display:flex;align-items:center;gap:8px;border:1px solid var(--line-2);background:var(--surface-2);border-radius:9px;padding:6px 8px;font-size:12.5px;font-weight:600;text-align:left}
+.mlist button:hover{border-color:var(--primary-line)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}
+.stat small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.stat b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:12px;color:var(--muted)}
+.keys kbd{font-family:inherit;font-size:11px;font-weight:700;background:var(--surface-3);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--ink-2);white-space:nowrap;justify-self:start}
+.note{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
+
+/* ---------- Modal ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(16,18,40,.45);backdrop-filter:blur(3px);z-index:100;display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);width:min(560px,100%);max-height:min(88vh,860px);display:flex;flex-direction:column;border:1px solid var(--line)}
+.modal.wide{width:min(900px,100%)}
+.modal-head{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 14px}
+.modal-head h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.modal-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.modal-head .btn{margin-left:auto}
+.modal-body{padding:4px 22px 18px;overflow-y:auto;min-height:0}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--line-2);flex-wrap:wrap}
+.modal-foot .btn{height:40px;padding:0 16px;border-radius:11px}
+.modal-foot .btn.outline:hover{background:var(--surface-3)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.tgrid .fcard{margin:0}
+.picklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px}
+.picklist .lib-item{cursor:pointer;border:1px solid var(--line-2)}
+.export-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px}
+.preview{border:1px solid var(--line);border-radius:14px;min-height:220px;display:grid;place-items:center;padding:12px;background-color:var(--surface-2);background-image:linear-gradient(45deg,var(--surface-3) 25%,transparent 25%,transparent 75%,var(--surface-3) 75%),linear-gradient(45deg,var(--surface-3) 25%,transparent 25%,transparent 75%,var(--surface-3) 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.preview canvas{max-width:100%;max-height:340px;border-radius:6px;box-shadow:var(--shadow);display:block}
+.dims{font-size:12px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
+.maplist{display:grid;gap:8px}
+.mapitem{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.mapitem .meta{flex:1;min-width:0}
+.mapitem b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mapitem small{color:var(--muted);font-size:12px}
+.err{color:var(--danger);font-size:12px;font-weight:600}
+
+/* ---------- Toasts ---------- */
+#toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:grid;gap:8px;z-index:200;justify-items:center;pointer-events:none;width:calc(100% - 32px)}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:12px;background:#1C2038;color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);animation:tin .2s ease-out;max-width:100%}
+.toast button{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:8px;padding:4px 10px;font-weight:700;font-size:12px}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.scrim{display:none}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1560px){.mapname{display:none}}
+@media (max-width:1320px){
+  .btn .lbl{display:none}
+  .btn.primary .lbl{display:inline}
+  .bgroup .btn:not(.icon){width:34px;padding:0}
+}
+@media (max-width:1180px){
+  #work{grid-template-columns:var(--side-w) minmax(0,1fr)}
+  #panel{position:absolute;top:0;right:0;bottom:0;width:min(var(--panel-w),92vw);transform:translateX(105%);transition:transform .2s ease;box-shadow:var(--shadow-lg)}
+  #panel.open{transform:none}
+  .only-md{display:inline-flex!important}
+  .mapmeta .savestate{display:none}
+}
+@media (max-width:860px){
+  :root{--side-w:300px}
+  .topbar{flex-wrap:wrap;gap:10px;padding:10px 16px}
+  .brand{flex:1 1 auto}
+  .brand-text h1{white-space:normal}
+  .brand-text h1{font-size:16.5px}
+  .brand-text p{font-size:11.5px}
+  .logo{width:38px;height:38px}
+  .mapmeta{display:none}
+  .actions{order:3;width:100%;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .actions::-webkit-scrollbar{display:none}
+  .only-sm{display:inline-flex!important}
+  #work{grid-template-columns:minmax(0,1fr)}
+  #sidebar{position:absolute;top:0;left:0;bottom:0;width:min(var(--side-w),88vw);transform:translateX(-105%);transition:transform .2s ease;box-shadow:var(--shadow-lg)}
+  #sidebar.open{transform:none}
+  .scrim.show{display:block;position:absolute;inset:0;background:rgba(16,18,40,.3);z-index:25}
+  .toolbar{top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 20px);overflow-x:auto;scrollbar-width:none}
+  .toolbar::-webkit-scrollbar{display:none}
+  .tbtn{min-width:44px;font-size:9.5px}
+  .selbar{top:10px;max-width:calc(100% - 20px);overflow-x:auto}
+  .minimap{display:none}
+  .credit{top:10px;bottom:auto;left:10px;font-size:11px;padding:4px 10px}
+  .selbar:not([hidden]) ~ .credit{display:none}
+  .chip-hint{bottom:78px}
+  .export-grid{grid-template-columns:1fr}
+  #toasts{bottom:84px}
+}
+@media (max-width:520px){
+  .tbtn span{display:none}
+  .tbtn{height:40px;min-width:38px}
+  .toolbar .tsep{margin:0 2px}
+}
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <button class="btn icon only-sm" id="btnLib" aria-label="Open step library"><i data-icon="menu"></i></button>
+      <div class="logo" aria-hidden="true"><i data-icon="filter"></i></div>
+      <div class="brand-text">
+        <h1>Funnel Flow Map Builder</h1>
+        <p>Visualize your funnel before you build it.</p>
+      </div>
+    </div>
+    <div class="mapmeta">
+      <input id="mapName" class="mapname" aria-label="Funnel name" maxlength="80">
+      <span id="saveState" class="savestate">Saved</span>
+    </div>
+    <div class="actions">
+      <div class="bgroup">
+        <button class="btn" id="btnNew" title="New map"><i data-icon="filePlus"></i><span class="lbl">New Map</span></button>
+        <button class="btn" id="btnLoad" title="Load a saved map"><i data-icon="folder"></i><span class="lbl">Load Map</span></button>
+        <button class="btn" id="btnSave" title="Save map (Ctrl/Cmd+S)"><i data-icon="save"></i><span class="lbl">Save Map</span></button>
+        <button class="btn" id="btnReset" title="Reset to the sample funnel"><i data-icon="rotate"></i><span class="lbl">Reset</span></button>
+      </div>
+      <div class="bgroup">
+        <button class="btn icon" id="btnUndo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo"><i data-icon="undo"></i></button>
+        <button class="btn icon" id="btnRedo" title="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo"><i data-icon="redo"></i></button>
+      </div>
+      <div class="bgroup">
+        <button class="btn icon" id="btnZoomOut" title="Zoom out" aria-label="Zoom out"><i data-icon="zoomOut"></i></button>
+        <button class="btn zoomval" id="btnZoomVal" title="Reset zoom to 100%">100%</button>
+        <button class="btn icon" id="btnZoomIn" title="Zoom in" aria-label="Zoom in"><i data-icon="zoomIn"></i></button>
+        <button class="btn icon" id="btnFit" title="Fit to screen (Shift+1)" aria-label="Fit to screen"><i data-icon="fit"></i></button>
+      </div>
+      <button class="btn primary" id="btnExport"><i data-icon="download"></i><span class="lbl">Export Image</span></button>
+      <button class="btn icon outline only-md" id="btnPanel" title="Settings panel" aria-label="Open settings panel"><i data-icon="sliders"></i></button>
+    </div>
+  </header>
+
+  <main id="work">
+    <aside id="sidebar" aria-label="Library">
+      <div class="side-head">
+        <div class="tabs" role="tablist">
+          <button data-tab="funnels" class="active" role="tab">Funnels</button>
+          <button data-tab="steps" role="tab">Steps</button>
+          <button data-tab="groups" role="tab">Groups</button>
+        </div>
+        <label class="search"><i data-icon="search" class="i-sm"></i><input id="libSearch" placeholder="Search funnels…" autocomplete="off"></label>
+      </div>
+      <div class="side-body" id="sideBody"></div>
+      <div class="side-foot">Designed by <a href="https://www.facebook.com/sams2410" target="_blank" rel="noopener">Sam Kushwah</a></div>
+    </aside>
+
+    <section id="canvasWrap" aria-label="Funnel canvas">
+      <svg id="stage" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="fxCard" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1E2360" flood-opacity=".09"/></filter>
+          <filter id="fxSoft" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E2360" flood-opacity=".08"/></filter>
+        </defs>
+        <g id="world"><g id="scene"></g><g id="overlay"></g></g>
+      </svg>
+      <div class="floatbar toolbar" id="toolbar" role="toolbar" aria-label="Canvas tools">
+        <button class="tbtn active" data-tool="select" title="Select (V)"><i data-icon="cursor"></i><span>Select</span></button>
+        <button class="tbtn" data-tool="hand" title="Hand / pan (H or hold Space)"><i data-icon="hand"></i><span>Pan</span></button>
+        <button class="tbtn" id="tAdd" title="Add a step"><i data-icon="plusSquare"></i><span>Add Step</span></button>
+        <button class="tbtn" data-tool="connect" title="Connect steps (C)"><i data-icon="connect"></i><span>Connect</span></button>
+        <button class="tbtn" data-tool="text" title="Add text (T)"><i data-icon="type"></i><span>Text</span></button>
+        <button class="tbtn" id="tGroup" title="Group selected steps (G)"><i data-icon="layers"></i><span>Group</span></button>
+        <span class="tsep"></span>
+        <button class="tbtn sq" id="tZoomOut" title="Zoom out" aria-label="Zoom out"><i data-icon="minus"></i></button>
+        <button class="tbtn sq" id="tZoomIn" title="Zoom in" aria-label="Zoom in"><i data-icon="plus"></i></button>
+        <button class="tbtn sq" id="tFit" title="Fit to screen" aria-label="Fit to screen"><i data-icon="fit"></i></button>
+        <button class="tbtn sq" id="tGrid" title="Snap to grid" aria-label="Snap to grid"><i data-icon="grid"></i></button>
+      </div>
+      <div class="floatbar selbar" id="selbar" hidden></div>
+      <div class="empty" id="empty" hidden>
+        <div class="empty-card">
+          <div class="empty-art"><i data-icon="filter"></i></div>
+          <h2>Build your funnel visually</h2>
+          <p>Start with a template or drag steps onto the canvas.</p>
+          <div class="row">
+            <button class="btn primary" id="emptyTpl"><i data-icon="layers"></i>Choose Funnel Template</button>
+            <button class="btn outline" id="emptyBlank" style="height:42px;border-radius:12px">Start From Blank Canvas</button>
+          </div>
+        </div>
+      </div>
+      <div class="chip-hint" id="hint" hidden></div>
+      <div class="credit">Designed by <a href="https://www.facebook.com/sams2410" target="_blank" rel="noopener">Sam Kushwah</a></div>
+      <div class="minimap" id="minimapBox">
+        <div class="minimap-head">Navigator <button id="mmToggle" aria-label="Collapse navigator"><i data-icon="chevronDown" class="i-sm"></i></button></div>
+        <canvas id="minimap" width="392" height="248"></canvas>
+      </div>
+      <div class="scrim" id="scrim"></div>
+    </section>
+
+    <aside id="panel" aria-label="Settings">
+      <div id="panelBody"></div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal-back" id="modalBack" hidden>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><div><h2 id="modalTitle"></h2><p id="modalSub"></p></div><button class="btn icon" id="modalClose" aria-label="Close"><i data-icon="x"></i></button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<script>
+"use strict";
+/* =====================================================================
+   ICONS — one outline system, 24×24 grid, path-only so the same data
+   drives the UI, the SVG canvas, and the raster (Path2D) export.
+   ===================================================================== */
+const C = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+const R = (x, y, w, h, r) => `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(h - 2 * r)}a${r} ${r} 0 0 1 ${r} ${-r}z`;
+const ICONS = {
+  cursor: ["M4 4l7.07 16.97 2.51-7.39 7.39-2.51L4 4z", "M13.5 13.5l6 6"],
+  globe: [C(12, 12, 10), "M2 12h20", "M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"],
+  browser: [R(3, 4, 18, 16, 2), "M3 9h18", "M6.5 6.5h.01", "M9.5 6.5h.01"],
+  landing: [R(3, 3, 18, 18, 2), "M3 9h18", "M9 21V9"],
+  form: [R(8, 2, 8, 4, 1), "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "M12 11h4", "M12 16h4", "M8 11h.01", "M8 16h.01"],
+  filePen: ["M12.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v9.5", "M14 2v4a2 2 0 0 0 2 2h4", "M13.38 15.63a1 1 0 1 0-3-3l-5.02 5.01a2 2 0 0 0-.5.86l-.84 2.87a.5.5 0 0 0 .62.62l2.87-.84a2 2 0 0 0 .86-.5z"],
+  fileText: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M16 13H8", "M16 17H8", "M10 9H8"],
+  cart: [C(8, 21, 1), C(19, 21, 1), "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"],
+  card: [R(2, 5, 20, 14, 2), "M2 10h20", "M6 15h4"],
+  dollar: ["M12 2v20", "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"],
+  wallet: ["M21 12V7H5a2 2 0 0 1 0-4h14v4", "M3 5v14a2 2 0 0 0 2 2h16v-5", "M18 12a2 2 0 0 0 0 4h4v-4z"],
+  mail: [R(2, 4, 20, 16, 2), "M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"],
+  mailOpen: ["M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6z", "M22 10l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"],
+  send: ["M22 2L11 13", "M22 2l-7 20-4-9-9-4 20-7z"],
+  workflow: [R(3, 3, 8, 8, 2), R(13, 13, 8, 8, 2), "M7 11v4a2 2 0 0 0 2 2h4"],
+  gear: [C(12, 12, 3), "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"],
+  zap: ["M13 2L3 14h9l-1 8 10-12h-9l1-8z"],
+  calendar: [R(3, 4, 18, 18, 2), "M16 2v4", "M8 2v4", "M3 10h18", "M8 14h.01", "M12 14h.01", "M16 14h.01", "M8 18h.01", "M12 18h.01"],
+  phone: ["M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"],
+  video: ["M22 8l-6 4 6 4V8z", R(2, 6, 14, 12, 2)],
+  webinar: ["M2 3h20", "M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3", "M7 21l5-5 5 5", "M10 7.5l4 2.5-4 2.5z"],
+  replay: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M10 9l5 3-5 3z"],
+  quiz: [C(12, 12, 10), "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", "M12 17h.01"],
+  survey: ["M3 17l2 2 4-4", "M3 7l2 2 4-4", "M13 6h8", "M13 12h8", "M13 18h8"],
+  user: [C(12, 7, 4), "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"],
+  userPlus: [C(9, 7, 4), "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M19 8v6", "M22 11h-6"],
+  users: [C(9, 7, 4), "M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2", "M16 3.13a4 4 0 0 1 0 7.75", "M21 21v-2a4 4 0 0 0-3-3.85"],
+  course: ["M22 10L12 5 2 10l10 5 10-5z", "M6 12v5c3 3 9 3 12 0v-5", "M22 10v6"],
+  book: ["M4 19.5A2.5 2.5 0 0 1 6.5 17H20", "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"],
+  check: [C(12, 12, 10), "M8.5 12.2l2.4 2.4 4.6-4.9"],
+  checkSquare: [R(3, 3, 18, 18, 3), "M8.5 12.2l2.4 2.4 4.6-4.9"],
+  warning: ["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z", "M12 9v4", "M12 17h.01"],
+  decision: ["M12 2.5l9.5 9.5-9.5 9.5L2.5 12z", "M9.9 10a2.2 2.2 0 0 1 4.2.8c0 1.4-2.1 2-2.1 2", "M12 15.6h.01"],
+  split: ["M16 3h5v5", "M8 3H3v5", "M12 22v-8.3a4 4 0 0 0-1.17-2.87L3 3", "M15 9l6-6"],
+  tag: ["M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l8.59-8.59a1 1 0 0 0 0-1.41L12 2z", "M7 7h.01"],
+  crm: [R(3, 4, 18, 16, 2), C(9, 10, 2), "M15 8h2", "M15 12h2", "M6 16.5a3 3 0 0 1 6 0"],
+  database: ["M3 5a9 3 0 1 0 18 0a9 3 0 1 0-18 0", "M3 5v14a9 3 0 0 0 18 0V5", "M3 12a9 3 0 0 0 18 0"],
+  api: ["M16 18l6-6-6-6", "M8 6l-6 6 6 6"],
+  link: ["M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"],
+  external: ["M15 3h6v6", "M10 14L21 3", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"],
+  arrowRight: ["M5 12h14", "M12 5l7 7-7 7"],
+  megaphone: ["M3 11l18-5v12L3 14v-3z", "M11.6 16.8a3 3 0 1 1-5.8-1.6"],
+  search: [C(11, 11, 8), "M21 21l-4.35-4.35"],
+  youtube: [R(2, 5, 20, 14, 4), "M10 9l5 3-5 3V9z"],
+  share: [C(18, 5, 3), C(6, 12, 3), C(18, 19, 3), "M8.59 13.51l6.83 3.98", "M15.41 6.51l-6.82 3.98"],
+  gift: [R(3, 8, 18, 4, 1), "M12 8v13", "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7", "M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"],
+  bell: ["M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9", "M10.3 21a1.94 1.94 0 0 0 3.4 0"],
+  clock: [C(12, 12, 10), "M12 6v6l4 2"],
+  filter: ["M22 3H2l8 9.46V19l4 2v-8.54L22 3z"],
+  target: [C(12, 12, 10), C(12, 12, 6), C(12, 12, 2)],
+  trendingUp: ["M23 6l-9.5 9.5-5-5L1 18", "M17 6h6v6"],
+  trendingDown: ["M23 18l-9.5-9.5-5 5L1 6", "M17 18h6v-6"],
+  arrowUpCircle: [C(12, 12, 10), "M16 12l-4-4-4 4", "M12 16V8"],
+  plusSquare: [R(3, 3, 18, 18, 3), "M12 8v8", "M8 12h8"],
+  shuffle: ["M16 3h5v5", "M4 20L21 3", "M21 16v5h-5", "M15 15l6 6", "M4 4l5 5"],
+  repeat: ["M17 1l4 4-4 4", "M3 11V9a4 4 0 0 1 4-4h14", "M7 23l-4-4 4-4", "M21 13v2a4 4 0 0 1-4 4H3"],
+  package: ["M16.5 9.4L7.55 4.24", "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z", "M3.27 6.96L12 12.01l8.73-5.05", "M12 22.08V12"],
+  dashboard: [R(3, 3, 7, 9, 1.5), R(14, 3, 7, 5, 1.5), R(14, 12, 7, 9, 1.5), R(3, 16, 7, 5, 1.5)],
+  lock: [R(3, 11, 18, 11, 2), "M7 11V7a5 5 0 0 1 10 0v4"],
+  unlock: [R(3, 11, 18, 11, 2), "M7 11V7a5 5 0 0 1 9.9-1"],
+  star: ["M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"],
+  award: [C(12, 8, 6), "M15.48 12.89L17 22l-5-3-5 3 1.52-9.11"],
+  crown: ["M11.56 3.27a.5.5 0 0 1 .88 0l2.95 5.6a1 1 0 0 0 1.52.3l4.27-3.67a.5.5 0 0 1 .8.52l-2.83 10.25a1 1 0 0 1-.96.73H5.81a1 1 0 0 1-.96-.73L2.02 6.02a.5.5 0 0 1 .8-.52l4.27 3.67a1 1 0 0 0 1.52-.3z", "M5 21h14"],
+  ticket: ["M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z", "M13 5v2", "M13 17v2", "M13 11v2"],
+  headset: ["M3 18v-6a9 9 0 0 1 18 0v6", "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z", "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"],
+  mapPin: ["M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z", C(12, 10, 3)],
+  rocket: ["M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z", "M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z", "M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0", "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"],
+  broadcast: [C(12, 12, 2), "M16.24 7.76a6 6 0 0 1 0 8.49", "M7.76 16.24a6 6 0 0 1 0-8.49", "M19.07 4.93a10 10 0 0 1 0 14.14", "M4.93 19.07a10 10 0 0 1 0-14.14"],
+  pen: ["M12 20h9", "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"],
+  message: ["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"],
+  heart: ["M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"],
+  layers: ["M12 2L2 7l10 5 10-5-10-5z", "M2 17l10 5 10-5", "M2 12l10 5 10-5"],
+  monitor: [R(2, 3, 20, 14, 2), "M8 21h8", "M12 17v4"],
+  flag: ["M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z", "M4 22v-7"],
+  mic: ["M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z", "M19 10v2a7 7 0 0 1-14 0v-2", "M12 19v3"],
+  sparkles: ["M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z", "M20 3v4", "M22 5h-4"],
+  /* UI-only */
+  hand: ["M18 11V6a2 2 0 0 0-4 0", "M14 10V4a2 2 0 0 0-4 0v2", "M10 10.5V6a2 2 0 0 0-4 0v8", "M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"],
+  connect: [C(5, 18, 2.5), C(19, 6, 2.5), "M7.5 18H11a3 3 0 0 0 3-3V9a3 3 0 0 1 3-3h-.5"],
+  type: ["M4 7V4h16v3", "M9 20h6", "M12 4v16"],
+  undo: ["M3 7v6h6", "M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"],
+  redo: ["M21 7v6h-6", "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"],
+  zoomIn: [C(11, 11, 8), "M21 21l-4.35-4.35", "M11 8v6", "M8 11h6"],
+  zoomOut: [C(11, 11, 8), "M21 21l-4.35-4.35", "M8 11h6"],
+  fit: ["M8 3H5a2 2 0 0 0-2 2v3", "M21 8V5a2 2 0 0 0-2-2h-3", "M3 16v3a2 2 0 0 0 2 2h3", "M16 21h3a2 2 0 0 0 2-2v-3", R(8, 9, 8, 6, 1)],
+  download: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+  save: ["M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z", "M17 21v-8H7v8", "M7 3v5h8"],
+  folder: ["M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"],
+  filePlus: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M12 18v-6", "M9 15h6"],
+  rotate: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5"],
+  trash: ["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", "M10 11v6", "M14 11v6"],
+  copy: [R(9, 9, 13, 13, 2), "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"],
+  grid: [R(3, 3, 18, 18, 2), "M3 9h18", "M3 15h18", "M9 3v18", "M15 3v18"],
+  chevronDown: ["M6 9l6 6 6-6"],
+  chevronRight: ["M9 18l6-6-6-6"],
+  x: ["M18 6L6 18", "M6 6l12 12"],
+  menu: ["M3 12h18", "M3 6h18", "M3 18h18"],
+  sliders: ["M4 21v-7", "M4 10V3", "M12 21v-9", "M12 8V3", "M20 21v-5", "M20 12V3", "M1 14h6", "M9 8h6", "M17 16h6"],
+  grip: [C(9, 6, 1), C(9, 12, 1), C(9, 18, 1), C(15, 6, 1), C(15, 12, 1), C(15, 18, 1)],
+  plus: ["M12 5v14", "M5 12h14"],
+  minus: ["M5 12h14"],
+  edit: ["M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", "M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"],
+  swap: ["M7 16V4", "M3 8l4-4 4 4", "M17 8v12", "M21 16l-4 4-4-4"],
+  alignLeft: ["M4 3v18", R(8, 6, 12, 4, 1), R(8, 14, 7, 4, 1)],
+  alignCenter: ["M12 3v18", R(5, 6, 14, 4, 1), R(7.5, 14, 9, 4, 1)],
+  alignRight: ["M20 3v18", R(4, 6, 12, 4, 1), R(9, 14, 7, 4, 1)],
+  alignTop: ["M3 4h18", R(6, 8, 4, 12, 1), R(14, 8, 4, 7, 1)],
+  alignMiddle: ["M3 12h18", R(6, 5, 4, 14, 1), R(14, 7.5, 4, 9, 1)],
+  alignBottom: ["M3 20h18", R(6, 4, 4, 12, 1), R(14, 9, 4, 7, 1)],
+  distH: ["M4 3v18", "M20 3v18", R(9, 7, 6, 10, 1)],
+  distV: ["M3 4h18", "M3 20h18", R(7, 9, 10, 6, 1)],
+  arrowsH: ["M3 12h18", "M7 8l-4 4 4 4", "M17 8l4 4-4 4"],
+  arrowsV: ["M12 3v18", "M8 7l4-4 4 4", "M8 17l4 4 4-4"],
+};
+const STEP_ICONS = ["cursor","globe","browser","landing","form","filePen","fileText","cart","card","dollar","wallet","mail","mailOpen","send","workflow","gear","zap","calendar","phone","video","webinar","replay","quiz","survey","user","userPlus","users","course","book","check","checkSquare","warning","decision","split","tag","crm","database","api","link","external","arrowRight","megaphone","search","youtube","share","gift","bell","clock","filter","target","trendingUp","trendingDown","arrowUpCircle","plusSquare","shuffle","repeat","package","dashboard","lock","unlock","star","award","crown","ticket","headset","mapPin","rocket","broadcast","pen","message","heart","layers","monitor","flag","mic","sparkles"];
+function iconSVG(name, cls = "i") {
+  const p = ICONS[name] || ICONS.pen;
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.map(d => `<path d="${d}"/>`).join("")}</svg>`;
+}
+
+/* =====================================================================
+   STEP LIBRARY
+   ===================================================================== */
+const CATS = {
+  traffic: { name: "Traffic", color: "#2F7BEA" },
+  pages: { name: "Pages", color: "#5B5CF0" },
+  forms: { name: "Forms", color: "#8B5CF6" },
+  sales: { name: "Sales", color: "#16A34A" },
+  email: { name: "Email", color: "#D97706" },
+  automation: { name: "Automation", color: "#DB2777" },
+  content: { name: "Content", color: "#0891B2" },
+  membership: { name: "Membership", color: "#0D9488" },
+  other: { name: "Other", color: "#64748B" },
+};
+const STEPS_RAW = [
+  ["traffic","Traffic","traffic","cursor","Visitors arriving at your funnel"],
+  ["ad","Ad","traffic","megaphone","Paid ads on Meta, Google or TikTok"],
+  ["organic","Organic Traffic","traffic","globe","Unpaid visits from your content"],
+  ["social","Social Media","traffic","share","Posts, reels and stories"],
+  ["youtube","YouTube","traffic","youtube","Videos that send viewers over"],
+  ["google","Google Search","traffic","search","People searching for a fix"],
+  ["referral","Referral","traffic","users","Word of mouth and partners"],
+  ["affTraffic","Affiliate Traffic","traffic","link","Partners promoting your offer"],
+  ["landing","Landing Page","pages","landing","Capture visitor attention"],
+  ["optinPage","Opt-in Page","pages","browser","Trade a freebie for an email"],
+  ["sales","Sales Page","pages","fileText","Make the case for your offer"],
+  ["webinarPage","Webinar Page","pages","webinar","Register for the live training"],
+  ["productPage","Product Page","pages","package","Show the product and price"],
+  ["pricing","Pricing Page","pages","tag","Compare plans and pick one"],
+  ["checkoutPage","Checkout Page","pages","card","Collect payment details"],
+  ["thankyou","Thank You Page","pages","check","Confirm and set the next step"],
+  ["confirmPage","Confirmation Page","pages","checkSquare","Confirm the action they took"],
+  ["bookingPage","Booking Page","pages","calendar","Pick a time that suits"],
+  ["bridge","Bridge Page","pages","arrowRight","Warm visitors up before the offer"],
+  ["quizPage","Quiz Page","pages","quiz","Invite visitors to take the quiz"],
+  ["surveyPage","Survey Page","pages","survey","Invite visitors to answer"],
+  ["resultsPage","Results Page","pages","award","Show personalised results"],
+  ["localPage","Local Landing Page","pages","mapPin","Page for one town or area"],
+  ["features","Features Page","pages","layers","What the product does"],
+  ["optinForm","Opt-in Form","forms","form","Name and email capture"],
+  ["application","Application Form","forms","filePen","Questions before a call"],
+  ["survey","Survey","forms","survey","A few questions to learn more"],
+  ["quiz","Quiz","forms","quiz","Scored questions with outcomes"],
+  ["contact","Contact Form","forms","message","Send a message or request"],
+  ["qualification","Qualification Form","forms","target","Check the lead is a good fit"],
+  ["quote","Quote Request","forms","fileText","Ask for a price"],
+  ["signup","Sign Up","forms","userPlus","Create a free account"],
+  ["offer","Offer","sales","star","The deal you present"],
+  ["salesCall","Sales Call","sales","phone","One-to-one call to close"],
+  ["checkout","Checkout","sales","cart","Buyer completes the order"],
+  ["orderBump","Order Bump","sales","plusSquare","One-tick add-on at checkout"],
+  ["upsell","Upsell","sales","trendingUp","Higher-value offer after purchase"],
+  ["downsell","Downsell","sales","trendingDown","Lower-priced alternative"],
+  ["crossSell","Cross-sell","sales","shuffle","Related product suggestion"],
+  ["subscription","Subscription","sales","repeat","Recurring monthly billing"],
+  ["payment","Payment","sales","wallet","Payment is processed"],
+  ["freeTrial","Free Trial","sales","unlock","Try it before paying"],
+  ["upgrade","Upgrade","sales","arrowUpCircle","Move to a paid plan"],
+  ["ticket","Ticket Checkout","sales","ticket","Buy a seat at the event"],
+  ["welcomeEmail","Welcome Email","email","mailOpen","First hello after sign-up"],
+  ["confirmEmail","Confirmation Email","email","mail","Confirm the sign-up or order"],
+  ["reminderEmail","Reminder Email","email","bell","Nudge before the event"],
+  ["nurture","Nurture Sequence","email","heart","Build trust over several emails"],
+  ["salesSeq","Sales Sequence","email","send","Emails that drive the sale"],
+  ["followUp","Follow-up","email","message","Check in after the step"],
+  ["abandoned","Abandoned Cart","email","cart","Recover unfinished orders"],
+  ["broadcast","Broadcast","email","broadcast","One-off email to your list"],
+  ["automation","Automation","automation","gear","Runs actions for you"],
+  ["tag","Tag","automation","tag","Label the contact"],
+  ["trigger","Trigger","automation","zap","Event that starts a workflow"],
+  ["condition","Condition","automation","split","If / else check"],
+  ["delay","Delay","automation","clock","Wait before the next step"],
+  ["workflow","Workflow","automation","workflow","Chain of automated steps"],
+  ["segment","Segmentation","automation","filter","Split contacts by behaviour"],
+  ["leadMagnet","Lead Magnet","content","gift","Free resource for an email"],
+  ["freeCourse","Free Course","content","book","Short free lessons"],
+  ["webinar","Webinar","content","webinar","Live or automated training"],
+  ["video","Video","content","video","Video content"],
+  ["training","Training","content","course","Teach a core skill"],
+  ["caseStudy","Case Study","content","fileText","Proof from a real client"],
+  ["demo","Demo","content","monitor","Walkthrough of the product"],
+  ["replay","Replay","content","replay","Recording for people who missed it"],
+  ["launchEvent","Launch Event","content","rocket","Open-cart live event"],
+  ["event","Event","content","mic","The live event day"],
+  ["account","Account Creation","membership","lock","Create a login"],
+  ["memberDash","Member Dashboard","membership","dashboard","Home base for members"],
+  ["courseAccess","Course Access","membership","course","Unlock the course content"],
+  ["community","Community","membership","users","Group space for members"],
+  ["membership","Membership","membership","crown","Ongoing member access"],
+  ["memberSub","Subscription","membership","repeat","Recurring membership fee"],
+  ["onboarding","Onboarding","membership","flag","Get customers to a first win"],
+  ["custom","Custom Step","other","pen","Describe this step"],
+  ["decision","Decision","other","decision","Yes / no split"],
+  ["external","External Link","other","external","Sends people to another site"],
+  ["api","API","other","api","Connect another system"],
+  ["crm","CRM","other","crm","Contact saved to your CRM"],
+  ["calendar","Calendar","other","calendar","Scheduling tool"],
+  ["support","Support","other","headset","Help desk or live chat"],
+  ["appointment","Appointment","other","user","Meet with the client"],
+];
+const STEPS = STEPS_RAW.map(([key, title, cat, icon, desc]) => ({ key, title, cat, icon, desc }));
+const STEP_MAP = Object.fromEntries(STEPS.map(s => [s.key, s]));
+
+/* =====================================================================
+   FUNNEL DEFINITIONS
+   steps: "key|Title|Description"  — "!" prefix stacks a step under the
+   previous one (a branch). flow: "0>1>2 2>3:Label" (default: in order).
+   ===================================================================== */
+const GC = { blue:"#2F7BEA", indigo:"#5B5CF0", violet:"#8B5CF6", green:"#16A34A", amber:"#D97706", pink:"#DB2777", cyan:"#0891B2", teal:"#0D9488", slate:"#64748B", orange:"#EA580C", rose:"#E11D48" };
+const GROUP_COLORS = Object.values(GC);
+
+const FUNNEL_TYPES = [
+  { id:"leadgen", name:"Lead Generation Funnel", icon:"users", blurb:"Capture leads and book calls",
+    steps:["ad|Ad / Traffic","landing","optinForm","thankyou","confirmEmail|Email Confirmation","nurture|Email Nurture","bookingPage"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2,3]],["Lead Nurture","amber",[4,5]],["Appointment Booking","green",[6]]] },
+  { id:"sales", name:"Sales Funnel", icon:"dollar", blurb:"Sell a product with upsell and downsell",
+    steps:["traffic","landing","sales","checkout","confirmPage|Order Confirmation","upsell","!downsell","thankyou"],
+    flow:"0>1>2>3>4>5 5>7:Yes 5>6:No thanks 6>7",
+    groups:[["Traffic & Acquisition","blue",[0]],["Sales","indigo",[1,2]],["Checkout","green",[3,4]],["Upsell","violet",[5]],["Downsell","rose",[6]],["Post-Purchase","teal",[7]]] },
+  { id:"webinar", name:"Webinar Funnel", icon:"webinar", blurb:"Register, attend, then buy",
+    steps:["traffic","webinarPage|Registration Page","confirmPage|Confirmation Page","reminderEmail|Reminder Emails","webinar|Live Webinar","!replay|Replay Page","sales","checkout","thankyou"],
+    flow:"0>1>2>3>4>6 3>5:Missed it 5>6 6>7>8",
+    groups:[["Traffic & Acquisition","blue",[0]],["Registration","indigo",[1,2]],["Email Automation","amber",[3]],["Webinar Event","cyan",[4,5]],["Sales","green",[6,7]],["Post-Purchase","teal",[8]]] },
+  { id:"application", name:"Application Funnel", icon:"filePen", blurb:"Qualify leads before a sales call",
+    steps:["traffic","landing","application","qualification|Qualification","calendar|Calendar Booking","confirmPage|Confirmation","salesCall","offer","checkout"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2]],["Qualification","violet",[3]],["Appointment Booking","cyan",[4,5]],["Sales","green",[6,7,8]]] },
+  { id:"appointment", name:"Appointment Funnel", icon:"calendar", blurb:"Turn visitors into booked sessions",
+    steps:["traffic","landing|Service Page|Explain the service and results","bookingPage","calendar","confirmPage|Confirmation","reminderEmail|Reminder Email","appointment"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Service","indigo",[1]],["Appointment Booking","cyan",[2,3,4]],["Email Automation","amber",[5]],["Appointment","green",[6]]] },
+  { id:"ecommerce", name:"E-commerce Funnel", icon:"cart", blurb:"Product page to repeat purchase",
+    steps:["traffic","productPage","checkout|Cart|Items waiting to be bought","checkoutPage|Checkout","confirmPage|Order Confirmation","upsell","!crossSell|Cross-Sell"],
+    flow:"0>1>2>3>4>5 4>6",
+    groups:[["Traffic & Acquisition","blue",[0]],["Sales","indigo",[1,2]],["Checkout","green",[3,4]],["Upsell","violet",[5,6]]] },
+  { id:"tripwire", name:"Tripwire Funnel", icon:"zap", blurb:"Low-price offer that leads to the core offer",
+    steps:["traffic","optinForm|Lead Capture","thankyou|Thank You","offer|Tripwire Offer|Low-price offer, $7–$27","checkout","!orderBump","upsell","offer|Core Offer|Your main program"],
+    flow:"0>1>2>3>4>6 4>5:Add-on 5>6 6>7",
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2]],["Sales","green",[3]],["Checkout","teal",[4,5]],["Upsell","violet",[6]],["Core Offer","orange",[7]]] },
+  { id:"membership", name:"Membership Funnel", icon:"crown", blurb:"Recurring access to content",
+    steps:["traffic","landing","sales","checkout","account","welcomeEmail|Welcome","memberDash","video|Content|Lessons, resources and replays"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Sales","indigo",[1,2]],["Checkout","green",[3]],["Customer Onboarding","cyan",[4,5]],["Membership","teal",[6,7]]] },
+  { id:"launch", name:"Product Launch Funnel", icon:"rocket", blurb:"Build anticipation, then open the cart",
+    steps:["optinForm|Lead Capture","video|Pre-Launch Content|Videos that build anticipation","launchEvent","sales","checkout","thankyou"],
+    groups:[["Pre-Launch","amber",[0,1]],["Launch","violet",[2,3]],["Checkout","green",[4,5]]] },
+  { id:"quiz", name:"Quiz Funnel", icon:"quiz", blurb:"Personalised results and offer",
+    steps:["quizPage|Quiz Landing Page","quiz|Quiz Questions","resultsPage|Results","optinForm|Lead Capture","offer|Personalized Offer","checkout"],
+    groups:[["Quiz","violet",[0,1,2]],["Lead Capture","indigo",[3]],["Sales","green",[4,5]]] },
+  { id:"survey", name:"Survey Funnel", icon:"survey", blurb:"Ask, then recommend the right fit",
+    steps:["surveyPage|Survey Landing Page","survey","resultsPage|Results","decision|Recommendation|Match them to the right option","offer","bookingPage|Booking / Checkout"],
+    groups:[["Survey","violet",[0,1]],["Recommendation","cyan",[2,3]],["Sales","green",[4,5]]] },
+  { id:"saas", name:"SaaS Funnel", icon:"monitor", blurb:"Trial to paid subscription",
+    steps:["traffic","landing","features","pricing","freeTrial","signup","onboarding","upgrade"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Website","indigo",[1,2,3]],["Trial & Sign Up","violet",[4,5]],["Customer Onboarding","cyan",[6]],["Retention","pink",[7]]] },
+  { id:"affiliate", name:"Affiliate Funnel", icon:"link", blurb:"Presell, then send to the partner offer",
+    steps:["traffic","bridge","optinForm|Opt-in","followUp|Email Follow-up","caseStudy|Review / Presell|Your honest take on the product","external|Affiliate Offer"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2]],["Lead Nurture","amber",[3,4]],["Affiliate Offer","green",[5]]] },
+  { id:"event", name:"Event Funnel", icon:"ticket", blurb:"Sell tickets and fill the room",
+    steps:["landing|Event Landing Page","optinForm|Registration","ticket","confirmPage|Confirmation","reminderEmail|Reminder","event","followUp"],
+    groups:[["Registration","indigo",[0,1]],["Checkout","green",[2,3]],["Email Automation","amber",[4]],["Event","cyan",[5]],["Retention","pink",[6]]] },
+  { id:"local", name:"Local Business Funnel", icon:"mapPin", blurb:"Quotes and bookings from your area",
+    steps:["traffic","localPage","landing|Service Page|What you offer and where","quote","bookingPage|Booking","confirmPage|Confirmation"],
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2,3]],["Appointment Booking","cyan",[4,5]]] },
+  { id:"course", name:"Course Funnel", icon:"course", blurb:"Free lead magnet to course sale",
+    steps:["traffic","leadMagnet","thankyou|Thank You","sales|Course Sales Page","checkout","confirmPage|Order Confirmation","courseAccess","!upsell"],
+    flow:"0>1>2>3>4>5>6 5>7",
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2]],["Sales","green",[3]],["Checkout","teal",[4,5]],["Course Delivery","cyan",[6]],["Upsell","violet",[7]]] },
+];
+
+const TEMPLATES = [
+  { id:"t-leadgen", name:"Lead Generation", title:"Lead Generation Funnel", icon:"users", blurb:"Two traffic sources, nurture and a call",
+    steps:["ad|Facebook Ads|Carousel ad for the free guide","!google|Google Search|Ranking blog post","landing|Landing Page|Promise one clear result","optinForm|Opt-in Form|Name and email","thankyou|Thank You Page|Deliver the guide","confirmEmail|Confirmation Email|Download link and next step","nurture|5-Day Nurture|One story and tip per day","decision|Engaged?|Opened 3+ emails","bookingPage|Discovery Call|Book a 20-minute call","!broadcast|Weekly Newsletter|Stay in touch until ready"],
+    flow:"0>2 1>2 2>3>4>5>6>7 7>8:Yes 7>9:Not yet",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Lead Capture","indigo",[2,3,4]],["Lead Nurture","amber",[5,6,7]],["Appointment Booking","green",[8]],["Retention","pink",[9]]] },
+  { id:"t-sales", name:"Sales Funnel", title:"Sales Funnel", icon:"dollar", blurb:"Order bump, upsell and downsell paths",
+    steps:["ad|Paid Ads|Retargeting and cold traffic","!social|Social Media|Organic posts and stories","landing|Landing Page|Hook and main promise","sales|Sales Page|Story, proof and guarantee","checkout|Checkout|$97 core product","!orderBump|Order Bump|$27 quick-start kit","upsell|One-Click Upsell|$197 advanced pack","!downsell|Downsell|$67 lite version","confirmPage|Order Confirmation|Access details","welcomeEmail|Receipt & Welcome|Login and first steps"],
+    flow:"0>2 1>2 2>3>4>6 4>5:Add-on 5>6 6>8:Yes 6>7:No thanks 7>8 8>9",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Sales","indigo",[2,3]],["Checkout","green",[4,5]],["Upsell","violet",[6]],["Downsell","rose",[7]],["Post-Purchase","teal",[8,9]]] },
+  { id:"t-webinar", name:"Webinar", title:"Webinar Funnel", icon:"webinar", blurb:"Live event with replay and cart-close emails",
+    steps:["traffic|Traffic|Ads, email list and partners","webinarPage|Registration Page|Free 60-minute masterclass","confirmPage|You're Registered|Add to calendar","reminderEmail|Reminder Sequence|24h, 1h and live now","webinar|Live Webinar|Teach, then pitch","!replay|Replay Page|Available for 48 hours","sales|Offer Page|Webinar-only bonus","checkout|Checkout|Pay in full or split","!salesSeq|Cart-Close Emails|Deadline reminders","thankyou|Thank You|Access and onboarding"],
+    flow:"0>1>2>3>4>6 3>5:Missed it 5>6 6>7>9 6>8:Not yet 8>7",
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1,2]],["Email Automation","amber",[3]],["Webinar Event","cyan",[4,5]],["Sales","green",[6]],["Checkout","teal",[7,8]],["Post-Purchase","violet",[9]]] },
+  { id:"t-coaching", name:"High-Ticket Coaching", title:"High-Ticket Coaching Funnel", icon:"award", blurb:"Application, call and $5k offer",
+    steps:["traffic|Traffic|Instagram, YouTube and podcasts","leadMagnet|Lead Magnet|Free 5-step client guide","landing|Landing Page|Headline, proof and one CTA","optinForm|Opt-in|Name and email capture","thankyou|Thank You|Deliver the guide","nurture|Email Nurture|7 emails over 14 days","application|Application|10 questions about the business","qualification|Qualification|Revenue, goals and budget","calendar|Calendar|Book a 45-minute call","salesCall|Sales Call|Diagnose, prescribe, invite","offer|Offer|$5,000 six-month program","checkout|Checkout|Pay in full or 3 instalments","!followUp|Follow-up|3 emails for the not-yet","onboarding|Onboarding|Welcome pack and kickoff"],
+    flow:"0>1>2>3>4>5>6>7>8>9>10>11>13 10>12:Not yet 12>11",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Lead Capture","indigo",[2,3,4]],["Lead Nurture","amber",[5]],["Qualification","violet",[6,7]],["Appointment Booking","cyan",[8]],["Sales","green",[9,10]],["Checkout","teal",[11,12]],["Customer Onboarding","pink",[13]]] },
+  { id:"t-course", name:"Course Funnel", title:"Online Course Funnel", icon:"course", blurb:"Mini-course, launch offer and community",
+    steps:["youtube|YouTube|Weekly tutorials","!ad|Paid Ads|Retarget video viewers","freeCourse|Free Mini-Course|3 short video lessons","thankyou|Thank You|Lesson 1 link","nurture|Nurture Sequence|Tips and student wins","sales|Course Sales Page|Curriculum and results","checkout|Checkout|$297 course","!orderBump|Order Bump|$37 workbook","confirmPage|Order Confirmation|Login details","courseAccess|Course Access|8 modules","!community|Community|Private student group","upsell|Coaching Upsell|Group coaching add-on"],
+    flow:"0>2 1>2 2>3>4>5>6>8 6>7:Add-on 7>8 8>9 8>10 9>11",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Lead Capture","indigo",[2,3]],["Lead Nurture","amber",[4]],["Sales","green",[5]],["Checkout","teal",[6,7,8]],["Course Delivery","cyan",[9,10]],["Upsell","violet",[11]]] },
+  { id:"t-membership", name:"Membership", title:"Membership Funnel", icon:"crown", blurb:"Join, onboard and keep members",
+    steps:["traffic|Traffic|Podcast and social","landing|Landing Page|What members get","sales|Sales Page|Monthly vs annual","pricing|Pricing|$29/mo or $290/yr","checkout|Checkout|Card on file","account|Account Creation|Username and password","welcomeEmail|Welcome Email|Start-here guide","memberDash|Member Dashboard|Your library and progress","courseAccess|Content Library|New lessons every month","!community|Community|Weekly live Q&A","memberSub|Monthly Renewal|Automatic billing","!broadcast|Member Newsletter|What's new this month"],
+    flow:"0>1>2>3>4>5>6>7 7>8 7>9 8>10 9>11",
+    groups:[["Traffic & Acquisition","blue",[0]],["Sales","indigo",[1,2,3]],["Checkout","green",[4]],["Customer Onboarding","cyan",[5,6]],["Membership","teal",[7,8,9]],["Retention","pink",[10,11]]] },
+  { id:"t-launch", name:"Product Launch", title:"Product Launch Funnel", icon:"rocket", blurb:"Waitlist, 3-video series and cart open",
+    steps:["social|Social Media|Behind-the-scenes posts","!ad|Paid Ads|Waitlist ads","optinForm|Waitlist Sign-up|Early-bird list","video|Launch Video 1|The opportunity","video|Launch Video 2|The transformation","video|Launch Video 3|The ownership experience","launchEvent|Launch Event|Live cart-open session","sales|Cart Open|Early-bird pricing","checkout|Checkout|Limited-time offer","!salesSeq|Cart-Close Emails|Final 48 hours","thankyou|Thank You|Welcome to the program","courseAccess|Product Access|Start module one"],
+    flow:"0>2 1>2 2>3>4>5>6>7>8>10>11 7>9:Didn't buy 9>8",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Lead Capture","indigo",[2]],["Pre-Launch","amber",[3,4,5]],["Launch","violet",[6,7]],["Checkout","green",[8,9,10]],["Post-Purchase","teal",[11]]] },
+  { id:"t-tripwire", name:"Tripwire", title:"Tripwire Funnel", icon:"zap", blurb:"$7 offer that funds your ads",
+    steps:["ad|Paid Ads|Cold audience","optinPage|Opt-in Page|Free checklist","offer|$7 Tripwire|Swipe file, today only","checkout|Checkout|Card details","!orderBump|Order Bump|$17 templates","upsell|$47 Upsell|Video training","!downsell|$27 Downsell|Training, no support","confirmPage|Order Confirmation|Downloads ready","salesSeq|Core Offer Sequence|7-day email series","offer|$497 Core Offer|Flagship program"],
+    flow:"0>1>2>3>5 3>4:Add-on 4>5 5>7:Yes 5>6:No thanks 6>7 7>8>9",
+    groups:[["Traffic & Acquisition","blue",[0]],["Lead Capture","indigo",[1]],["Sales","green",[2]],["Checkout","teal",[3,4]],["Upsell","violet",[5]],["Downsell","rose",[6]],["Post-Purchase","cyan",[7]],["Core Offer","orange",[8,9]]] },
+  { id:"t-quiz", name:"Quiz Funnel", title:"Quiz Funnel", icon:"quiz", blurb:"Score-based results and two offers",
+    steps:["ad|Paid Ads|“Which type are you?”","quizPage|Quiz Landing Page|Take the 2-minute quiz","quiz|Quiz Questions|8 scored questions","optinForm|Email Gate|Send my results","decision|Score Check|Route by total score","resultsPage|Result: Beginner|Score under 50","!resultsPage|Result: Advanced|Score 50 and over","offer|Starter Offer|$47 foundations kit","!offer|Premium Offer|$297 accelerator","checkout|Checkout|Personalised bundle"],
+    flow:"0>1>2>3>4 4>5:Under 50 4>6:50+ 5>7 6>8 7>9 8>9",
+    groups:[["Traffic & Acquisition","blue",[0]],["Quiz","violet",[1,2]],["Lead Capture","indigo",[3]],["Results","cyan",[4,5,6]],["Sales","green",[7,8]],["Checkout","teal",[9]]] },
+  { id:"t-saas", name:"SaaS Funnel", title:"SaaS Trial Funnel", icon:"monitor", blurb:"Trial, activation and upgrade",
+    steps:["google|Google Search|Comparison keywords","!ad|Paid Ads|Retargeting","landing|Landing Page|Problem, product, proof","pricing|Pricing Page|Three plans","freeTrial|Free Trial|14 days, no card","signup|Sign Up|Email or Google","onboarding|Onboarding Checklist|5 setup tasks","welcomeEmail|Activation Emails|Tips for day 1, 3 and 7","decision|Activated?|Finished setup in 7 days","upgrade|Upgrade|Paid plan","!nurture|Re-engagement|Help and a trial extension"],
+    flow:"0>2 1>2 2>3>4>5>6>7>8 8>9:Yes 8>10:No 10>9",
+    groups:[["Traffic & Acquisition","blue",[0,1]],["Website","indigo",[2,3]],["Trial & Sign Up","violet",[4,5]],["Customer Onboarding","cyan",[6,7,8]],["Retention","pink",[9,10]]] },
+];
+
+const GROUP_PRESETS = [
+  { id:"g-traffic", title:"Traffic & Acquisition", color:"blue", desc:"Where visitors come from", steps:["ad","!organic","!social"], flow:"none" },
+  { id:"g-capture", title:"Lead Capture", color:"indigo", desc:"Turn visitors into leads", steps:["landing","optinForm","thankyou"] },
+  { id:"g-nurture", title:"Lead Nurture", color:"amber", desc:"Build trust before the offer", steps:["welcomeEmail","nurture","caseStudy"] },
+  { id:"g-sales", title:"Sales", color:"green", desc:"Present and explain the offer", steps:["sales","offer"] },
+  { id:"g-checkout", title:"Checkout", color:"teal", desc:"Take payment", steps:["checkoutPage","!orderBump","payment"], flow:"0>2 0>1:Add-on" },
+  { id:"g-upsell", title:"Upsell", color:"violet", desc:"Raise the order value", steps:["upsell|One-Time Offer","upsell|Second Upsell"], flow:"0>1:Yes" },
+  { id:"g-downsell", title:"Downsell", color:"rose", desc:"Save the sale at a lower price", steps:["downsell|Downsell Offer","subscription|Payment Plan"] },
+  { id:"g-post", title:"Post-Purchase", color:"cyan", desc:"After the order is placed", steps:["confirmPage|Order Confirmation","welcomeEmail|Receipt Email","followUp|Review Request"] },
+  { id:"g-email", title:"Email Automation", color:"amber", desc:"Tag, wait and send", steps:["trigger|Form Submitted","tag|Add Tag","delay|Wait 1 Day","nurture|Send Sequence"] },
+  { id:"g-booking", title:"Appointment Booking", color:"cyan", desc:"Book and show up", steps:["bookingPage","confirmEmail|Booking Confirmed","reminderEmail|Reminder","salesCall|Call"] },
+  { id:"g-course", title:"Course Delivery", color:"cyan", desc:"Deliver the program", steps:["courseAccess","training|Lessons","community"] },
+  { id:"g-member", title:"Membership", color:"teal", desc:"Ongoing member experience", steps:["account","memberDash","community"] },
+  { id:"g-onboard", title:"Customer Onboarding", color:"indigo", desc:"Get to the first win", steps:["welcomeEmail","video|Onboarding Video","calendar|Kickoff Call"] },
+  { id:"g-retention", title:"Retention", color:"pink", desc:"Keep customers coming back", steps:["followUp|Check-in","broadcast|Newsletter","offer|Renewal Offer"] },
+];
+</script>
+<script>
+"use strict";
+/* =====================================================================
+   UTILITIES
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = (p = "") => p + Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const r2 = v => Math.round(v * 100) / 100;
+function hexRgb(h) { h = String(h || "#000").replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const n = parseInt(h.slice(0, 6), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rgba(h, a) { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; }
+function mix(a, b, t) { const A = hexRgb(a), B = hexRgb(b); return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, "0")).join(""); }
+const FONT = `"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif`;
+const GRID = 20, DEF_W = 232, DEF_H = 88;
+const LS = { auto: "ffmb.v1.autosave", maps: "ffmb.v1.maps", custom: "ffmb.v1.custom" };
+function lsGet(k, fb) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const DEFAULT_SETTINGS = () => ({ title: "High-Ticket Coaching Funnel", showTitle: true, direction: "h", bg: "grid", primary: "#5B5CF0", accent: "#8B5CF6", iconMode: "category", cardStyle: "elevated", connector: "curved", fontScale: 1, snap: true });
+let doc = { nodes: [], edges: [], groups: [], settings: DEFAULT_SETTINGS() };
+let view = { x: 0, y: 0, k: 1 };
+let sel = { nodes: new Set(), groups: new Set(), edge: null };
+let tool = "select";
+let hoverId = null, pendingSource = null, spaceDown = false;
+let undoStack = [], redoStack = [];
+let clipboard = null, pasteCount = 0;
+let customSteps = lsGet(LS.custom, []);
+let savedId = null, savedSnap = null, emptyDismissed = false;
+let sideTab = "funnels";
+
+const byId = (arr, id) => arr.find(o => o.id === id);
+const nodeById = id => byId(doc.nodes, id);
+const groupById = id => byId(doc.groups, id);
+const edgeById = id => byId(doc.edges, id);
+function stepDef(key) { return STEP_MAP[key] || customSteps.find(s => s.key === key) || STEP_MAP.custom; }
+const snapshot = () => JSON.stringify({ nodes: doc.nodes, edges: doc.edges, groups: doc.groups, settings: doc.settings });
+function restore(json) { const d = JSON.parse(json); doc = { nodes: d.nodes || [], edges: d.edges || [], groups: d.groups || [], settings: { ...DEFAULT_SETTINGS(), ...(d.settings || {}) } }; }
+
+/* =====================================================================
+   HISTORY
+   ===================================================================== */
+function pushHistory(pre) {
+  if (pre === snapshot()) return;
+  undoStack.push(pre); if (undoStack.length > 150) undoStack.shift();
+  redoStack = []; changed();
+}
+function mutate(fn, opts = {}) { const pre = snapshot(); fn(); pushHistory(pre); renderAll(opts.panel !== false); }
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); pruneSel(); changed(); renderAll(true); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); pruneSel(); changed(); renderAll(true); }
+function pruneSel() {
+  sel.nodes = new Set([...sel.nodes].filter(nodeById)); sel.groups = new Set([...sel.groups].filter(groupById));
+  if (sel.edge && !edgeById(sel.edge)) sel.edge = null;
+}
+
+/* =====================================================================
+   TEXT MEASUREMENT
+   ===================================================================== */
+const mctx = document.createElement("canvas").getContext("2d");
+const mcache = new Map();
+function measure(text, font) { const k = font + "\u0001" + text; let v = mcache.get(k); if (v === undefined) { mctx.font = font; v = mctx.measureText(text).width; mcache.set(k, v); } return v; }
+function wrap(text, maxW, font, maxLines) {
+  const out = []; if (!text || maxLines <= 0) return out;
+  const paras = String(text).split("\n");
+  for (const para of paras) {
+    const words = para.split(/\s+/).filter(Boolean); let line = "";
+    if (!words.length) { out.push(""); continue; }
+    for (const w of words) {
+      const t = line ? line + " " + w : w;
+      if (measure(t, font) <= maxW || !line) {
+        if (!line && measure(w, font) > maxW) { line = clip(w, maxW, font, false); } else line = t;
+      } else { out.push(line); line = w; }
+    }
+    out.push(line);
+  }
+  if (out.length > maxLines) { const cut = out.slice(0, maxLines); cut[maxLines - 1] = clip(cut[maxLines - 1] + " " + out[maxLines], maxW, font, true); return cut; }
+  return out;
+}
+function clip(s, maxW, font, force) {
+  if (!force && measure(s, font) <= maxW) return s;
+  let t = s; while (t.length > 1 && measure(t + "…", font) > maxW) t = t.slice(0, -1);
+  return t.replace(/\s+$/, "") + "…";
+}
+
+/* =====================================================================
+   GEOMETRY
+   ===================================================================== */
+const HEAD = 48;
+function isHidden(n) { const g = n.groupId && groupById(n.groupId); return !!(g && g.collapsed); }
+function groupBox(g) { return { x: g.x, y: g.y, w: g.w, h: g.collapsed ? HEAD : g.h }; }
+function endBox(id) { const n = nodeById(id); if (!n) return null; if (isHidden(n)) return groupBox(groupById(n.groupId)); return { x: n.x, y: n.y, w: n.w, h: n.h }; }
+const OPP = { r: "l", l: "r", t: "b", b: "t" };
+const DIRV = { r: { x: 1, y: 0 }, l: { x: -1, y: 0 }, t: { x: 0, y: -1 }, b: { x: 0, y: 1 } };
+function pickSides(a, b) {
+  const G = 24;
+  const right = b.x >= a.x + a.w + G, left = b.x + b.w <= a.x - G, below = b.y >= a.y + a.h + G, above = b.y + b.h <= a.y - G;
+  const order = doc.settings.direction === "v" ? [["b", below], ["r", right], ["l", left], ["t", above]] : [["r", right], ["b", below], ["t", above], ["l", left]];
+  for (const [s, ok] of order) if (ok) return [s, OPP[s]];
+  const dx = (b.x + b.w / 2) - (a.x + a.w / 2), dy = (b.y + b.h / 2) - (a.y + a.h / 2);
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? ["r", "l"] : ["l", "r"];
+  return dy >= 0 ? ["b", "t"] : ["t", "b"];
+}
+function portPt(b, s) {
+  if (s === "r") return { x: b.x + b.w, y: b.y + b.h / 2 };
+  if (s === "l") return { x: b.x, y: b.y + b.h / 2 };
+  if (s === "t") return { x: b.x + b.w / 2, y: b.y };
+  return { x: b.x + b.w / 2, y: b.y + b.h };
+}
+const f1 = v => Math.round(v * 10) / 10;
+function roundedPoly(pts, rad) {
+  const p = pts.filter((q, i) => i === 0 || Math.hypot(q.x - pts[i - 1].x, q.y - pts[i - 1].y) > 0.5);
+  let d = `M${f1(p[0].x)} ${f1(p[0].y)}`;
+  for (let i = 1; i < p.length - 1; i++) {
+    const a = p[i - 1], b = p[i], c = p[i + 1];
+    const l1 = Math.hypot(b.x - a.x, b.y - a.y), l2 = Math.hypot(c.x - b.x, c.y - b.y);
+    const r = Math.min(rad, l1 / 2, l2 / 2);
+    const s = { x: b.x + (a.x - b.x) / l1 * r, y: b.y + (a.y - b.y) / l1 * r }, e = { x: b.x + (c.x - b.x) / l2 * r, y: b.y + (c.y - b.y) / l2 * r };
+    d += `L${f1(s.x)} ${f1(s.y)}Q${f1(b.x)} ${f1(b.y)} ${f1(e.x)} ${f1(e.y)}`;
+  }
+  const z = p[p.length - 1]; d += `L${f1(z.x)} ${f1(z.y)}`;
+  return { d, pts: p };
+}
+function polyMid(pts) {
+  let tot = 0; for (let i = 1; i < pts.length; i++) tot += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  let h = tot / 2;
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); if (h <= l) { const t = l ? h / l : 0; return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t }; } h -= l; }
+  return pts[0];
+}
+function bez(p0, p1, p2, p3, t) { const u = 1 - t; return { x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x, y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y }; }
+function edgePath(A, B, style) {
+  const [sa, sb] = pickSides(A, B);
+  const p1 = portPt(A, sa), p2 = portPt(B, sb), d1 = DIRV[sa], d2 = DIRV[sb], AL = 9;
+  if (style === "straight") {
+    const L = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1, u = { x: (p2.x - p1.x) / L, y: (p2.y - p1.y) / L };
+    const q = { x: p2.x - u.x * AL, y: p2.y - u.y * AL };
+    return { d: `M${f1(p1.x)} ${f1(p1.y)}L${f1(q.x)} ${f1(q.y)}`, tip: p2, base: q, mid: { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, bb: [p1, p2] };
+  }
+  const q = { x: p2.x + d2.x * AL, y: p2.y + d2.y * AL };
+  if (style === "orthogonal") {
+    let pts;
+    if (d1.x !== 0) {
+      const fwd = d1.x > 0 ? q.x >= p1.x + 16 : q.x <= p1.x - 16;
+      if (fwd) { const mx = (p1.x + q.x) / 2; pts = [p1, { x: mx, y: p1.y }, { x: mx, y: q.y }, q]; }
+      else { const a = { x: p1.x + d1.x * 20, y: p1.y }, b = { x: q.x + d2.x * 20, y: q.y }, my = (p1.y + q.y) / 2; pts = [p1, a, { x: a.x, y: my }, { x: b.x, y: my }, b, q]; }
+    } else {
+      const fwd = d1.y > 0 ? q.y >= p1.y + 16 : q.y <= p1.y - 16;
+      if (fwd) { const my = (p1.y + q.y) / 2; pts = [p1, { x: p1.x, y: my }, { x: q.x, y: my }, q]; }
+      else { const a = { x: p1.x, y: p1.y + d1.y * 20 }, b = { x: q.x, y: q.y + d2.y * 20 }, mx = (p1.x + q.x) / 2; pts = [p1, a, { x: mx, y: a.y }, { x: mx, y: b.y }, b, q]; }
+    }
+    const rp = roundedPoly(pts, 14);
+    return { d: rp.d, tip: p2, base: q, mid: polyMid(rp.pts), bb: rp.pts };
+  }
+  const dist = Math.hypot(q.x - p1.x, q.y - p1.y), k = clamp(dist * 0.45, 36, 170);
+  const c1 = { x: p1.x + d1.x * k, y: p1.y + d1.y * k }, c2 = { x: q.x + d2.x * k, y: q.y + d2.y * k };
+  return { d: `M${f1(p1.x)} ${f1(p1.y)}C${f1(c1.x)} ${f1(c1.y)} ${f1(c2.x)} ${f1(c2.y)} ${f1(q.x)} ${f1(q.y)}`, tip: p2, base: q, mid: bez(p1, c1, c2, q, 0.5), bb: [p1, bez(p1, c1, c2, q, .25), bez(p1, c1, c2, q, .75), q] };
+}
+
+/* =====================================================================
+   SCENE — backend-neutral primitives shared by screen, SVG and PNG/JPG
+   ===================================================================== */
+const BG = {
+  white: { name: "White", base: "#FFFFFF" },
+  gray: { name: "Light Gray", base: "#F1F2F7" },
+  grid: { name: "Grid", base: "#F8F9FD", line: "#E7E9F4" },
+  dots: { name: "Dotted", base: "#F8F9FD", dot: "#CDD1E6" },
+  dark: { name: "Dark", base: "#131528", line: "#1E2140" },
+};
+const EDGE_TYPES = { default: "Standard", yes: "Yes / success", no: "No / decline", conditional: "Conditional" };
+function edgeColor(type) {
+  const S = doc.settings, dark = S.bg === "dark";
+  if (type === "yes") return dark ? "#34D399" : "#16A34A";
+  if (type === "no") return dark ? "#FB7185" : "#E11D48";
+  if (type === "conditional") return dark ? mix(S.accent, "#ffffff", .3) : S.accent;
+  return dark ? mix(S.primary, "#ffffff", .3) : S.primary;
+}
+function bl(top, lh, f) { return top + (lh - f) / 2 + f * 0.8; }
+
+function stepEntity(n, ui) {
+  const S = doc.settings, fs = S.fontScale, cat = CATS[n.category] || CATS.other;
+  const col = S.iconMode === "accent" ? S.accent : cat.color;
+  const it = [], { x, y, w, h } = n;
+  if (S.cardStyle === "outline") it.push({ t: "rect", x, y, w, h, r: 14, fill: "#FFFFFF", stroke: "#CFD3E6", sw: 1.5 });
+  else if (S.cardStyle === "tinted") it.push({ t: "rect", x, y, w, h, r: 14, fill: mix(col, "#FFFFFF", .93), stroke: mix(col, "#FFFFFF", .7), sw: 1.2, shadow: "soft" });
+  else it.push({ t: "rect", x, y, w, h, r: 14, fill: "#FFFFFF", stroke: "#E3E6F2", sw: 1, shadow: "card" });
+  const bs = 40, bx = x + 14, by = y + h / 2 - bs / 2;
+  it.push({ t: "rect", x: bx, y: by, w: bs, h: bs, r: 11, fill: S.cardStyle === "tinted" ? "#FFFFFF" : rgba(col, .12) });
+  it.push({ t: "icon", name: n.icon, x: bx + 9, y: by + 9, size: 22, color: col, sw: 1.9 });
+  const tx = bx + bs + 12, tw = Math.max(20, x + w - 14 - tx - (n.url ? 14 : 0));
+  const catF = 9.5 * fs, tF = 14 * fs, dF = 11.5 * fs, catLH = 12 * fs, tLH = 18 * fs, dLH = 15 * fs, g1 = 4 * fs, g2 = 3 * fs;
+  const tFont = `700 ${tF}px ${FONT}`, dFont = `500 ${dF}px ${FONT}`;
+  const tLines = wrap(n.title || "Untitled step", tw, tFont, 2);
+  const room = h - 18 - (catLH + g1 + tLines.length * tLH + g2);
+  const dLines = n.desc ? wrap(n.desc, tw, dFont, clamp(Math.floor(room / dLH), 0, 4)) : [];
+  const blockH = catLH + g1 + tLines.length * tLH + (dLines.length ? g2 + dLines.length * dLH : 0);
+  let top = y + (h - blockH) / 2;
+  it.push({ t: "text", x: tx, y: bl(top, catLH, catF), s: clip(cat.name.toUpperCase(), tw, `700 ${catF}px ${FONT}`), size: catF, weight: 700, fill: col, ls: .9 });
+  top += catLH + g1;
+  for (const l of tLines) { it.push({ t: "text", x: tx, y: bl(top, tLH, tF), s: l, size: tF, weight: 700, fill: "#1C2038" }); top += tLH; }
+  if (dLines.length) { top += g2; for (const l of dLines) { it.push({ t: "text", x: tx, y: bl(top, dLH, dF), s: l, size: dF, weight: 500, fill: "#6E7396" }); top += dLH; } }
+  if (n.url) it.push({ t: "icon", name: "link", x: x + w - 24, y: y + 10, size: 13, color: "#9A9EBC", sw: 2 });
+  return { ref: "n:" + n.id, items: it };
+}
+function textLayout(n) {
+  const size = (n.fontSize || 20) * doc.settings.fontScale, font = `${n.bold === false ? 500 : 700} ${size}px ${FONT}`;
+  const lines = wrap(n.title || "Text", n.w - 8, font, 30);
+  return { size, font, lines, lh: size * 1.3, h: Math.max(size * 1.3, lines.length * size * 1.3) + 8 };
+}
+function textEntity(n) {
+  const L = textLayout(n); n.h = L.h;
+  const dark = doc.settings.bg === "dark", fill = n.color || (dark ? "#EEF0FA" : "#1C2038");
+  const it = [{ t: "rect", x: n.x, y: n.y, w: n.w, h: n.h, r: 6, fill: "rgba(0,0,0,0)", hit: true }];
+  const anchor = n.align || "start", ax = anchor === "middle" ? n.x + n.w / 2 : anchor === "end" ? n.x + n.w - 4 : n.x + 4;
+  L.lines.forEach((l, i) => it.push({ t: "text", x: ax, y: n.y + 4 + i * L.lh + L.size * 1.02, s: l, size: L.size, weight: n.bold === false ? 500 : 700, fill, anchor }));
+  return { ref: "n:" + n.id, items: it };
+}
+function topRoundPath(x, y, w, h, r) { return `M${x} ${y + h}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h}Z`; }
+function groupEntity(g) {
+  const dark = doc.settings.bg === "dark", col = g.color, b = groupBox(g), it = [];
+  const count = doc.nodes.filter(n => n.groupId === g.id).length;
+  it.push({ t: "rect", x: b.x, y: b.y, w: b.w, h: b.h, r: 18, fill: rgba(col, dark ? .10 : .045), stroke: rgba(col, dark ? .5 : .38), sw: 1.5, part: "body" });
+  it.push(g.collapsed ? { t: "rect", x: b.x, y: b.y, w: b.w, h: b.h, r: 18, fill: rgba(col, dark ? .2 : .11), part: "head" } : { t: "path", d: topRoundPath(b.x, b.y, b.w, HEAD, 18), fill: rgba(col, dark ? .2 : .10), part: "head" });
+  it.push({ t: "icon", name: "layers", x: b.x + 15, y: b.y + 14, size: 20, color: col, sw: 2, part: "head" });
+  const right = count ? (g.collapsed ? `${count} step${count > 1 ? "s" : ""} hidden` : `${count} step${count > 1 ? "s" : ""}`) : "";
+  const rw = right ? measure(right, `600 11px ${FONT}`) + 20 : 0;
+  const tw = b.w - 44 - 14 - rw, tcol = dark ? mix(col, "#FFFFFF", .45) : mix(col, "#1C2038", .35);
+  const hasDesc = g.desc && !g.collapsed;
+  it.push({ t: "text", x: b.x + 44, y: b.y + (hasDesc ? 22 : 29.5), s: clip(g.title || "Group", tw, `700 13.5px ${FONT}`), size: 13.5, weight: 700, fill: tcol, part: "head" });
+  if (hasDesc) it.push({ t: "text", x: b.x + 44, y: b.y + 38, s: clip(g.desc, tw, `500 11px ${FONT}`), size: 11, weight: 500, fill: dark ? "#9CA0C4" : "#7A7FA3", part: "head" });
+  if (right) it.push({ t: "text", x: b.x + b.w - 16, y: b.y + 29.5, s: right, size: 11, weight: 600, fill: rgba(dark ? mix(col, "#FFFFFF", .4) : col, .85), anchor: "end", part: "head" });
+  return { ref: "g:" + g.id, items: it };
+}
+function edgeEntity(e, ui) {
+  const A = endBox(e.sourceId), B = endBox(e.targetId); if (!A || !B) return null;
+  const sn = nodeById(e.sourceId), tn = nodeById(e.targetId);
+  if (isHidden(sn) && isHidden(tn) && sn.groupId === tn.groupId) return null;
+  const P = edgePath(A, B, doc.settings.connector), col = edgeColor(e.type), it = [];
+  const selected = ui && ui.sel.edge === e.id;
+  if (ui) it.push({ t: "path", d: P.d, stroke: "rgba(0,0,0,0)", sw: 16, fill: "none", hit: true });
+  if (selected) it.push({ t: "path", d: P.d, stroke: rgba(col, .2), sw: 9, fill: "none" });
+  it.push({ t: "path", d: P.d, stroke: col, sw: selected ? 2.8 : 2, fill: "none", dash: e.type === "conditional" ? "7 5" : null, cls: "eline" });
+  const nx = -(P.tip.y - P.base.y), ny = (P.tip.x - P.base.x), nl = Math.hypot(nx, ny) || 1, hw = 5.5;
+  it.push({ t: "path", d: `M${f1(P.tip.x)} ${f1(P.tip.y)}L${f1(P.base.x + nx / nl * hw)} ${f1(P.base.y + ny / nl * hw)}L${f1(P.base.x - nx / nl * hw)} ${f1(P.base.y - ny / nl * hw)}Z`, fill: col });
+  let lb = null;
+  if (e.label) {
+    const f = `600 11px ${FONT}`, s = clip(e.label, 160, f, false), lw = measure(s, f) + 18, lh = 22;
+    lb = { x: P.mid.x - lw / 2, y: P.mid.y - lh / 2, w: lw, h: lh };
+    it.push({ t: "rect", ...lb, r: 11, fill: "#FFFFFF", stroke: rgba(col, .45), sw: 1.2 });
+    it.push({ t: "text", x: P.mid.x, y: P.mid.y + 3.9, s, size: 11, weight: 600, fill: mix(col, "#1C2038", .15), anchor: "middle" });
+  }
+  return { ref: "e:" + e.id, items: it, bb: P.bb, lb };
+}
+function buildScene(ui) {
+  const g = doc.groups.map(groupEntity);
+  const e = doc.edges.map(x => edgeEntity(x, ui)).filter(Boolean);
+  const n = doc.nodes.filter(x => !isHidden(x)).map(x => x.kind === "text" ? textEntity(x) : stepEntity(x, ui));
+  return [...g, ...e, ...n];
+}
+function contentBounds() {
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  const add = (x, y, w = 0, h = 0) => { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x + w); y2 = Math.max(y2, y + h); };
+  doc.groups.forEach(g => { const b = groupBox(g); add(b.x, b.y, b.w, b.h); });
+  doc.nodes.forEach(n => { if (!isHidden(n)) add(n.x, n.y, n.w, n.h); });
+  doc.edges.forEach(e => { const E = edgeEntity(e, null); if (E) { E.bb.forEach(p => add(p.x, p.y)); if (E.lb) add(E.lb.x, E.lb.y, E.lb.w, E.lb.h); } });
+  if (x1 === Infinity) return null;
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+
+/* ---------- SVG backend ---------- */
+function itemSVG(it, forExport) {
+  if (forExport && it.hit) return "";
+  const part = !forExport && it.part ? ` data-part="${it.part}"` : "";
+  const cls = !forExport && it.cls ? ` class="${it.cls}"` : "";
+  if (it.t === "rect") {
+    const f = it.shadow ? ` filter="url(#${it.shadow === "soft" ? "fxSoft" : "fxCard"})"` : "";
+    return `<rect x="${r2(it.x)}" y="${r2(it.y)}" width="${r2(it.w)}" height="${r2(it.h)}" rx="${it.r || 0}" fill="${it.fill || "none"}"${it.stroke ? ` stroke="${it.stroke}" stroke-width="${it.sw || 1}"` : ""}${f}${part}/>`;
+  }
+  if (it.t === "path") {
+    const hit = it.hit && !forExport ? ` pointer-events="stroke"` : "";
+    return `<path d="${it.d}" fill="${it.fill || "none"}"${it.stroke ? ` stroke="${it.stroke}" stroke-width="${it.sw || 1}" stroke-linecap="round" stroke-linejoin="round"` : ""}${it.dash ? ` stroke-dasharray="${it.dash}"` : ""}${hit}${part}${cls}/>`;
+  }
+  if (it.t === "text") {
+    return `<text x="${r2(it.x)}" y="${r2(it.y)}" font-size="${r2(it.size)}" font-weight="${it.weight}" fill="${it.fill}"${it.anchor && it.anchor !== "start" ? ` text-anchor="${it.anchor}"` : ""}${it.ls ? ` letter-spacing="${it.ls}"` : ""}${part}>${esc(it.s)}</text>`;
+  }
+  if (it.t === "icon") {
+    const s = it.size / 24, p = ICONS[it.name] || ICONS.pen;
+    return `<g transform="translate(${r2(it.x)} ${r2(it.y)}) scale(${r2(s)})" fill="none" stroke="${it.color}" stroke-width="${it.sw}" stroke-linecap="round" stroke-linejoin="round"${part}>${p.map(d => `<path d="${d}"/>`).join("")}</g>`;
+  }
+  return "";
+}
+function entitiesSVG(ents, forExport) {
+  return ents.map(e => forExport ? e.items.map(i => itemSVG(i, true)).join("") : `<g data-ref="${e.ref}">${e.items.map(i => itemSVG(i, false)).join("")}</g>`).join("");
+}
+
+/* ---------- Canvas backend ---------- */
+function rrPath(ctx, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); }
+function drawItems(ctx, items, scale) {
+  for (const it of items) {
+    if (it.hit) continue;
+    ctx.save();
+    if (it.t === "rect") {
+      rrPath(ctx, it.x, it.y, it.w, it.h, it.r || 0);
+      if (it.fill && it.fill !== "none") {
+        if (it.shadow) { const soft = it.shadow === "soft"; ctx.shadowColor = `rgba(30,35,96,${soft ? .08 : .09})`; ctx.shadowBlur = (soft ? 6 : 14) * scale; ctx.shadowOffsetY = (soft ? 2 : 4) * scale; }
+        ctx.fillStyle = it.fill; ctx.fill(); ctx.shadowColor = "transparent";
+      }
+      if (it.stroke) { ctx.lineWidth = it.sw || 1; ctx.strokeStyle = it.stroke; ctx.stroke(); }
+    } else if (it.t === "path") {
+      const p = new Path2D(it.d);
+      if (it.fill && it.fill !== "none") { ctx.fillStyle = it.fill; ctx.fill(p); }
+      if (it.stroke) { ctx.lineWidth = it.sw || 1; ctx.strokeStyle = it.stroke; ctx.lineCap = "round"; ctx.lineJoin = "round"; if (it.dash) ctx.setLineDash(it.dash.split(" ").map(Number)); ctx.stroke(p); }
+    } else if (it.t === "text") {
+      ctx.font = `${it.weight} ${it.size}px ${FONT}`; ctx.fillStyle = it.fill; ctx.textBaseline = "alphabetic";
+      ctx.textAlign = it.anchor === "middle" ? "center" : it.anchor === "end" ? "right" : "left";
+      if ("letterSpacing" in ctx) ctx.letterSpacing = (it.ls || 0) + "px";
+      ctx.fillText(it.s, it.x, it.y);
+    } else if (it.t === "icon") {
+      ctx.translate(it.x, it.y); ctx.scale(it.size / 24, it.size / 24);
+      ctx.lineWidth = it.sw; ctx.strokeStyle = it.color; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      for (const d of (ICONS[it.name] || ICONS.pen)) ctx.stroke(new Path2D(d));
+    }
+    ctx.restore();
+  }
+}
+function bgItems(rect, mode) {
+  const B = BG[mode] || BG.grid, it = [{ t: "rect", x: rect.x, y: rect.y, w: rect.w, h: rect.h, r: 0, fill: B.base }];
+  if (B.line) {
+    let d = ""; const x0 = Math.ceil(rect.x / GRID) * GRID, y0 = Math.ceil(rect.y / GRID) * GRID;
+    for (let x = x0; x <= rect.x + rect.w; x += GRID) d += `M${x} ${f1(rect.y)}V${f1(rect.y + rect.h)}`;
+    for (let y = y0; y <= rect.y + rect.h; y += GRID) d += `M${f1(rect.x)} ${y}H${f1(rect.x + rect.w)}`;
+    it.push({ t: "path", d, stroke: B.line, sw: 1 });
+  }
+  if (B.dot) {
+    let d = ""; const x0 = Math.ceil(rect.x / GRID) * GRID, y0 = Math.ceil(rect.y / GRID) * GRID;
+    for (let x = x0; x <= rect.x + rect.w; x += GRID) for (let y = y0; y <= rect.y + rect.h; y += GRID) d += `M${x - 1.3} ${y}a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0`;
+    it.push({ t: "path", d, fill: B.dot });
+  }
+  return it;
+}
+
+/* =====================================================================
+   FUNNEL LAYOUT — builds nodes, edges and groups from a definition
+   ===================================================================== */
+const LAY = { h: { col: 320, row: 190, band: 90, max: 5 }, v: { col: 218, row: 300, band: 120, max: 5 } };
+function parseStep(spec) {
+  const stack = spec.startsWith("!"); const [key, title, desc] = spec.replace(/^!/, "").split("|");
+  const d = stepDef(key);
+  return { stack, key, title: title || d.title, desc: desc !== undefined ? desc : d.desc, icon: d.icon, cat: d.cat };
+}
+function guessType(label) {
+  if (!label) return "default";
+  if (/^(yes|accept|buy|bought|pass)/i.test(label)) return "yes";
+  if (/^(no|not|didn|decline|missed|reject)/i.test(label)) return label.toLowerCase().startsWith("missed") ? "conditional" : "no";
+  return "conditional";
+}
+function parseFlow(flow, n) {
+  const out = [];
+  if (flow === "none") return out;
+  if (!flow) { for (let i = 0; i < n - 1; i++) out.push([i, i + 1, ""]); return out; }
+  for (const tok of flow.trim().split(/\s+(?=\d+>)/)) {
+    const ci = tok.indexOf(":"), chain = ci >= 0 ? tok.slice(0, ci) : tok, label = ci >= 0 ? tok.slice(ci + 1).trim() : "";
+    const ids = chain.split(">").map(Number);
+    for (let i = 0; i < ids.length - 1; i++) out.push([ids[i], ids[i + 1], label]);
+  }
+  return out;
+}
+function layoutDef(def, origin, dir) {
+  const L = LAY[dir], steps = def.steps.map(parseStep), links = parseFlow(def.flow, steps.length);
+  const parents = steps.map(() => []);
+  links.forEach(([a, b]) => { if (a < b) parents[b].push(a); });
+  const rank = [], row = [], colCount = {};
+  steps.forEach((s, i) => {
+    if (i && s.stack) rank[i] = rank[i - 1];
+    else if (parents[i].length) rank[i] = Math.max(...parents[i].map(p => rank[p])) + 1;
+    else rank[i] = i ? rank[i - 1] + 1 : 0;
+    row[i] = colCount[rank[i]] = (colCount[rank[i]] ?? -1) + 1;
+  });
+  const R = Math.max(...rank) + 1;
+  const gOf = steps.map(() => -1); (def.groups || []).forEach((g, gi) => g[2].forEach(i => gOf[i] = gi));
+  const ranges = []; steps.forEach((s, i) => { const k = gOf[i] >= 0 ? "g" + gOf[i] : "s" + i; const r = ranges.find(x => x.k === k); if (r) { r.a = Math.min(r.a, rank[i]); r.b = Math.max(r.b, rank[i]); } else ranges.push({ k, a: rank[i], b: rank[i] }); });
+  const valid = c => ranges.every(r => !(r.a < c && c <= r.b));
+  const bands = Math.ceil(R / L.max), target = Math.ceil(R / bands), cuts = [0];
+  let start = 0;
+  while (start < R) {
+    let c = -1;
+    for (let k = Math.min(R, start + target); k > start; k--) if (k === R || valid(k)) { c = k; break; }
+    if (c < 0) for (let k = start + target + 1; k <= R; k++) if (k === R || valid(k)) { c = k; break; }
+    cuts.push(c); start = c;
+  }
+  const bandOf = r => { for (let b = 0; b < cuts.length - 1; b++) if (r < cuts[b + 1]) return b; return 0; };
+  const bandRows = []; for (let r = 0; r < R; r++) { const b = bandOf(r); bandRows[b] = Math.max(bandRows[b] || 0, colCount[r] + 1); }
+  const bandOff = [0]; for (let b = 1; b < cuts.length - 1; b++) bandOff[b] = bandOff[b - 1] + bandRows[b - 1] * L.row + L.band;
+  const ox = origin.x + 20, oy = origin.y + 56;
+  const nodes = steps.map((s, i) => {
+    const b = bandOf(rank[i]), c = rank[i] - cuts[b];
+    const x = dir === "h" ? ox + c * L.col : ox + bandOff[b] + row[i] * L.row;
+    const y = dir === "h" ? oy + bandOff[b] + row[i] * L.row : oy + c * L.col;
+    return { id: uid("n"), kind: "step", type: s.key, title: s.title, desc: s.desc, icon: s.icon, category: s.cat, x, y, w: DEF_W, h: DEF_H, groupId: null, url: "", notes: "" };
+  });
+  const groups = (def.groups || []).map(([title, color, idx, desc]) => {
+    const g = { id: uid("g"), title, desc: desc || "", color: GC[color] || color, collapsed: false, x: 0, y: 0, w: 0, h: 0 };
+    idx.forEach(i => nodes[i].groupId = g.id); fitGroupTo(g, idx.map(i => nodes[i])); return g;
+  });
+  const edges = links.map(([a, b, label]) => ({ id: uid("e"), sourceId: nodes[a].id, targetId: nodes[b].id, label, type: guessType(label) }));
+  return { nodes, edges, groups };
+}
+function fitGroupTo(g, members) {
+  if (!members.length) return;
+  const x1 = Math.min(...members.map(n => n.x)), y1 = Math.min(...members.map(n => n.y)), x2 = Math.max(...members.map(n => n.x + n.w)), y2 = Math.max(...members.map(n => n.y + n.h));
+  g.x = x1 - 20; g.y = y1 - 56; g.w = x2 - x1 + 40; g.h = y2 - y1 + 76;
+}
+function growGroupTo(g, n) {
+  const x1 = Math.min(g.x, n.x - 20), y1 = Math.min(g.y, n.y - 56), x2 = Math.max(g.x + g.w, n.x + n.w + 20), y2 = Math.max(g.y + g.h, n.y + n.h + 20);
+  g.x = x1; g.y = y1; g.w = x2 - x1; g.h = y2 - y1;
+}
+function membersOf(gid) { return doc.nodes.filter(n => n.groupId === gid); }
+</script>
+<script>
+"use strict";
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const stage = $("#stage"), sceneEl = $("#scene"), overlayEl = $("#overlay"), worldEl = $("#world"), wrapEl = $("#canvasWrap");
+let rafPending = false, needPanel = false, drag = null;
+function renderAll(panel) { if (panel) needPanel = true; if (!rafPending) { rafPending = true; requestAnimationFrame(flush); } }
+function flush() { rafPending = false; sceneEl.innerHTML = entitiesSVG(buildScene({ sel }), false); renderOverlay(); applyView(); renderChrome(); if (needPanel) { needPanel = false; renderPanel(); } }
+function applyView() {
+  worldEl.setAttribute("transform", `translate(${r2(view.x)} ${r2(view.y)}) scale(${view.k})`);
+  const B = BG[doc.settings.bg] || BG.grid; let g = GRID * view.k; while (g < 9) g *= 5;
+  wrapEl.style.backgroundColor = B.base;
+  if (B.line) { wrapEl.style.backgroundImage = `linear-gradient(to right, ${B.line} 1px, transparent 1px), linear-gradient(to bottom, ${B.line} 1px, transparent 1px)`; wrapEl.style.backgroundSize = `${g}px ${g}px`; wrapEl.style.backgroundPosition = `${view.x}px ${view.y}px`; }
+  else if (B.dot) { const r = Math.max(.8, 1.3 * Math.min(view.k, 1.4)); wrapEl.style.backgroundImage = `radial-gradient(circle, ${B.dot} ${r}px, transparent ${r + .6}px)`; wrapEl.style.backgroundSize = `${g}px ${g}px`; wrapEl.style.backgroundPosition = `${view.x - g / 2}px ${view.y - g / 2}px`; }
+  else wrapEl.style.backgroundImage = "none";
+  $("#btnZoomVal").textContent = Math.round(view.k * 100) + "%";
+  renderMinimap(); scheduleAutosave();
+}
+function renderOverlay() {
+  const k = view.k, P = doc.settings.primary; let h = "";
+  const ns = `vector-effect="non-scaling-stroke"`;
+  if (drag && drag.type === "move" && drag.hoverGroup) { const g = groupById(drag.hoverGroup); if (g) h += `<rect x="${g.x - 4}" y="${g.y - 4}" width="${g.w + 8}" height="${g.h + 8}" rx="22" fill="${rgba(g.color, .06)}" stroke="${g.color}" stroke-width="2" stroke-dasharray="6 5" ${ns}/>`; }
+  for (const g of doc.groups) {
+    const b = groupBox(g);
+    h += `<g data-h="collapse" data-id="${g.id}" transform="translate(${b.x + 11} ${b.y + 11})"><title>${g.collapsed ? "Expand" : "Collapse"} group</title><rect width="26" height="26" rx="8" fill="#FFFFFF" stroke="${rgba(g.color, .4)}"/><path d="${g.collapsed ? "M11 8.5l4.5 4.5-4.5 4.5" : "M8.5 11l4.5 4.5 4.5-4.5"}" fill="none" stroke="${g.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  }
+  for (const id of sel.groups) { const g = groupById(id); if (!g) continue; const b = groupBox(g); h += `<rect x="${b.x - 3}" y="${b.y - 3}" width="${b.w + 6}" height="${b.h + 6}" rx="20" fill="none" stroke="${P}" stroke-width="2" ${ns}/>`; }
+  for (const id of sel.nodes) { const n = nodeById(id); if (!n || isHidden(n)) continue; h += `<rect x="${n.x - 4}" y="${n.y - 4}" width="${n.w + 8}" height="${n.h + 8}" rx="17" fill="${rgba(P, .04)}" stroke="${P}" stroke-width="2" ${ns}/>`; }
+  if (pendingSource) { const n = nodeById(pendingSource); if (n) h += `<rect x="${n.x - 6}" y="${n.y - 6}" width="${n.w + 12}" height="${n.h + 12}" rx="19" fill="none" stroke="${P}" stroke-width="2" stroke-dasharray="6 4" ${ns}/>`; }
+  const portNodes = new Set();
+  if (tool === "connect") doc.nodes.forEach(n => { if (n.kind === "step" && !isHidden(n)) portNodes.add(n.id); });
+  if (hoverId) portNodes.add(hoverId);
+  if (sel.nodes.size === 1 && !sel.groups.size) portNodes.add([...sel.nodes][0]);
+  if (!drag || drag.type === "connect") for (const id of portNodes) {
+    const n = nodeById(id); if (!n || n.kind !== "step" || isHidden(n)) continue;
+    for (const s of ["t", "r", "b", "l"]) { const p = portPt(n, s); h += `<g data-h="port" data-id="${id}" data-side="${s}"><circle cx="${p.x}" cy="${p.y}" r="${12 / k}" fill="rgba(0,0,0,0)"/><circle cx="${p.x}" cy="${p.y}" r="${5.5 / k}" fill="#FFFFFF" stroke="${P}" stroke-width="2" ${ns}/></g>`; }
+  }
+  const hs = 11 / k;
+  if (!drag && sel.nodes.size === 1 && !sel.groups.size) { const n = nodeById([...sel.nodes][0]); if (n && !isHidden(n)) h += `<rect data-h="resize-n" data-id="${n.id}" x="${n.x + n.w - hs / 2}" y="${n.y + n.h - hs / 2}" width="${hs}" height="${hs}" rx="${3 / k}" fill="#FFFFFF" stroke="${P}" stroke-width="2" ${ns}/>`; }
+  if (!drag && sel.groups.size === 1 && !sel.nodes.size) { const g = groupById([...sel.groups][0]); if (g && !g.collapsed) h += `<rect data-h="resize-g" data-id="${g.id}" x="${g.x + g.w - hs / 2}" y="${g.y + g.h - hs / 2}" width="${hs}" height="${hs}" rx="${3 / k}" fill="#FFFFFF" stroke="${P}" stroke-width="2" ${ns}/>`; }
+  if (drag && drag.type === "connect") {
+    const a = drag.p, b = drag.cur, t = drag.target && nodeById(drag.target);
+    if (t) h += `<rect x="${t.x - 5}" y="${t.y - 5}" width="${t.w + 10}" height="${t.h + 10}" rx="18" fill="${rgba(P, .06)}" stroke="${P}" stroke-width="2" ${ns}/>`;
+    h += `<path d="M${a.x} ${a.y}L${b.x} ${b.y}" stroke="${P}" stroke-width="2" stroke-dasharray="6 5" fill="none" ${ns}/><circle cx="${b.x}" cy="${b.y}" r="${5 / k}" fill="${P}"/>`;
+  }
+  if (drag && drag.type === "marquee" && drag.moved) { const m = normRect(drag.a, drag.b); h += `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" fill="${rgba(P, .08)}" stroke="${P}" stroke-width="1.5" stroke-dasharray="5 4" ${ns}/>`; }
+  overlayEl.innerHTML = h;
+}
+const normRect = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) });
+const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+function viewRect() { return { x: -view.x / view.k, y: -view.y / view.k, w: wrapEl.clientWidth / view.k, h: wrapEl.clientHeight / view.k }; }
+
+/* ---------- minimap ---------- */
+let mm = null;
+function renderMinimap() {
+  const box = $("#minimapBox"), cv = $("#minimap");
+  const empty = !doc.nodes.length && !doc.groups.length; box.hidden = empty;
+  if (empty || box.classList.contains("min") || !cv.offsetParent) return;
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, cs = getComputedStyle(document.documentElement);
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = cs.getPropertyValue("--surface-2").trim() || "#F7F8FD"; ctx.fillRect(0, 0, W, H);
+  const cb = contentBounds(), vr = viewRect(); if (!cb) return;
+  const x1 = Math.min(cb.x, vr.x), y1 = Math.min(cb.y, vr.y), x2 = Math.max(cb.x + cb.w, vr.x + vr.w), y2 = Math.max(cb.y + cb.h, vr.y + vr.h);
+  const s = Math.min((W - 16) / (x2 - x1), (H - 16) / (y2 - y1)), ox = (W - (x2 - x1) * s) / 2 - x1 * s, oy = (H - (y2 - y1) * s) / 2 - y1 * s;
+  mm = { s, ox, oy };
+  for (const g of doc.groups) { const b = groupBox(g); ctx.fillStyle = rgba(g.color, .16); rrPath(ctx, b.x * s + ox, b.y * s + oy, b.w * s, b.h * s, 4); ctx.fill(); }
+  for (const n of doc.nodes) { if (isHidden(n)) continue; ctx.fillStyle = n.kind === "text" ? "#9AA0BF" : (CATS[n.category] || CATS.other).color; rrPath(ctx, n.x * s + ox, n.y * s + oy, Math.max(2, n.w * s), Math.max(2, n.h * s), 2); ctx.fill(); }
+  const P = doc.settings.primary; ctx.fillStyle = rgba(P, .08); ctx.strokeStyle = P; ctx.lineWidth = 2;
+  rrPath(ctx, vr.x * s + ox, vr.y * s + oy, vr.w * s, vr.h * s, 4); ctx.fill(); ctx.stroke();
+}
+function mmPan(e) { if (!mm) return; const r = e.currentTarget.getBoundingClientRect(), sx = (e.clientX - r.left) * (e.currentTarget.width / r.width), sy = (e.clientY - r.top) * (e.currentTarget.height / r.height); const wx = (sx - mm.ox) / mm.s, wy = (sy - mm.oy) / mm.s; view.x = wrapEl.clientWidth / 2 - wx * view.k; view.y = wrapEl.clientHeight / 2 - wy * view.k; applyView(); }
+
+/* ---------- chrome ---------- */
+let selbarKey = "";
+function renderChrome() {
+  $("#btnUndo").disabled = !undoStack.length; $("#btnRedo").disabled = !redoStack.length;
+  const mn = $("#mapName"); if (document.activeElement !== mn) mn.value = doc.settings.title;
+  const st = $("#saveState"), dirty = savedSnap === null || savedSnap !== snapshot();
+  st.textContent = savedId ? (dirty ? "Unsaved changes" : "Saved") : (doc.nodes.length ? "Not saved yet" : "New map"); st.classList.toggle("dirty", dirty && !!doc.nodes.length);
+  $("#empty").hidden = !!(doc.nodes.length || doc.groups.length || emptyDismissed);
+  $$(".tbtn[data-tool]").forEach(b => b.classList.toggle("active", b.dataset.tool === tool));
+  $("#tGrid").classList.toggle("active", !!doc.settings.snap);
+  stage.classList.toggle("tool-hand", tool === "hand"); stage.classList.toggle("tool-connect", tool === "connect"); stage.classList.toggle("tool-text", tool === "text");
+  const hint = $("#hint"); let ht = "";
+  if (tool === "connect") ht = pendingSource ? "Now click the step to connect to · Esc to cancel" : "Click a step, then another step to connect them · Esc to exit";
+  else if (tool === "text") ht = "Click anywhere on the canvas to add text";
+  hint.hidden = !ht; hint.textContent = ht;
+  renderSelbar();
+}
+function renderSelbar() {
+  const bar = $("#selbar"), n = sel.nodes.size + sel.groups.size, narrow = window.innerWidth <= 1180;
+  let key = n >= 2 ? "multi" + n : (n === 1 || sel.edge) && narrow ? "one" + (sel.edge ? "e" : "") : "";
+  if (key === selbarKey) return; selbarKey = key;
+  if (!key) { bar.hidden = true; bar.innerHTML = ""; return; }
+  bar.hidden = false;
+  const B = (act, icon, title, extra = "") => `<button class="btn icon ${extra}" data-act="${act}" title="${title}" aria-label="${title}">${iconSVG(icon)}</button>`;
+  if (key === "one") { bar.innerHTML = `<button class="btn" data-act="openPanel">${iconSVG("edit")}Edit</button>${sel.edge ? "" : B("duplicate", "copy", "Duplicate")}${B("delete", "trash", "Delete", "danger")}`; return; }
+  bar.innerHTML = `<span class="lbl">${n} selected</span>${B("alignLeft", "alignLeft", "Align left")}${B("alignCenter", "alignCenter", "Align center")}${B("alignRight", "alignRight", "Align right")}${B("alignTop", "alignTop", "Align top")}${B("alignMiddle", "alignMiddle", "Align middle")}${B("alignBottom", "alignBottom", "Align bottom")}<span class="tsep"></span>${B("distH", "distH", "Distribute horizontally")}${B("distV", "distV", "Distribute vertically")}<span class="tsep"></span>${B("group", "layers", "Group selection")}${B("duplicate", "copy", "Duplicate")}${B("delete", "trash", "Delete", "danger")}`;
+}
+window.addEventListener("resize", () => { selbarKey = ""; renderAll(); });
+
+/* =====================================================================
+   SELECTION
+   ===================================================================== */
+function clearSel() { sel = { nodes: new Set(), groups: new Set(), edge: null }; }
+function selectOnly({ nodes = [], groups = [], edge = null }) { sel = { nodes: new Set(nodes), groups: new Set(groups), edge }; renderAll(true); }
+function selectAll() { selectOnly({ nodes: doc.nodes.filter(n => !isHidden(n)).map(n => n.id), groups: doc.groups.map(g => g.id) }); }
+
+/* =====================================================================
+   VIEW: ZOOM / PAN / FIT
+   ===================================================================== */
+function zoomAt(f, sx, sy) { const k = clamp(view.k * f, .15, 2.5); const wx = (sx - view.x) / view.k, wy = (sy - view.y) / view.k; view.k = k; view.x = sx - wx * k; view.y = sy - wy * k; applyView(); renderOverlay(); }
+function zoomBy(f) { zoomAt(f, wrapEl.clientWidth / 2, wrapEl.clientHeight / 2); }
+function fitView(b = contentBounds()) {
+  const W = wrapEl.clientWidth, H = wrapEl.clientHeight, narrow = window.innerWidth <= 860;
+  if (!W || !H) return;
+  if (!b) { view = { x: W / 2, y: H / 2, k: 1 }; applyView(); return; }
+  const top = narrow ? 56 : 84, bot = narrow ? 84 : 56, side = 48;
+  const k = clamp(Math.min((W - side * 2) / b.w, (H - top - bot) / b.h, 1), .15, 1);
+  view = { k, x: (W - b.w * k) / 2 - b.x * k, y: top + (H - top - bot - b.h * k) / 2 - b.y * k };
+  applyView(); renderOverlay();
+}
+function revealBox(b) { const vr = viewRect(); if (b.x >= vr.x && b.y >= vr.y && b.x + b.w <= vr.x + vr.w && b.y + b.h <= vr.y + vr.h) return; const cb = contentBounds(); fitView(cb); }
+
+/* =====================================================================
+   ACTIONS
+   ===================================================================== */
+function newStepNode(key, over = {}) { const d = stepDef(key); return { id: uid("n"), kind: "step", type: key, title: d.title, desc: d.desc, icon: d.icon, category: d.cat, x: 0, y: 0, w: DEF_W, h: DEF_H, groupId: null, url: "", notes: "", ...over }; }
+function overlaps(r, ignore) { return doc.nodes.some(n => n.id !== ignore && !isHidden(n) && hits({ x: r.x - 10, y: r.y - 10, w: r.w + 20, h: r.h + 20 }, n)); }
+function snapNode(n) { if (doc.settings.snap) { n.x = Math.round(n.x / GRID) * GRID; n.y = Math.round(n.y / GRID) * GRID; } }
+function nextSlot(a, w = DEF_W, h = DEF_H) {
+  const H = doc.settings.direction !== "v", L = LAY[H ? "h" : "v"];
+  const base = H ? { x: a.x + L.col, y: a.y } : { x: a.x, y: a.y + L.col };
+  for (let i = 0; i < 12; i++) {
+    const off = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6][i];
+    const p = H ? { x: base.x, y: base.y + off * L.row } : { x: base.x + off * L.row, y: base.y };
+    if (!overlaps({ ...p, w, h })) return p;
+  }
+  return base;
+}
+function freeSpotAt(cx, cy, w = DEF_W, h = DEF_H) { let p = { x: cx - w / 2, y: cy - h / 2 }; for (let i = 0; i < 30 && overlaps({ ...p, w, h }); i++) { p.x += 40; p.y += 40; } return p; }
+function groupAt(pt, exclude = new Set()) {
+  let best = null, area = Infinity;
+  for (const g of doc.groups) { if (g.collapsed || exclude.has(g.id)) continue; if (pt.x >= g.x && pt.x <= g.x + g.w && pt.y >= g.y && pt.y <= g.y + g.h && g.w * g.h < area) { best = g; area = g.w * g.h; } }
+  return best;
+}
+function assignGroup(n, exclude) { const g = groupAt({ x: n.x + n.w / 2, y: n.y + n.h / 2 }, exclude); n.groupId = g ? g.id : null; if (g) growGroupTo(g, n); }
+function singleStep() { if (sel.nodes.size !== 1 || sel.groups.size) return null; const n = nodeById([...sel.nodes][0]); return n && n.kind === "step" ? n : null; }
+
+function addStep(key, opts = {}) {
+  let created;
+  mutate(() => {
+    const n = newStepNode(key); created = n;
+    const after = opts.after && nodeById(opts.after);
+    if (after) { Object.assign(n, nextSlot(after)); }
+    else if (opts.x != null) { n.x = opts.x - n.w / 2; n.y = opts.y - n.h / 2; }
+    else { const vr = viewRect(); Object.assign(n, freeSpotAt(vr.x + vr.w / 2, vr.y + vr.h / 2)); }
+    snapNode(n); doc.nodes.push(n);
+    if (opts.groupId && groupById(opts.groupId)) { const g = groupById(opts.groupId); n.groupId = g.id; if (!after && opts.x == null) { const m = membersOf(g.id).filter(x => x !== n); const last = m[m.length - 1]; if (last) Object.assign(n, nextSlot(last)); else { n.x = g.x + 20; n.y = g.y + 56; } } growGroupTo(g, n); }
+    else assignGroup(n);
+    if (after) doc.edges.push({ id: uid("e"), sourceId: after.id, targetId: n.id, label: "", type: "default" });
+    sel = { nodes: new Set([n.id]), groups: new Set(), edge: null };
+  });
+  revealBox(created); closeDrawers();
+  return created;
+}
+function addTextAt(p) {
+  mutate(() => { const n = { id: uid("n"), kind: "text", type: "text", title: "Add your text", x: p.x, y: p.y - 16, w: 260, h: 40, fontSize: 22, bold: true, align: "start", color: "", groupId: null }; snapNode(n); doc.nodes.push(n); assignGroup(n); sel = { nodes: new Set([n.id]), groups: new Set(), edge: null }; });
+  setTool("select"); focusPanelField("title");
+}
+function connect(a, b) {
+  if (a === b) return;
+  if (doc.edges.some(e => e.sourceId === a && e.targetId === b)) { toast("These steps are already connected"); return; }
+  mutate(() => { const e = { id: uid("e"), sourceId: a, targetId: b, label: "", type: "default" }; doc.edges.push(e); sel = { nodes: new Set(), groups: new Set(), edge: e.id }; });
+}
+function createGroup() {
+  const nodes = [...sel.nodes].map(nodeById).filter(n => n && !isHidden(n));
+  mutate(() => {
+    const g = { id: uid("g"), title: "New Group", desc: "", color: GROUP_COLORS[doc.groups.length % GROUP_COLORS.length], collapsed: false, x: 0, y: 0, w: 560, h: 260 };
+    if (nodes.length) { fitGroupTo(g, nodes); nodes.forEach(n => n.groupId = g.id); }
+    else { const vr = viewRect(); g.x = Math.round((vr.x + vr.w / 2 - 280) / GRID) * GRID; g.y = Math.round((vr.y + vr.h / 2 - 130) / GRID) * GRID; }
+    doc.groups.push(g); sel = { nodes: new Set(), groups: new Set([g.id]), edge: null };
+  });
+  focusPanelField("title");
+}
+function besideContent() { const cb = contentBounds(); if (!cb) { const vr = viewRect(); return { x: vr.x + 80, y: vr.y + 120 }; } return doc.settings.direction === "v" ? { x: cb.x, y: cb.y + cb.h + 100 } : { x: cb.x + cb.w + 100, y: cb.y }; }
+function addGroupPreset(p, at) {
+  const from = singleStep(); let built;
+  mutate(() => {
+    const origin = at ? { x: at.x, y: at.y } : besideContent();
+    built = layoutDef({ steps: p.steps, flow: p.flow, groups: [[p.title, p.color, p.steps.map((_, i) => i), p.desc]] }, origin, doc.settings.direction);
+    built.nodes.forEach(snapNode); fitGroupTo(built.groups[0], built.nodes);
+    doc.nodes.push(...built.nodes); doc.edges.push(...built.edges); doc.groups.push(...built.groups);
+    if (from) doc.edges.push({ id: uid("e"), sourceId: from.id, targetId: built.nodes[0].id, label: "", type: "default" });
+    sel = { nodes: new Set(), groups: new Set([built.groups[0].id]), edge: null };
+  });
+  revealBox(groupBox(built.groups[0])); closeDrawers();
+  toast(`Added “${p.title}” group${from ? " and connected it" : ""}`);
+}
+function loadDef(def, mode) {
+  mutate(() => {
+    const dir = doc.settings.direction;
+    const origin = mode === "add" ? besideContent() : { x: 0, y: 0 };
+    const b = layoutDef(def, origin, dir);
+    if (mode === "add") { doc.nodes.push(...b.nodes); doc.edges.push(...b.edges); doc.groups.push(...b.groups); }
+    else { doc.nodes = b.nodes; doc.edges = b.edges; doc.groups = b.groups; doc.settings.title = def.title || def.name; }
+    clearSel();
+  });
+  requestAnimationFrame(() => fitView()); closeDrawers();
+  toast(mode === "add" ? `Added ${def.name} to the canvas` : `Loaded ${def.title || def.name}`);
+}
+function chooseFunnel(def) {
+  closeModal();
+  if (!doc.nodes.length && !doc.groups.length) { loadDef(def, "replace"); return; }
+  openModal({ title: `Use “${def.title || def.name}”?`, sub: "Your canvas already has a funnel on it.",
+    body: `<p class="note">Replace it with this funnel, or add this one next to what you already have. You can undo either choice.</p>`,
+    foot: [{ label: "Cancel", cls: "outline", fn: closeModal }, { label: "Add to canvas", cls: "outline", fn: () => { closeModal(); loadDef(def, "add"); } }, { label: "Replace current map", cls: "primary", fn: () => { closeModal(); loadDef(def, "replace"); } }] });
+}
+function deleteSelection() {
+  const nodeIds = new Set(sel.nodes), groupIds = new Set(sel.groups);
+  if (!nodeIds.size && !groupIds.size && !sel.edge) return;
+  const n = nodeIds.size, g = groupIds.size;
+  mutate(() => {
+    groupIds.forEach(gid => membersOf(gid).forEach(m => nodeIds.add(m.id)));
+    doc.nodes = doc.nodes.filter(x => !nodeIds.has(x.id));
+    doc.groups = doc.groups.filter(x => !groupIds.has(x.id));
+    doc.edges = doc.edges.filter(e => !nodeIds.has(e.sourceId) && !nodeIds.has(e.targetId) && e.id !== sel.edge);
+    clearSel();
+  });
+  toast(g ? "Group deleted" : n ? `Deleted ${n} step${n > 1 ? "s" : ""}` : "Connection deleted", { action: "Undo", fn: undo });
+}
+function collectSel() {
+  const ids = new Set(sel.nodes); sel.groups.forEach(gid => membersOf(gid).forEach(m => ids.add(m.id)));
+  const nodes = doc.nodes.filter(n => ids.has(n.id)), groups = doc.groups.filter(g => sel.groups.has(g.id));
+  const edges = doc.edges.filter(e => ids.has(e.sourceId) && ids.has(e.targetId));
+  return JSON.parse(JSON.stringify({ nodes, groups, edges }));
+}
+function insertClip(clip, off) {
+  const map = {};
+  mutate(() => {
+    const gs = clip.groups.map(g => { const ng = { ...g, id: uid("g"), x: g.x + off, y: g.y + off }; map[g.id] = ng.id; return ng; });
+    const ns = clip.nodes.map(n => { const nn = { ...n, id: uid("n"), x: n.x + off, y: n.y + off }; map[n.id] = nn.id; nn.groupId = map[n.groupId] || null; return nn; });
+    doc.groups.push(...gs); doc.nodes.push(...ns);
+    ns.forEach(n => { if (!n.groupId) assignGroup(n, new Set(gs.map(g => g.id))); });
+    doc.edges.push(...clip.edges.map(e => ({ ...e, id: uid("e"), sourceId: map[e.sourceId], targetId: map[e.targetId] })));
+    sel = { nodes: new Set(ns.filter(n => !gs.some(g => g.id === n.groupId)).map(n => n.id)), groups: new Set(gs.map(g => g.id)), edge: null };
+  });
+}
+function copySel() { if (!sel.nodes.size && !sel.groups.size) return; clipboard = collectSel(); pasteCount = 0; toast("Copied"); }
+function paste() { if (!clipboard) return; pasteCount++; insertClip(clipboard, 40 * pasteCount); }
+function duplicate() { if (!sel.nodes.size && !sel.groups.size) return; insertClip(collectSel(), 40); }
+function align(kind) {
+  const ns = [...sel.nodes].map(nodeById).filter(Boolean); if (ns.length < 2) { toast("Select two or more steps to align"); return; }
+  mutate(() => {
+    const x1 = Math.min(...ns.map(n => n.x)), x2 = Math.max(...ns.map(n => n.x + n.w)), y1 = Math.min(...ns.map(n => n.y)), y2 = Math.max(...ns.map(n => n.y + n.h));
+    if (kind === "alignLeft") ns.forEach(n => n.x = x1);
+    if (kind === "alignCenter") ns.forEach(n => n.x = (x1 + x2) / 2 - n.w / 2);
+    if (kind === "alignRight") ns.forEach(n => n.x = x2 - n.w);
+    if (kind === "alignTop") ns.forEach(n => n.y = y1);
+    if (kind === "alignMiddle") ns.forEach(n => n.y = (y1 + y2) / 2 - n.h / 2);
+    if (kind === "alignBottom") ns.forEach(n => n.y = y2 - n.h);
+    if (kind === "distH" || kind === "distV") {
+      const H = kind === "distH", s = [...ns].sort((a, b) => H ? a.x - b.x : a.y - b.y);
+      const span = H ? x2 - x1 : y2 - y1, sum = s.reduce((t, n) => t + (H ? n.w : n.h), 0), gap = (span - sum) / (s.length - 1);
+      let cur = H ? x1 : y1; s.forEach(n => { if (H) n.x = cur; else n.y = cur; cur += (H ? n.w : n.h) + gap; });
+    }
+    ns.forEach(n => { const g = n.groupId && groupById(n.groupId); if (g) growGroupTo(g, n); });
+  }, { panel: false });
+}
+function setDirection(d) {
+  if (doc.settings.direction === d) return;
+  mutate(() => {
+    const ns = doc.nodes; if (ns.length) {
+      const toV = d === "v", fx = toV ? LAY.v.row / LAY.h.row : LAY.h.col / LAY.v.col, fy = toV ? LAY.v.col / LAY.h.col : LAY.h.row / LAY.v.row;
+      const ox = Math.min(...ns.map(n => n.x + n.w / 2)), oy = Math.min(...ns.map(n => n.y + n.h / 2));
+      const tf = (cx, cy) => ({ x: ox + (cy - oy) * fx, y: oy + (cx - ox) * fy });
+      ns.forEach(n => { const p = tf(n.x + n.w / 2, n.y + n.h / 2); n.x = Math.round(p.x - n.w / 2); n.y = Math.round(p.y - n.h / 2); });
+      doc.groups.forEach(g => { const m = membersOf(g.id); if (m.length) fitGroupTo(g, m); else { const p = tf(g.x + g.w / 2, g.y + g.h / 2); g.x = p.x - g.w / 2; g.y = p.y - g.h / 2; } });
+    }
+    doc.settings.direction = d;
+  });
+  requestAnimationFrame(() => fitView());
+}
+function setTool(t) { tool = t; pendingSource = null; renderAll(); }
+function nudge(dx, dy) {
+  if (!sel.nodes.size && !sel.groups.size) return;
+  mutate(() => { const ids = new Set(sel.nodes); sel.groups.forEach(gid => { const g = groupById(gid); g.x += dx; g.y += dy; membersOf(gid).forEach(m => ids.add(m.id)); }); ids.forEach(id => { const n = nodeById(id); n.x += dx; n.y += dy; }); }, { panel: false });
+}
+const ACTIONS = {
+  alignLeft: () => align("alignLeft"), alignCenter: () => align("alignCenter"), alignRight: () => align("alignRight"),
+  alignTop: () => align("alignTop"), alignMiddle: () => align("alignMiddle"), alignBottom: () => align("alignBottom"),
+  distH: () => align("distH"), distV: () => align("distV"), group: createGroup, duplicate, delete: deleteSelection,
+  openPanel: () => openPanel(),
+};
+
+/* =====================================================================
+   POINTER INTERACTION
+   ===================================================================== */
+const pointers = new Map(); let pinch = null;
+function screenPt(e) { const r = wrapEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+const toWorld = sp => ({ x: (sp.x - view.x) / view.k, y: (sp.y - view.y) / view.k });
+function nodeAt(p, exclude) { for (let i = doc.nodes.length - 1; i >= 0; i--) { const n = doc.nodes[i]; if (n.id === exclude || isHidden(n) || n.kind !== "step") continue; if (p.x >= n.x && p.x <= n.x + n.w && p.y >= n.y && p.y <= n.y + n.h) return n; } return null; }
+function beginDrag(d, e) {
+  drag = { ...d, pre: snapshot(), moved: false, cx: e.clientX, cy: e.clientY };
+  window.addEventListener("pointermove", onDragMove); window.addEventListener("pointerup", onDragEnd); window.addEventListener("pointercancel", onDragEnd);
+}
+stage.addEventListener("pointerdown", e => {
+  if (e.pointerType === "touch") {
+    pointers.set(e.pointerId, screenPt(e));
+    if (pointers.size === 2) { if (drag) { if (drag.type === "move" && drag.moved) restore(drag.pre); endDragListeners(); drag = null; renderAll(); } const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, v: { ...view } }; return; }
+  }
+  if (e.button === 2) return;
+  const sp = screenPt(e), wp = toWorld(sp);
+  const hEl = e.target.closest("[data-h]"), rEl = e.target.closest("[data-ref]");
+  if (e.button === 1 || spaceDown || tool === "hand") { e.preventDefault(); beginDrag({ type: "pan", vx: view.x, vy: view.y }, e); return; }
+  if (hEl) {
+    const h = hEl.dataset.h, id = hEl.dataset.id;
+    if (h === "collapse") { mutate(() => { const g = groupById(id); g.collapsed = !g.collapsed; }); return; }
+    if (h === "port") { const n = nodeById(id); beginDrag({ type: "connect", from: id, p: portPt(n, hEl.dataset.side), cur: wp, target: null }, e); return; }
+    if (h === "resize-n") { const n = nodeById(id); beginDrag({ type: "resize", obj: n, text: n.kind === "text", w0: n.w, h0: n.h, start: wp }, e); return; }
+    if (h === "resize-g") { const g = groupById(id); beginDrag({ type: "resize", obj: g, group: true, w0: g.w, h0: g.h, start: wp }, e); return; }
+  }
+  const [kind, id] = rEl ? rEl.dataset.ref.split(":") : [null, null];
+  if (tool === "text" && kind !== "n") { addTextAt(wp); return; }
+  if (tool === "connect") {
+    if (kind === "n" && nodeById(id).kind === "step") {
+      if (pendingSource && pendingSource !== id) { const s = pendingSource; pendingSource = null; connect(s, id); return; }
+      const n = nodeById(id); beginDrag({ type: "connect", from: id, p: { x: n.x + n.w / 2, y: n.y + n.h / 2 }, cur: wp, target: null, fromTool: true }, e); return;
+    }
+    pendingSource = null; renderAll(); beginDrag({ type: "pan", vx: view.x, vy: view.y }, e); return;
+  }
+  const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+  if (kind === "e") { selectOnly({ edge: id }); return; }
+  if (kind === "n") {
+    if (additive) { if (sel.nodes.has(id)) { sel.nodes.delete(id); renderAll(true); return; } sel.nodes.add(id); sel.edge = null; renderAll(true); }
+    else if (!sel.nodes.has(id)) selectOnly({ nodes: [id] });
+    startMove(e, wp, nodeById(id), additive); return;
+  }
+  if (kind === "g") {
+    const part = e.target.closest("[data-part]")?.dataset.part;
+    if (part === "head") {
+      if (additive) { if (sel.groups.has(id)) { sel.groups.delete(id); renderAll(true); return; } sel.groups.add(id); sel.edge = null; renderAll(true); }
+      else if (!sel.groups.has(id)) selectOnly({ groups: [id] });
+      startMove(e, wp, groupById(id), additive); return;
+    }
+    startMarquee(e, wp, id, additive); return;
+  }
+  if (e.pointerType === "touch") { beginDrag({ type: "pan", vx: view.x, vy: view.y, clearOnTap: true }, e); return; }
+  startMarquee(e, wp, null, additive);
+});
+function startMove(e, wp, ref, additive) {
+  const ids = new Set(sel.nodes), gs = [...sel.groups].map(groupById).filter(Boolean);
+  gs.forEach(g => membersOf(g.id).forEach(m => ids.add(m.id)));
+  const movingGroups = new Set(gs.map(g => g.id));
+  beginDrag({ type: "move", start: wp, ref, rx: ref.x, ry: ref.y, clickedId: ref.id, additive,
+    nodes: [...ids].map(nodeById).filter(Boolean).map(n => ({ n, x: n.x, y: n.y })),
+    groups: gs.map(g => ({ g, x: g.x, y: g.y })), movingGroups,
+    direct: [...sel.nodes].filter(id => { const n = nodeById(id); return n && !movingGroups.has(n.groupId); }) }, e);
+}
+function startMarquee(e, wp, groupClick, additive) {
+  beginDrag({ type: "marquee", a: wp, b: wp, groupClick, additive, base: { nodes: new Set(additive ? sel.nodes : []), groups: new Set(additive ? sel.groups : []) } }, e);
+}
+function onDragMove(e) {
+  if (pinch) return;
+  const d = drag; if (!d) return;
+  if (!d.moved && Math.hypot(e.clientX - d.cx, e.clientY - d.cy) < 4) return;
+  d.moved = true;
+  const sp = screenPt(e), wp = toWorld(sp);
+  if (d.type === "pan") { view.x = d.vx + (e.clientX - d.cx); view.y = d.vy + (e.clientY - d.cy); stage.classList.add("panning"); applyView(); return; }
+  if (d.type === "move") {
+    let dx = wp.x - d.start.x, dy = wp.y - d.start.y;
+    if (doc.settings.snap) { dx = Math.round((d.rx + dx) / GRID) * GRID - d.rx; dy = Math.round((d.ry + dy) / GRID) * GRID - d.ry; }
+    d.nodes.forEach(o => { o.n.x = o.x + dx; o.n.y = o.y + dy; }); d.groups.forEach(o => { o.g.x = o.x + dx; o.g.y = o.y + dy; });
+    if (d.direct.length === 1 && !d.groups.length) { const n = nodeById(d.direct[0]); const g = groupAt({ x: n.x + n.w / 2, y: n.y + n.h / 2 }); d.hoverGroup = g && g.id !== n.groupId ? g.id : null; }
+    renderAll(); return;
+  }
+  if (d.type === "connect") { d.cur = wp; const t = nodeAt(wp, d.from); d.target = t ? t.id : null; renderOverlay(); return; }
+  if (d.type === "resize") {
+    const o = d.obj, snap = v => doc.settings.snap ? Math.round(v / 10) * 10 : Math.round(v);
+    if (d.group) { o.w = Math.max(220, snap(d.w0 + wp.x - d.start.x)); o.h = Math.max(110, snap(d.h0 + wp.y - d.start.y)); }
+    else { o.w = clamp(snap(d.w0 + wp.x - d.start.x), d.text ? 60 : 160, 520); if (!d.text) o.h = clamp(snap(d.h0 + wp.y - d.start.y), 56, 260); }
+    renderAll(); return;
+  }
+  if (d.type === "marquee") {
+    d.b = wp; const m = normRect(d.a, d.b);
+    sel.nodes = new Set(d.base.nodes); sel.groups = new Set(d.base.groups); sel.edge = null;
+    doc.nodes.forEach(n => { if (!isHidden(n) && hits(m, n)) sel.nodes.add(n.id); });
+    doc.groups.forEach(g => { const b = groupBox(g); if (b.x >= m.x && b.y >= m.y && b.x + b.w <= m.x + m.w && b.y + b.h <= m.y + m.h) { sel.groups.add(g.id); membersOf(g.id).forEach(x => sel.nodes.delete(x.id)); } });
+    renderOverlay(); renderSelbar();
+  }
+}
+function endDragListeners() { window.removeEventListener("pointermove", onDragMove); window.removeEventListener("pointerup", onDragEnd); window.removeEventListener("pointercancel", onDragEnd); stage.classList.remove("panning"); }
+function onDragEnd(e) {
+  const d = drag; endDragListeners(); drag = null; if (!d) return;
+  if (d.type === "pan") { if (!d.moved && d.clearOnTap) { clearSel(); renderAll(true); } return; }
+  if (d.type === "move") {
+    if (d.moved) {
+      d.direct.forEach(id => { const n = nodeById(id); const g = groupAt({ x: n.x + n.w / 2, y: n.y + n.h / 2 }, d.movingGroups); n.groupId = g ? g.id : null; if (g) growGroupTo(g, n); });
+      pushHistory(d.pre); renderAll(true);
+    } else if (!d.additive && sel.nodes.size + sel.groups.size > 1) {
+      selectOnly(d.ref.kind ? { nodes: [d.ref.id] } : { groups: [d.ref.id] });
+    } else renderAll();
+    return;
+  }
+  if (d.type === "connect") {
+    if (d.target) { connect(d.from, d.target); return; }
+    if (d.moved) { const at = d.cur, from = d.from; pickStep(key => { const n = addStep(key, { x: at.x, y: at.y }); if (n) { mutate(() => doc.edges.push({ id: uid("e"), sourceId: from, targetId: n.id, label: "", type: "default" })); } }, "Add a connected step"); renderAll(); return; }
+    if (d.fromTool) { pendingSource = d.from; renderAll(); }
+    return;
+  }
+  if (d.type === "resize") { pushHistory(d.pre); renderAll(true); return; }
+  if (d.type === "marquee") {
+    if (!d.moved) { if (d.groupClick) selectOnly({ groups: [d.groupClick] }); else if (!d.additive) { clearSel(); renderAll(true); } return; }
+    renderAll(true);
+  }
+}
+window.addEventListener("pointermove", e => {
+  if (e.pointerType === "touch" && pointers.has(e.pointerId)) {
+    pointers.set(e.pointerId, screenPt(e));
+    if (pinch && pointers.size >= 2) { const [a, b] = [...pointers.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y), m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; const k = clamp(pinch.v.k * dd / pinch.d, .15, 2.5); const wx = (pinch.m.x - pinch.v.x) / pinch.v.k, wy = (pinch.m.y - pinch.v.y) / pinch.v.k; view = { k, x: m.x - wx * k, y: m.y - wy * k }; applyView(); }
+  }
+});
+const endTouch = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; };
+window.addEventListener("pointerup", endTouch); window.addEventListener("pointercancel", endTouch);
+stage.addEventListener("pointermove", e => {
+  if (drag || e.pointerType === "touch") return;
+  const wp = toWorld(screenPt(e)); let hv = null;
+  for (let i = doc.nodes.length - 1; i >= 0; i--) { const n = doc.nodes[i]; if (n.kind !== "step" || isHidden(n)) continue; const m = 16 / view.k; if (wp.x >= n.x - m && wp.x <= n.x + n.w + m && wp.y >= n.y - m && wp.y <= n.y + n.h + m) { hv = n.id; break; } }
+  if (hv !== hoverId) { hoverId = hv; renderOverlay(); }
+});
+stage.addEventListener("pointerleave", () => { if (hoverId && !drag) { hoverId = null; renderOverlay(); } });
+stage.addEventListener("dblclick", e => {
+  const rEl = e.target.closest("[data-ref]"); const [kind, id] = rEl ? rEl.dataset.ref.split(":") : [null, null];
+  if (kind === "n") { selectOnly({ nodes: [id] }); focusPanelField("title"); return; }
+  if (kind === "g" && e.target.closest("[data-part]")?.dataset.part === "head") { selectOnly({ groups: [id] }); focusPanelField("title"); return; }
+  if (!kind && tool === "select") { const wp = toWorld(screenPt(e)); pickStep(key => addStep(key, { x: wp.x, y: wp.y }), "Add a step here"); }
+});
+wrapEl.addEventListener("wheel", e => {
+  e.preventDefault();
+  const sp = screenPt(e);
+  const mouseWheel = e.deltaMode === 1 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
+  if (e.ctrlKey || e.metaKey || mouseWheel) zoomAt(Math.exp(-e.deltaY * (e.ctrlKey && !mouseWheel ? .01 : .0018) * (e.deltaMode === 1 ? 16 : 1)), sp.x, sp.y);
+  else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
+}, { passive: false });
+stage.addEventListener("contextmenu", e => e.preventDefault());
+
+/* ---------- drag & drop from the library ---------- */
+wrapEl.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("text/x-ffmb")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; stage.classList.add("drop-target"); } });
+wrapEl.addEventListener("dragleave", e => { if (e.target === stage || !wrapEl.contains(e.relatedTarget)) stage.classList.remove("drop-target"); });
+wrapEl.addEventListener("drop", e => {
+  stage.classList.remove("drop-target");
+  const data = e.dataTransfer.getData("text/x-ffmb"); if (!data) return; e.preventDefault();
+  const [kind, key] = data.split(":"), wp = toWorld(screenPt(e));
+  if (kind === "step") addStep(key, { x: wp.x, y: wp.y });
+  else if (kind === "group") { const p = GROUP_PRESETS.find(g => g.id === key); if (p) addGroupPreset(p, { x: wp.x - 20, y: wp.y - 28 }); }
+  else if (kind === "funnel") { const def = [...TEMPLATES, ...FUNNEL_TYPES].find(f => f.id === key); if (def) chooseFunnel(def); }
+});
+
+/* ---------- keyboard ---------- */
+const isTyping = t => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+document.addEventListener("keydown", e => {
+  if (!$("#modalBack").hidden) { if (e.key === "Escape") closeModal(); return; }
+  if (isTyping(e.target)) { if (e.key === "Escape") e.target.blur(); return; }
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (mod && k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && k === "y") { e.preventDefault(); redo(); return; }
+  if (mod && k === "c") { copySel(); return; }
+  if (mod && k === "v") { e.preventDefault(); paste(); return; }
+  if (mod && k === "d") { e.preventDefault(); duplicate(); return; }
+  if (mod && k === "a") { e.preventDefault(); selectAll(); return; }
+  if (mod && k === "s") { e.preventDefault(); saveMap(); return; }
+  if (mod && (k === "=" || k === "+")) { e.preventDefault(); zoomBy(1.2); return; }
+  if (mod && k === "-") { e.preventDefault(); zoomBy(1 / 1.2); return; }
+  if (mod) return;
+  if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); return; }
+  if (e.key === "Escape") { if (pendingSource) { pendingSource = null; renderAll(); return; } if (tool !== "select") { setTool("select"); return; } clearSel(); renderAll(true); return; }
+  if (e.key === " ") { if (!spaceDown) { spaceDown = true; stage.classList.add("panning"); } e.preventDefault(); return; }
+  if (e.key.startsWith("Arrow")) { e.preventDefault(); const s = e.shiftKey ? GRID : 2; nudge(e.key === "ArrowLeft" ? -s : e.key === "ArrowRight" ? s : 0, e.key === "ArrowUp" ? -s : e.key === "ArrowDown" ? s : 0); return; }
+  if (e.key === "!" || (e.shiftKey && e.code === "Digit1")) { fitView(); return; }
+  const keyActs = { v: () => setTool("select"), h: () => setTool("hand"), c: () => setTool("connect"), t: () => setTool("text"), g: createGroup, "=": () => zoomBy(1.2), "+": () => zoomBy(1.2), "-": () => zoomBy(1 / 1.2), "0": () => { view.k = 1; fitCenter(); } };
+  if (keyActs[k]) { e.preventDefault(); keyActs[k](); }
+});
+document.addEventListener("keyup", e => { if (e.key === " ") { spaceDown = false; stage.classList.remove("panning"); } });
+function fitCenter() { const cb = contentBounds(); if (!cb) return fitView(); const k = view.k; view.x = wrapEl.clientWidth / 2 - (cb.x + cb.w / 2) * k; view.y = wrapEl.clientHeight / 2 - (cb.y + cb.h / 2) * k; applyView(); renderOverlay(); }
+
+/* =====================================================================
+   SIDEBAR
+   ===================================================================== */
+function funnelCard(f, tpl) {
+  const n = f.steps.length, first = parseStep(f.steps[0]).title, last = parseStep(f.steps[n - 1]).title;
+  return `<button class="fcard ${tpl ? "tpl" : ""}" draggable="true" data-add="funnel" data-key="${f.id}"><span class="fic">${iconSVG(f.icon)}</span><span><b>${esc(f.name)}${tpl ? "" : ""}</b><small>${esc(f.blurb)}</small><small>${n} steps · ${f.groups.length} groups · ${esc(first)} → ${esc(last)}</small></span></button>`;
+}
+function libItem(s, custom) {
+  const c = (CATS[s.cat] || CATS.other).color;
+  return `<div class="lib-item" draggable="true" tabindex="0" role="button" data-add="step" data-key="${esc(s.key)}" title="Click to add · drag onto the canvas"><span class="lib-ic" style="--c:${c}">${iconSVG(s.icon)}</span><span class="lib-text"><b>${esc(s.title)}</b><small>${esc((CATS[s.cat] || CATS.other).name)}${custom ? " · custom" : ""}</small></span>${custom ? `<button class="lib-del" data-del="${esc(s.key)}" aria-label="Remove ${esc(s.title)} from library">${iconSVG("x", "i i-sm")}</button>` : ""}<span class="grip">${iconSVG("grip", "i i-sm")}</span></div>`;
+}
+function renderSidebar() {
+  const q = $("#libSearch").value.trim().toLowerCase(), body = $("#sideBody"), m = s => !q || s.toLowerCase().includes(q);
+  $$(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === sideTab));
+  $("#libSearch").placeholder = { funnels: "Search funnels…", steps: "Search 90+ steps…", groups: "Search groups…" }[sideTab];
+  let h = "";
+  if (sideTab === "funnels") {
+    const T = TEMPLATES.filter(f => m(f.name + " " + f.blurb)), F = FUNNEL_TYPES.filter(f => m(f.name + " " + f.blurb));
+    if (T.length) h += `<div class="sec-title">Templates <span>Detailed, with branches</span></div>` + T.map(f => funnelCard(f, true)).join("");
+    if (F.length) h += `<div class="sec-title">Funnel types <span>${F.length}</span></div><p class="hint-line">Click to load a starting map, or drag onto the canvas.</p>` + F.map(f => funnelCard(f, false)).join("");
+    if (!T.length && !F.length) h = `<div class="empty-lib">No funnels match “${esc(q)}”.</div>`;
+  } else if (sideTab === "steps") {
+    h += `<button class="addcustom" data-add="custom">${iconSVG("plus")}Add Custom Step</button><p class="hint-line">Click a step to add it after the selected step, or drag it anywhere.</p>`;
+    const cs = customSteps.filter(s => m(s.title + " " + CATS[s.cat]?.name));
+    if (cs.length) h += `<details class="cat" open style="--c:${doc.settings.primary}"><summary><span class="chev">${iconSVG("chevronRight", "i i-sm")}</span><span class="dot"></span>My steps<span class="cnt">${cs.length}</span></summary>${cs.map(s => libItem(s, true)).join("")}</details>`;
+    let any = cs.length;
+    for (const [ck, c] of Object.entries(CATS)) {
+      const list = STEPS.filter(s => s.cat === ck && m(s.title + " " + c.name)); if (!list.length) continue; any++;
+      h += `<details class="cat" ${q || ["traffic", "pages", "sales"].includes(ck) ? "open" : ""} style="--c:${c.color}"><summary><span class="chev">${iconSVG("chevronRight", "i i-sm")}</span><span class="dot"></span>${c.name}<span class="cnt">${list.length}</span></summary>${list.map(s => libItem(s)).join("")}</details>`;
+    }
+    if (!any) h += `<div class="empty-lib">No steps match “${esc(q)}”. Try a custom step instead.</div>`;
+  } else {
+    h += `<button class="addcustom" data-add="newgroup">${iconSVG("plus")}New Empty Group</button><p class="hint-line">Groups keep related steps together and move as one. Select steps and press <b>G</b> to group them.</p><div class="sec-title">Pre-built groups</div>`;
+    const G = GROUP_PRESETS.filter(g => m(g.title + " " + g.desc));
+    h += G.map(g => `<button class="gcard" draggable="true" data-add="group" data-key="${g.id}" style="--c:${GC[g.color]}"><b>${esc(g.title)}</b><small>${g.steps.map(s => esc(parseStep(s).title)).join(" · ")}</small></button>`).join("");
+    if (!G.length) h += `<div class="empty-lib">No groups match “${esc(q)}”.</div>`;
+  }
+  body.innerHTML = h;
+}
+$(".tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; sideTab = b.dataset.tab; $("#libSearch").value = ""; renderSidebar(); });
+$("#libSearch").addEventListener("input", renderSidebar);
+function libActivate(el) {
+  const kind = el.dataset.add, key = el.dataset.key;
+  if (kind === "step") { const after = singleStep(); addStep(key, after ? { after: after.id } : {}); }
+  else if (kind === "funnel") chooseFunnel([...TEMPLATES, ...FUNNEL_TYPES].find(f => f.id === key));
+  else if (kind === "group") addGroupPreset(GROUP_PRESETS.find(g => g.id === key));
+  else if (kind === "newgroup") { clearSel(); createGroup(); closeDrawers(); }
+  else if (kind === "custom") customStepModal();
+}
+$("#sideBody").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]");
+  if (del) { e.stopPropagation(); customSteps = customSteps.filter(s => s.key !== del.dataset.del); lsSet(LS.custom, customSteps); renderSidebar(); toast("Removed from your library"); return; }
+  const el = e.target.closest("[data-add]"); if (el) libActivate(el);
+});
+$("#sideBody").addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches(".lib-item")) { e.preventDefault(); libActivate(e.target); } });
+$("#sideBody").addEventListener("dragstart", e => { const el = e.target.closest("[data-add]"); if (!el) return; e.dataTransfer.setData("text/x-ffmb", `${el.dataset.add}:${el.dataset.key}`); e.dataTransfer.effectAllowed = "copy"; });
+
+/* =====================================================================
+   RIGHT PANEL
+   ===================================================================== */
+let panelKind = "map", panelId = null;
+const seg = (act, cur, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-act="${act}" data-val="${v}" class="${String(cur) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
+const head = (icon, title, sub, color) => `<div class="panel-head"><div class="hic" ${color ? `style="background:${rgba(color, .12)};color:${color}"` : ""}>${iconSVG(icon)}</div><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div><button class="btn icon x only-md" data-act="closePanel" aria-label="Close panel">${iconSVG("x")}</button></div>`;
+const rangeF = (t, f, label, v, min, max, step = 1) => `<div class="field"><span class="flabel">${label}</span><div class="range"><input type="range" data-t="${t}" data-f="${f}" min="${min}" max="${max}" step="${step}" value="${v}" aria-label="${label}"><input class="inp num" type="number" data-t="${t}" data-f="${f}" min="${min}" max="${max}" step="${step}" value="${v}" aria-label="${label} value"></div></div>`;
+const PRESET_COLORS = ["#5B5CF0", "#2F7BEA", "#8B5CF6", "#16A34A", "#0891B2", "#DB2777", "#EA580C", "#1C2038"];
+function renderPanel() {
+  const P = $("#panelBody"); let h = "";
+  const nsel = sel.nodes.size + sel.groups.size;
+  if (sel.edge && edgeById(sel.edge)) { panelKind = "e"; panelId = sel.edge; h = panelEdge(edgeById(sel.edge)); }
+  else if (nsel > 1) { panelKind = "multi"; panelId = null; h = panelMulti(); }
+  else if (sel.nodes.size === 1) { const n = nodeById([...sel.nodes][0]); panelKind = "n"; panelId = n.id; h = n.kind === "text" ? panelText(n) : panelStep(n); }
+  else if (sel.groups.size === 1) { const g = groupById([...sel.groups][0]); panelKind = "g"; panelId = g.id; h = panelGroup(g); }
+  else { panelKind = "map"; panelId = null; h = panelMap(); }
+  P.innerHTML = h;
+}
+function panelMap() {
+  const S = doc.settings, steps = doc.nodes.filter(n => n.kind === "step").length;
+  const bgPrev = { white: "#FFFFFF", gray: "#F1F2F7", grid: "linear-gradient(#E7E9F4 1px,transparent 1px) 0 0/7px 7px,linear-gradient(90deg,#E7E9F4 1px,transparent 1px) 0 0/7px 7px,#F8F9FD", dots: "radial-gradient(#C3C8E0 1px,transparent 1.4px) 0 0/7px 7px,#F8F9FD", dark: "#131528" };
+  const colorRow = (f, cur) => `<div class="colorrow"><div class="swatches">${PRESET_COLORS.slice(0, 6).map(c => `<button class="sw ${cur.toLowerCase() === c.toLowerCase() ? "on" : ""}" style="--c:${c}" data-act="setColor" data-f="${f}" data-val="${c}" aria-label="Use ${c}"></button>`).join("")}</div><input type="color" data-t="s" data-f="${f}" value="${cur}" aria-label="Custom ${f} color"></div>`;
+  return head("sliders", "Map settings", "Select a step to edit it") + `
+  <div class="psec"><h4>Funnel</h4>
+    <div class="field"><label for="pTitle">Funnel name</label><input id="pTitle" class="inp" data-t="s" data-f="title" value="${esc(S.title)}" maxlength="80"></div>
+    <label class="toggle">Show funnel title on export <input type="checkbox" data-t="s" data-f="showTitle" ${S.showTitle ? "checked" : ""}></label>
+    <div class="stats"><div class="stat"><small>Steps</small><b>${steps}</b></div><div class="stat"><small>Links</small><b>${doc.edges.length}</b></div><div class="stat"><small>Groups</small><b>${doc.groups.length}</b></div></div>
+  </div>
+  <div class="psec"><h4>Layout</h4>
+    <div class="field"><span class="flabel">Flow direction</span>${seg("direction", S.direction, [["h", iconSVG("arrowsH", "i i-sm") + "Horizontal"], ["v", iconSVG("arrowsV", "i i-sm") + "Vertical"]])}</div>
+    <label class="toggle">Snap to grid <input type="checkbox" data-t="s" data-f="snap" ${S.snap ? "checked" : ""}></label>
+  </div>
+  <div class="psec"><h4>Canvas background</h4>
+    <div class="bgopts">${Object.entries(BG).map(([k, b]) => `<button class="bgopt ${S.bg === k ? "on" : ""}" data-act="bg" data-val="${k}"><i style="background:${bgPrev[k]}"></i>${b.name}</button>`).join("")}</div>
+  </div>
+  <div class="psec"><h4>Map style</h4>
+    <div class="field"><span class="flabel">Primary color <span>Connectors</span></span>${colorRow("primary", S.primary)}</div>
+    <div class="field"><span class="flabel">Accent color <span>Conditional paths</span></span>${colorRow("accent", S.accent)}</div>
+    <div class="field"><span class="flabel">Icon colors</span>${seg("iconMode", S.iconMode, [["category", "By category"], ["accent", "Accent color"]])}</div>
+    <div class="field"><span class="flabel">Card style</span>${seg("cardStyle", S.cardStyle, [["elevated", "Elevated"], ["outline", "Outline"], ["tinted", "Tinted"]])}</div>
+    <div class="field"><span class="flabel">Connector style</span>${seg("connector", S.connector, [["curved", "Curved"], ["orthogonal", "Elbow"], ["straight", "Straight"]])}</div>
+    <div class="field"><span class="flabel">Font size</span>${seg("fontScale", S.fontScale, [[0.9, "Small"], [1, "Medium"], [1.12, "Large"]])}</div>
+  </div>
+  <div class="psec"><h4>Shortcuts</h4><div class="keys"><kbd>Double-click</kbd><span>Empty canvas adds a step</span><kbd>Drag a dot</kbd><span>Connect two steps</span><kbd>Shift + click</kbd><span>Select several</span><kbd>Space + drag</kbd><span>Pan the canvas</span><kbd>Ctrl/⌘ Z</kbd><span>Undo · add Shift to redo</span><kbd>Ctrl/⌘ C · V · D</kbd><span>Copy, paste, duplicate</span><kbd>Delete</kbd><span>Remove selection</span><kbd>G</kbd><span>Group selected steps</span></div></div>`;
+}
+function panelStep(n) {
+  const cat = CATS[n.category] || CATS.other, col = doc.settings.iconMode === "accent" ? doc.settings.accent : cat.color;
+  const outs = doc.edges.filter(e => e.sourceId === n.id), ins = doc.edges.filter(e => e.targetId === n.id);
+  const link = (e, other) => `<button data-act="selEdge" data-val="${e.id}">${iconSVG(e.sourceId === n.id ? "arrowRight" : "undo", "i i-sm")}<span>${e.sourceId === n.id ? "To" : "From"}: ${esc(nodeById(other)?.title || "Step")}${e.label ? ` · <em>${esc(e.label)}</em>` : ""}</span></button>`;
+  return head(n.icon, n.title || "Step", `${cat.name} step`, col) + `
+  <div class="psec"><h4>Content</h4>
+    <div class="field"><label for="pTitle">Step name</label><input id="pTitle" class="inp" data-t="n" data-f="title" value="${esc(n.title)}" maxlength="60"></div>
+    <div class="field"><label for="pDesc">Description <span>Optional</span></label><textarea id="pDesc" class="inp" data-t="n" data-f="desc" rows="2" maxlength="120">${esc(n.desc)}</textarea></div>
+    <div class="row2"><div class="field"><label for="pCat">Category</label><select id="pCat" class="inp" data-t="n" data-f="category">${Object.entries(CATS).map(([k, c]) => `<option value="${k}" ${k === n.category ? "selected" : ""}>${c.name}</option>`).join("")}</select></div>
+    <div class="field"><label for="pGroup">Group</label><select id="pGroup" class="inp" data-t="n" data-f="groupId"><option value="">No group</option>${doc.groups.map(g => `<option value="${g.id}" ${g.id === n.groupId ? "selected" : ""}>${esc(g.title)}</option>`).join("")}</select></div></div>
+  </div>
+  <div class="psec"><h4>Icon</h4><div class="icongrid">${STEP_ICONS.map(i => `<button class="${i === n.icon ? "on" : ""}" data-act="icon" data-val="${i}" title="${i}" aria-label="Icon ${i}">${iconSVG(i)}</button>`).join("")}</div></div>
+  <div class="psec"><h4>Size</h4>${rangeF("n", "w", "Width", n.w, 160, 520, 10)}${rangeF("n", "h", "Height", n.h, 56, 260, 2)}</div>
+  <div class="psec"><h4>Details</h4>
+    <div class="field"><label for="pUrl">URL <span>Optional</span></label><input id="pUrl" class="inp" data-t="n" data-f="url" value="${esc(n.url)}" placeholder="https://yoursite.com/page" inputmode="url"></div>
+    <div class="field"><label for="pNotes">Notes <span>Optional · not exported</span></label><textarea id="pNotes" class="inp" data-t="n" data-f="notes" rows="3" placeholder="Copy ideas, tools, KPIs…">${esc(n.notes)}</textarea></div>
+  </div>
+  <div class="psec"><h4>Connections</h4>${outs.length || ins.length ? `<div class="mlist">${outs.map(e => link(e, e.targetId)).join("")}${ins.map(e => link(e, e.sourceId)).join("")}</div>` : `<p class="note">Drag from one of the dots on the card to another step to connect them.</p>`}
+    <button class="btn outline block" data-act="addNext">${iconSVG("plus")}Add next step</button></div>
+  <div class="psec"><div class="btnrow"><button class="btn" data-act="duplicate">${iconSVG("copy")}Duplicate</button><button class="btn danger" data-act="delete">${iconSVG("trash")}Delete</button></div></div>`;
+}
+function panelText(n) {
+  const cols = ["", "#5B5CF0", "#8B5CF6", "#16A34A", "#E11D48", "#D97706", "#FFFFFF"];
+  return head("type", "Text", "Free text label") + `
+  <div class="psec"><div class="field"><label for="pTitle">Text</label><textarea id="pTitle" class="inp" data-t="n" data-f="title" rows="3">${esc(n.title)}</textarea></div>
+  ${rangeF("n", "fontSize", "Font size", n.fontSize || 20, 12, 72)}${rangeF("n", "w", "Box width", n.w, 60, 520, 10)}
+  <div class="field"><span class="flabel">Weight</span>${seg("textBold", n.bold !== false, [[true, "Bold"], [false, "Regular"]])}</div>
+  <div class="field"><span class="flabel">Alignment</span>${seg("textAlign", n.align || "start", [["start", "Left"], ["middle", "Center"], ["end", "Right"]])}</div>
+  <div class="field"><span class="flabel">Color</span><div class="swatches">${cols.map(c => `<button class="sw ${(n.color || "") === c ? "on" : ""}" style="--c:${c || "linear-gradient(135deg,#1C2038 50%,#EEF0FA 50%)"}" data-act="textColor" data-val="${c}" aria-label="${c || "Automatic"}"></button>`).join("")}</div></div></div>
+  <div class="psec"><div class="btnrow"><button class="btn" data-act="duplicate">${iconSVG("copy")}Duplicate</button><button class="btn danger" data-act="delete">${iconSVG("trash")}Delete</button></div></div>`;
+}
+function panelEdge(e) {
+  const a = nodeById(e.sourceId), b = nodeById(e.targetId);
+  return head("connect", "Connection", `${a?.title || "?"} → ${b?.title || "?"}`, edgeColor(e.type)) + `
+  <div class="psec"><div class="field"><label for="pTitle">Label <span>Optional</span></label><input id="pTitle" class="inp" data-t="e" data-f="label" value="${esc(e.label)}" maxlength="40" placeholder="e.g. Yes, Declined, After 1 day"></div>
+  <div class="chips">${["Yes", "No", "No thanks", "Add-on", "If qualified", "After 1 day", "Missed it"].map(l => `<button data-act="edgeLabel" data-val="${l}">${l}</button>`).join("")}</div>
+  <div class="field"><span class="flabel">Path type</span>${seg("edgeType", e.type, Object.entries(EDGE_TYPES).map(([k, v]) => [k, v.split(" ")[0]]))}</div>
+  <p class="note">Yes paths are green, No paths are red, and conditional paths are dashed.</p></div>
+  <div class="psec"><div class="btnrow"><button class="btn" data-act="reverse">${iconSVG("swap")}Reverse</button><button class="btn danger" data-act="delete">${iconSVG("trash")}Delete</button></div></div>`;
+}
+function panelGroup(g) {
+  const m = membersOf(g.id);
+  return head("layers", g.title || "Group", `Group · ${m.length} step${m.length === 1 ? "" : "s"}`, g.color) + `
+  <div class="psec"><div class="field"><label for="pTitle">Group title</label><input id="pTitle" class="inp" data-t="g" data-f="title" value="${esc(g.title)}" maxlength="48"></div>
+  <div class="field"><label for="pDesc">Description <span>Optional</span></label><input id="pDesc" class="inp" data-t="g" data-f="desc" value="${esc(g.desc)}" maxlength="70"></div>
+  <div class="field"><span class="flabel">Header color</span><div class="swatches">${GROUP_COLORS.map(c => `<button class="sw ${c === g.color ? "on" : ""}" style="--c:${c}" data-act="groupColor" data-val="${c}" aria-label="Color ${c}"></button>`).join("")}</div></div>
+  <label class="toggle">Collapse group <input type="checkbox" data-t="g" data-f="collapsed" ${g.collapsed ? "checked" : ""}></label></div>
+  <div class="psec"><h4>Size</h4>${rangeF("g", "w", "Width", Math.round(g.w), 220, 3000, 10)}${rangeF("g", "h", "Height", Math.round(g.h), 110, 2000, 10)}<button class="btn outline block" data-act="fitGroup">${iconSVG("fit")}Fit to its steps</button></div>
+  <div class="psec"><h4>Steps in this group</h4>${m.length ? `<div class="mlist">${m.map(n => `<button data-act="selNode" data-val="${n.id}">${iconSVG(n.icon || "type", "i i-sm")}<span>${esc(n.title)}</span></button>`).join("")}</div>` : `<p class="note">Drag steps into this box to add them.</p>`}
+  <button class="btn outline block" data-act="addToGroup">${iconSVG("plus")}Add a step to this group</button></div>
+  <div class="psec"><div class="btnrow"><button class="btn" data-act="ungroup">Ungroup</button><button class="btn danger" data-act="delete">${iconSVG("trash")}Delete all</button></div><p class="note">Ungroup keeps the steps and removes the box. Delete all removes the box and its steps.</p></div>`;
+}
+function panelMulti() {
+  const n = sel.nodes.size, g = sel.groups.size, B = (a, i, t) => `<button class="btn icon" data-act="${a}" title="${t}" aria-label="${t}">${iconSVG(i)}</button>`;
+  return head("cursor", `${n + g} selected`, [n && `${n} step${n > 1 ? "s" : ""}`, g && `${g} group${g > 1 ? "s" : ""}`].filter(Boolean).join(" · ")) + `
+  <div class="psec"><h4>Align</h4><div class="alignrow">${B("alignLeft", "alignLeft", "Align left")}${B("alignCenter", "alignCenter", "Align center")}${B("alignRight", "alignRight", "Align right")}${B("distH", "distH", "Distribute horizontally")}${B("alignTop", "alignTop", "Align top")}${B("alignMiddle", "alignMiddle", "Align middle")}${B("alignBottom", "alignBottom", "Align bottom")}${B("distV", "distV", "Distribute vertically")}</div><p class="note">Distribute needs three or more steps.</p></div>
+  <div class="psec"><h4>Organize</h4>${n ? `<div class="field"><label for="pMove">Move steps to group</label><select id="pMove" class="inp" data-act-change="moveToGroup"><option value="">Choose a group…</option><option value="__none">No group</option>${doc.groups.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join("")}</select></div>` : ""}
+  <button class="btn outline block" data-act="group">${iconSVG("layers")}Group selection</button></div>
+  <div class="psec"><div class="btnrow"><button class="btn" data-act="duplicate">${iconSVG("copy")}Duplicate</button><button class="btn danger" data-act="delete">${iconSVG("trash")}Delete</button></div></div>`;
+}
+function panelTarget(t) { return t === "s" ? doc.settings : t === "n" ? nodeById(panelId) : t === "g" ? groupById(panelId) : t === "e" ? edgeById(panelId) : null; }
+let histPre = null;
+document.addEventListener("focusin", e => { if (e.target.closest("#panelBody") || e.target.id === "mapName") histPre = snapshot(); });
+document.addEventListener("focusout", e => { if ((e.target.closest("#panelBody") || e.target.id === "mapName") && histPre) { const p = histPre; histPre = null; pushHistory(p); renderChrome(); } });
+$("#panelBody").addEventListener("input", e => {
+  const el = e.target, f = el.dataset.f, obj = panelTarget(el.dataset.t); if (!f || !obj) return;
+  if (el.type === "checkbox") { const pre = histPre || snapshot(); obj[f] = el.checked; pushHistory(pre); histPre = snapshot(); renderAll(); return; }
+  if (f === "groupId") { const pre = snapshot(); const n = obj; n.groupId = el.value || null; const g = groupById(n.groupId); if (g) growGroupTo(g, n); pushHistory(pre); histPre = snapshot(); renderAll(); return; }
+  let v = el.value;
+  if (el.type === "range" || el.type === "number") { if (v === "" || isNaN(+v)) return; v = clamp(+v, +el.min, +el.max); $$(`[data-t="${el.dataset.t}"][data-f="${f}"]`, $("#panelBody")).forEach(o => { if (o !== el) o.value = v; }); }
+  obj[f] = v;
+  if (el.dataset.t === "s" && f === "title") $("#mapName").value = v;
+  if (f === "title" && el.dataset.t !== "s") { const h3 = $(".panel-head h3"); if (h3) h3.textContent = v || "Untitled"; }
+  renderAll();
+});
+$("#panelBody").addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.actChange === "moveToGroup" && el.value) {
+    mutate(() => { const gid = el.value === "__none" ? null : el.value; [...sel.nodes].map(nodeById).forEach(n => { n.groupId = gid; if (gid) growGroupTo(groupById(gid), n); }); });
+    toast("Moved to group");
+  }
+});
+$("#panelBody").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act, v = b.dataset.val, n = panelKind === "n" ? nodeById(panelId) : null, g = panelKind === "g" ? groupById(panelId) : null, ed = panelKind === "e" ? edgeById(panelId) : null, S = doc.settings;
+  const set = fn => mutate(fn);
+  switch (act) {
+    case "closePanel": closeDrawers(); break;
+    case "direction": setDirection(v); break;
+    case "bg": set(() => S.bg = v); break;
+    case "setColor": set(() => S[b.dataset.f] = v); break;
+    case "iconMode": set(() => S.iconMode = v); break;
+    case "cardStyle": set(() => S.cardStyle = v); break;
+    case "connector": set(() => S.connector = v); break;
+    case "fontScale": set(() => S.fontScale = +v); break;
+    case "icon": set(() => n.icon = v); break;
+    case "textBold": set(() => n.bold = v === "true"); break;
+    case "textAlign": set(() => n.align = v); break;
+    case "textColor": set(() => n.color = v); break;
+    case "edgeLabel": set(() => { ed.label = v; ed.type = guessType(v) === "default" ? ed.type : guessType(v); }); break;
+    case "edgeType": set(() => ed.type = v); break;
+    case "reverse": set(() => { const t = ed.sourceId; ed.sourceId = ed.targetId; ed.targetId = t; }); break;
+    case "groupColor": set(() => g.color = v); break;
+    case "fitGroup": set(() => { const m = membersOf(g.id); if (m.length) fitGroupTo(g, m); else toast("This group has no steps yet"); }); break;
+    case "ungroup": set(() => { membersOf(g.id).forEach(m => m.groupId = null); doc.groups = doc.groups.filter(x => x.id !== g.id); clearSel(); }); toast("Group removed · steps kept", { action: "Undo", fn: undo }); break;
+    case "addToGroup": { const gid = g.id; pickStep(key => addStep(key, { groupId: gid }), `Add a step to “${g.title}”`); break; }
+    case "addNext": { const id = n.id; pickStep(key => addStep(key, { after: id }), "Add the next step"); break; }
+    case "selEdge": selectOnly({ edge: v }); break;
+    case "selNode": selectOnly({ nodes: [v] }); revealBox(nodeById(v)); break;
+    default: if (ACTIONS[act]) ACTIONS[act]();
+  }
+});
+$("#selbar").addEventListener("click", e => { const b = e.target.closest("[data-act]"); if (b && ACTIONS[b.dataset.act]) ACTIONS[b.dataset.act](); });
+function openPanel() { if (window.innerWidth <= 1180) { $("#panel").classList.add("open"); if (window.innerWidth <= 860) $("#scrim").classList.add("show"); } }
+function closeDrawers() { $("#panel").classList.remove("open"); $("#sidebar").classList.remove("open"); $("#scrim").classList.remove("show"); }
+function focusPanelField(f) { needPanel = true; flush(); openPanel(); const el = $(`#panelBody [data-f="${f}"]`); if (el) { el.focus(); el.select?.(); } }
+
+/* =====================================================================
+   MODALS
+   ===================================================================== */
+let modalOnClose = null;
+function openModal({ title, sub = "", body, foot = [], wide = false, onClose = null }) {
+  $("#modalTitle").textContent = title; $("#modalSub").textContent = sub; $("#modalSub").hidden = !sub;
+  $("#modalBody").innerHTML = body; $("#modal").classList.toggle("wide", wide);
+  const F = $("#modalFoot"); F.innerHTML = ""; F.hidden = !foot.length;
+  foot.forEach(b => { const el = document.createElement("button"); el.className = "btn " + (b.cls || "outline"); el.innerHTML = b.label; if (b.id) el.id = b.id; el.addEventListener("click", b.fn); F.appendChild(el); });
+  modalOnClose = onClose; $("#modalBack").hidden = false;
+  setTimeout(() => ($("#modalBody [autofocus]") || $("#modalClose")).focus(), 30);
+}
+function closeModal() { if ($("#modalBack").hidden) return; $("#modalBack").hidden = true; $("#modalBody").innerHTML = ""; const f = modalOnClose; modalOnClose = null; if (f) f(); }
+$("#modalClose").addEventListener("click", closeModal);
+$("#modalBack").addEventListener("pointerdown", e => { if (e.target.id === "modalBack") closeModal(); });
+
+function pickStep(cb, title = "Add a step") {
+  const all = [...customSteps, ...STEPS];
+  const list = q => { q = q.trim().toLowerCase(); const out = []; for (const [ck, c] of [["__mine", { name: "My steps" }], ...Object.entries(CATS)]) { const items = all.filter(s => (ck === "__mine" ? s.custom : !s.custom && s.cat === ck) && (!q || (s.title + " " + (CATS[s.cat]?.name || "")).toLowerCase().includes(q))); if (items.length) out.push(`<div class="sec-title">${c.name}</div><div class="picklist">${items.map(s => libItem(s)).join("")}</div>`); } return out.join("") || `<div class="empty-lib">No steps match. <button class="btn outline" data-custom>Create a custom step</button></div>`; };
+  openModal({ title, sub: "Pick a step type. You can rename it afterwards.", wide: true, body: `<label class="search" style="margin-bottom:6px"><input id="pickQ" placeholder="Search steps…" autofocus autocomplete="off"></label><div id="pickList">${list("")}</div>` });
+  $("#pickQ").addEventListener("input", e => $("#pickList").innerHTML = list(e.target.value));
+  $("#pickList").addEventListener("click", e => { if (e.target.closest("[data-custom]")) { customStepModal(); return; } const it = e.target.closest("[data-key]"); if (!it) return; closeModal(); cb(it.dataset.key); });
+  $("#pickList").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("[data-key]")) { closeModal(); cb(e.target.dataset.key); } });
+}
+function customStepModal() {
+  let icon = "sparkles";
+  openModal({ title: "Add Custom Step", sub: "It will be saved to My steps in your library.", body: `
+    <div style="display:grid;gap:14px">
+      <div class="field"><label for="csName">Step name</label><input id="csName" class="inp" maxlength="40" placeholder="e.g. Free Strategy Session" autofocus></div>
+      <div class="field"><label for="csDesc">Description <span class="note">Optional</span></label><input id="csDesc" class="inp" maxlength="80" placeholder="What happens at this step"></div>
+      <div class="field"><label for="csCat">Category</label><select id="csCat" class="inp">${Object.entries(CATS).map(([k, c]) => `<option value="${k}" ${k === "other" ? "selected" : ""}>${c.name}</option>`).join("")}</select></div>
+      <div class="field"><span class="flabel">Icon</span><div class="icongrid" id="csIcons">${STEP_ICONS.map(i => `<button type="button" data-i="${i}" class="${i === icon ? "on" : ""}" title="${i}" aria-label="Icon ${i}">${iconSVG(i)}</button>`).join("")}</div></div>
+      <div class="err" id="csErr" hidden></div>
+    </div>`,
+    foot: [{ label: "Cancel", fn: closeModal }, { label: "Add to canvas & library", cls: "primary", fn: () => {
+      const title = $("#csName").value.trim(); if (!title) { $("#csErr").hidden = false; $("#csErr").textContent = "Give the step a name so you can find it later."; $("#csName").focus(); return; }
+      const s = { key: uid("c_"), title, desc: $("#csDesc").value.trim(), icon, cat: $("#csCat").value, custom: true };
+      customSteps.push(s); lsSet(LS.custom, customSteps); closeModal(); sideTab = "steps"; renderSidebar();
+      const after = singleStep(); addStep(s.key, after ? { after: after.id } : {}); toast(`“${title}” added to My steps`);
+    } }] });
+  $("#csIcons").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (!b) return; icon = b.dataset.i; $$("#csIcons button").forEach(x => x.classList.toggle("on", x === b)); });
+  $("#csName").addEventListener("keydown", e => { if (e.key === "Enter") $("#modalFoot .primary").click(); });
+}
+function templatesModal() {
+  openModal({ title: "Choose a funnel template", sub: "Every template is fully editable once it's on the canvas.", wide: true,
+    body: `<div class="sec-title">Templates</div><div class="tgrid">${TEMPLATES.map(f => funnelCard(f, true)).join("")}</div><div class="sec-title">Funnel types</div><div class="tgrid">${FUNNEL_TYPES.map(f => funnelCard(f, false)).join("")}</div>` });
+  $("#modalBody").addEventListener("click", e => { const b = e.target.closest("[data-key]"); if (b) chooseFunnel([...TEMPLATES, ...FUNNEL_TYPES].find(f => f.id === b.dataset.key)); });
+}
+
+/* =====================================================================
+   PERSISTENCE
+   ===================================================================== */
+let autoT = null;
+function changed() { renderChrome(); scheduleAutosave(); }
+function scheduleAutosave() { clearTimeout(autoT); autoT = setTimeout(() => lsSet(LS.auto, { doc: snapshot(), view, savedId, savedSnap, emptyDismissed }), 350); }
+const isDirty = () => !!(doc.nodes.length || doc.groups.length) && savedSnap !== snapshot();
+function saveMap(then) {
+  const maps = lsGet(LS.maps, []), snap = snapshot(), now = Date.now(), name = doc.settings.title.trim() || "Untitled Funnel";
+  let m = savedId && maps.find(x => x.id === savedId);
+  if (m) Object.assign(m, { name, doc: snap, updated: now }); else { m = { id: uid("m"), name, doc: snap, updated: now }; maps.unshift(m); }
+  if (!lsSet(LS.maps, maps)) { toast("Couldn't save. This browser is blocking or out of local storage."); return false; }
+  savedId = m.id; savedSnap = snap; changed(); toast(`Saved “${name}” in this browser`);
+  if (typeof then === "function") then();
+  return true;
+}
+function guardUnsaved(next) {
+  if (!isDirty()) { next(); return; }
+  openModal({ title: "Save your changes first?", sub: `“${doc.settings.title}” has changes that aren't saved.`, body: `<p class="note">Save keeps a copy you can open later from Load Map. Your work is also kept if you refresh this page.</p>`,
+    foot: [{ label: "Cancel", fn: closeModal }, { label: "Discard changes", cls: "outline danger", fn: () => { closeModal(); next(); } }, { label: "Save & continue", cls: "primary", fn: () => { closeModal(); if (saveMap()) next(); } }] });
+}
+function newMap() {
+  guardUnsaved(() => { mutate(() => { doc.nodes = []; doc.edges = []; doc.groups = []; doc.settings.title = "Untitled Funnel"; clearSel(); }); savedId = null; savedSnap = null; emptyDismissed = false; view = { x: wrapEl.clientWidth / 2, y: wrapEl.clientHeight / 2, k: 1 }; changed(); renderAll(true); });
+}
+function loadSample(withHistory) {
+  const def = TEMPLATES.find(t => t.id === "t-coaching");
+  const apply = () => { const b = layoutDef(def, { x: 0, y: 0 }, doc.settings.direction); doc.nodes = b.nodes; doc.edges = b.edges; doc.groups = b.groups; doc.settings.title = def.title; clearSel(); };
+  if (withHistory) mutate(apply); else apply();
+}
+function resetMap() {
+  openModal({ title: "Reset to the sample funnel?", sub: "This replaces the canvas with the High-Ticket Coaching example.", body: `<p class="note">Your map style settings are reset too. You can undo this with Ctrl/⌘ Z.</p>`,
+    foot: [{ label: "Cancel", fn: closeModal }, { label: "Reset map", cls: "primary", fn: () => { closeModal(); mutate(() => { doc.settings = DEFAULT_SETTINGS(); }); loadSample(true); savedId = null; savedSnap = null; emptyDismissed = false; changed(); requestAnimationFrame(() => fitView()); toast("Map reset", { action: "Undo", fn: undo }); } }] });
+}
+function loadModal() {
+  const maps = lsGet(LS.maps, []);
+  const fmt = t => new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const body = maps.length ? `<div class="maplist">${maps.map(m => { let c = 0; try { c = JSON.parse(m.doc).nodes.filter(n => n.kind === "step").length; } catch {} return `<div class="mapitem"><div class="fic">${iconSVG("filter")}</div><div class="meta"><b>${esc(m.name)}</b><small>${c} steps · saved ${fmt(m.updated)}${m.id === savedId ? " · open now" : ""}</small></div><button class="btn outline danger" data-delmap="${m.id}">Delete</button><button class="btn primary" style="height:36px" data-openmap="${m.id}">Open</button></div>`; }).join("")}</div>`
+    : `<div class="empty-lib">No saved maps yet.<br>Use <b>Save Map</b> to keep a copy in this browser.</div>`;
+  openModal({ title: "Load a saved map", sub: "Maps are stored in this browser only.", body });
+  $("#modalBody").addEventListener("click", e => {
+    const o = e.target.closest("[data-openmap]"), d = e.target.closest("[data-delmap]");
+    if (o) { const m = lsGet(LS.maps, []).find(x => x.id === o.dataset.openmap); if (!m) return; closeModal(); guardUnsaved(() => { mutate(() => restore(m.doc)); savedId = m.id; savedSnap = snapshot(); clearSel(); changed(); renderAll(true); requestAnimationFrame(() => fitView()); toast(`Opened “${m.name}”`); }); }
+    if (d) { if (d.dataset.confirm) { lsSet(LS.maps, lsGet(LS.maps, []).filter(x => x.id !== d.dataset.delmap)); if (savedId === d.dataset.delmap) { savedId = null; savedSnap = null; changed(); } closeModal(); loadModal(); toast("Saved map deleted"); } else { d.dataset.confirm = "1"; d.textContent = "Confirm delete"; } }
+  });
+}
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+let dlCap = null;
+try { if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { dlCap = d; }).catch(() => {}); } catch {}
+const exp = { format: "png", scale: 2, bg: "current", scope: "all" };
+function exportPlan() {
+  const S = doc.settings, b = exp.scope === "view" ? viewRect() : contentBounds(); if (!b) return null;
+  const dark = (exp.bg === "current" && S.bg === "dark"), showT = S.showTitle && S.title.trim();
+  const pad = exp.scope === "view" ? 0 : 56, tH = showT ? 86 : 0;
+  const rect = { x: b.x - pad, y: b.y - pad - tH, w: b.w + pad * 2, h: b.h + pad * 2 + tH };
+  const bgMode = exp.bg === "current" ? S.bg : exp.bg === "white" ? "white" : (exp.format === "jpg" ? "white" : null);
+  const back = bgMode ? bgItems(rect, bgMode) : [];
+  const title = showT ? [{ t: "text", x: rect.x + Math.max(pad, 32), y: rect.y + Math.max(pad, 32) + 12, s: "FUNNEL MAP", size: 11, weight: 800, fill: dark ? mix(S.primary, "#ffffff", .35) : S.primary, ls: 1.6 }, { t: "text", x: rect.x + Math.max(pad, 32), y: rect.y + Math.max(pad, 32) + 48, s: S.title.trim(), size: 30, weight: 800, fill: dark ? "#F1F2FA" : "#1C2038", ls: -.4 }] : [];
+  return { rect, back, title, ents: buildScene(null) };
+}
+function rasterize(plan, scale) {
+  const { rect } = plan; let s = scale;
+  while ((rect.w * s > 16000 || rect.h * s > 16000 || rect.w * rect.h * s * s > 1.2e8) && s > .25) s *= .8;
+  const cv = document.createElement("canvas"); cv.width = Math.ceil(rect.w * s); cv.height = Math.ceil(rect.h * s);
+  const ctx = cv.getContext("2d"); ctx.scale(s, s); ctx.translate(-rect.x, -rect.y);
+  if (exp.format === "jpg" && !plan.back.length) { ctx.fillStyle = "#fff"; ctx.fillRect(rect.x, rect.y, rect.w, rect.h); }
+  drawItems(ctx, plan.back, s); plan.ents.forEach(e => drawItems(ctx, e.items, s)); drawItems(ctx, plan.title, s);
+  cv._scale = s; return cv;
+}
+function svgString(plan) {
+  const { rect } = plan, all = [...plan.back, ...plan.ents.flatMap(e => e.items), ...plan.title];
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${Math.ceil(rect.w)}" height="${Math.ceil(rect.h)}" viewBox="${r2(rect.x)} ${r2(rect.y)} ${r2(rect.w)} ${r2(rect.h)}" font-family='${FONT}'>
+<defs><style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap');text{font-family:${FONT.replace(/"/g, "'")}}</style>
+<filter id="fxCard" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1E2360" flood-opacity=".09"/></filter>
+<filter id="fxSoft" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E2360" flood-opacity=".08"/></filter></defs>
+${all.map(i => itemSVG(i, true)).join("\n")}
+</svg>`;
+}
+const slug = s => (s || "funnel-map").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "funnel-map";
+function exportModal() {
+  if (!contentBounds()) { toast("Add some steps before exporting"); return; }
+  const S = doc.settings;
+  const body = `<div class="export-grid"><div><div class="preview" id="expPrev"></div><div class="dims" id="expDims"></div></div>
+  <div style="display:grid;gap:14px;align-content:start">
+    <div class="field"><label for="expName">Funnel name</label><input id="expName" class="inp" value="${esc(S.title)}" maxlength="80"></div>
+    <label class="toggle">Show funnel title <input type="checkbox" id="expShow" ${S.showTitle ? "checked" : ""}></label>
+    <div class="field"><span class="flabel">Format</span><div class="seg" data-k="format">${[["png", "PNG"], ["jpg", "JPG"], ["svg", "SVG"]].map(([v, l]) => `<button data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="field"><span class="flabel">Resolution</span><div class="seg" data-k="scale">${[[1, "1x"], [2, "2x"], [3, "3x"]].map(([v, l]) => `<button data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="field"><span class="flabel">Background</span><div class="seg" data-k="bg">${[["current", "Current"], ["white", "White"], ["transparent", "Transparent"]].map(([v, l]) => `<button data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="field"><span class="flabel">Area</span><div class="seg" data-k="scope">${[["all", "Entire funnel"], ["view", "Visible area"]].map(([v, l]) => `<button data-v="${v}">${l}</button>`).join("")}</div></div>
+    <p class="note" id="expNote"></p>
+  </div></div>`;
+  openModal({ title: "Export Image", sub: "Only the funnel map is exported: no toolbars or panels.", wide: true, body,
+    foot: [{ label: "Cancel", fn: closeModal }, { label: iconSVG("download") + `<span id="expGoLbl">Export Entire Funnel</span>`, cls: "primary", id: "expGo", fn: doExport }] });
+  const sync = () => {
+    $$("#modalBody .seg[data-k]").forEach(sg => { const k = sg.dataset.k; $$("button", sg).forEach(b => { b.classList.toggle("on", String(exp[k]) === b.dataset.v); b.disabled = (k === "scale" && exp.format === "svg") || (k === "bg" && b.dataset.v === "transparent" && exp.format === "jpg"); }); });
+    $("#expGoLbl").textContent = exp.scope === "all" ? "Export Entire Funnel" : "Export Visible Area";
+    $("#expNote").textContent = exp.format === "svg" ? "SVG is a vector file: it stays sharp at any size and opens in Figma, Illustrator and browsers." : exp.format === "jpg" && exp.bg === "transparent" ? "JPG can't be transparent, so a white background is used." : exp.bg === "transparent" ? "Transparent PNG works well on slides and documents." : "PNG is best for slides, docs and sharing.";
+    const plan = exportPlan(); if (!plan) return;
+    const box = $("#expPrev"), maxW = Math.max(200, box.clientWidth - 24), fit = Math.min(maxW / plan.rect.w, 340 / plan.rect.h);
+    const cv = rasterize(plan, fit * (window.devicePixelRatio || 1)); cv.style.width = Math.round(plan.rect.w * fit) + "px"; cv.style.height = Math.round(plan.rect.h * fit) + "px";
+    box.innerHTML = ""; box.appendChild(cv);
+    const sc = exp.format === "svg" ? 1 : exp.scale;
+    $("#expDims").textContent = exp.format === "svg" ? `${Math.ceil(plan.rect.w)} × ${Math.ceil(plan.rect.h)} vector · ${doc.nodes.filter(n => n.kind === "step").length} steps` : `${Math.ceil(plan.rect.w * sc).toLocaleString()} × ${Math.ceil(plan.rect.h * sc).toLocaleString()} px · ${exp.format.toUpperCase()}`;
+  };
+  $("#modalBody").addEventListener("click", e => { const b = e.target.closest(".seg[data-k] button"); if (!b || b.disabled) return; const k = b.closest(".seg").dataset.k; exp[k] = k === "scale" ? +b.dataset.v : b.dataset.v; if (exp.format === "jpg" && exp.bg === "transparent") exp.bg = "white"; sync(); });
+  $("#expName").addEventListener("input", e => { doc.settings.title = e.target.value; clearTimeout(exportModal.t); exportModal.t = setTimeout(sync, 200); renderChrome(); });
+  $("#expShow").addEventListener("change", e => { doc.settings.showTitle = e.target.checked; sync(); });
+  const pre = snapshot(); modalOnClose = () => { pushHistory(pre); renderAll(true); };
+  requestAnimationFrame(sync);
+}
+async function doExport() {
+  const plan = exportPlan(); if (!plan) return;
+  const name = `${slug(doc.settings.title)}.${exp.format}`; let blob, cv = null;
+  try {
+    if (exp.format === "svg") blob = new Blob([svgString(plan)], { type: "image/svg+xml" });
+    else { cv = rasterize(plan, exp.scale); blob = await new Promise(r => cv.toBlob(r, exp.format === "jpg" ? "image/jpeg" : "image/png", .95)); if (cv._scale < exp.scale) toast("This map is very large, so the resolution was reduced to fit browser limits."); }
+  } catch (err) { toast("Export failed: the map is too large for this browser. Try 1x or the visible area."); return; }
+  if (!blob) { toast("Export failed. Try a lower resolution."); return; }
+  if (dlCap) {
+    try { await dlCap.save({ filename: name, data: blob }); closeModal(); toast(`Exported ${name}`); return; }
+    catch (err) { if (err && err.code === "declined") { toast("Export cancelled"); return; } if (err && err.code === "rate_limited") { toast("A save prompt is already open"); return; } }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+  if (cv) { const box = $("#expPrev"); if (box) { const pw = box.querySelector("canvas"); cv.style.width = pw?.style.width || "100%"; cv.style.height = pw?.style.height || "auto"; box.innerHTML = ""; box.appendChild(cv); } }
+  const note = $("#expNote"); if (note) note.innerHTML = `<b>Download started: ${esc(name)}.</b> If nothing downloaded, right-click the preview and choose “Save image as”. The preview is now full resolution.`;
+  toast(`Exporting ${name}`);
+}
+
+/* =====================================================================
+   TOASTS
+   ===================================================================== */
+function toast(msg, opts = {}) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  if (opts.action) { const b = document.createElement("button"); b.textContent = opts.action; b.addEventListener("click", () => { opts.fn(); t.remove(); }); t.appendChild(b); }
+  const box = $("#toasts"); box.appendChild(t); while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), opts.ms || 3200);
+}
+
+/* =====================================================================
+   WIRING & INIT
+   ===================================================================== */
+$$("[data-icon]").forEach(el => { const cls = "i " + (el.getAttribute("class") || ""); el.outerHTML = iconSVG(el.dataset.icon, cls.trim()); });
+$("#btnUndo").addEventListener("click", undo); $("#btnRedo").addEventListener("click", redo);
+$("#btnZoomIn").addEventListener("click", () => zoomBy(1.2)); $("#btnZoomOut").addEventListener("click", () => zoomBy(1 / 1.2));
+$("#tZoomIn").addEventListener("click", () => zoomBy(1.2)); $("#tZoomOut").addEventListener("click", () => zoomBy(1 / 1.2));
+$("#btnZoomVal").addEventListener("click", () => { view.k = 1; fitCenter(); });
+$("#btnFit").addEventListener("click", () => fitView()); $("#tFit").addEventListener("click", () => fitView());
+$("#tGrid").addEventListener("click", () => { mutate(() => doc.settings.snap = !doc.settings.snap); toast(doc.settings.snap ? "Snap to grid on" : "Snap to grid off"); });
+$("#btnExport").addEventListener("click", exportModal);
+$("#btnSave").addEventListener("click", () => saveMap()); $("#btnNew").addEventListener("click", newMap); $("#btnLoad").addEventListener("click", loadModal); $("#btnReset").addEventListener("click", resetMap);
+$$(".tbtn[data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+$("#tAdd").addEventListener("click", () => { const after = singleStep(); pickStep(key => addStep(key, after ? { after: after.id } : {}), after ? `Add a step after “${after.title}”` : "Add a step"); });
+$("#tGroup").addEventListener("click", createGroup);
+$("#emptyTpl").addEventListener("click", templatesModal);
+$("#emptyBlank").addEventListener("click", () => { emptyDismissed = true; sideTab = "steps"; renderSidebar(); renderChrome(); scheduleAutosave(); if (window.innerWidth <= 860) { $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); } toast("Drag steps from the library, or double-click the canvas"); });
+$("#mapName").addEventListener("input", e => { doc.settings.title = e.target.value; const f = $('#panelBody [data-t="s"][data-f="title"]'); if (f) f.value = e.target.value; changed(); });
+$("#mapName").addEventListener("keydown", e => { if (e.key === "Enter") e.target.blur(); });
+$("#btnLib").addEventListener("click", () => { const o = !$("#sidebar").classList.contains("open"); closeDrawers(); if (o) { $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); } });
+$("#btnPanel").addEventListener("click", () => { const o = !$("#panel").classList.contains("open"); closeDrawers(); if (o) openPanel(); });
+$("#scrim").addEventListener("click", closeDrawers);
+$("#mmToggle").addEventListener("click", () => { const b = $("#minimapBox"); b.classList.toggle("min"); $("#mmToggle").style.transform = b.classList.contains("min") ? "rotate(180deg)" : ""; renderMinimap(); });
+$("#minimap").addEventListener("pointerdown", e => { mmPan(e); const mv = ev => mmPan({ ...ev, clientX: ev.clientX, clientY: ev.clientY, currentTarget: $("#minimap") }); const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); }; window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); });
+
+(function init() {
+  const saved = lsGet(LS.auto, null);
+  let restored = false;
+  if (saved && saved.doc) { try { restore(saved.doc); view = saved.view || view; savedId = saved.savedId || null; savedSnap = saved.savedSnap ?? null; emptyDismissed = !!saved.emptyDismissed; restored = true; } catch { restored = false; } }
+  if (!restored) loadSample(false);
+  renderSidebar(); needPanel = true; flush();
+  if (!restored) requestAnimationFrame(() => fitView());
+  const fontsReady = () => { mcache.clear(); needPanel = false; flush(); if (!restored) fitView(); };
+  if (document.fonts) { Promise.all(["400", "500", "600", "700", "800"].map(w => document.fonts.load(`${w} 14px "Plus Jakarta Sans"`))).then(fontsReady).catch(() => {}); document.fonts.ready.then(fontsReady); }
+})();
+</script>
