@@ -1,0 +1,328 @@
+<title>Funnel ROI Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#f3f6ff;
+  --bg-hero-a:#eef1fc;
+  --bg-hero-b:#e6e8fd;
+  --surface:#fbfcff;
+  --surface-2:#ffffff;
+  --line:#e2e6f3;
+  --ink:#27324a;
+  --ink-2:#4a5570;
+  --muted:#7a849c;
+  --accent:#4a6cf7;
+  --accent-2:#5b3ff0;
+  --accent-soft:#e7edff;
+  --accent-soft-2:#ece8ff;
+  --good:#1f9d63;
+  --good-soft:#e3f6ec;
+  --bad:#d6454f;
+  --bad-soft:#fdeaec;
+  --warn:#b7791f;
+  --shadow:0 10px 30px -12px rgba(52,64,120,.22),0 2px 6px rgba(52,64,120,.06);
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#10131f;--bg-hero-a:#161a2c;--bg-hero-b:#1b1a35;
+    --surface:#171b2b;--surface-2:#1c2134;--line:#2a3150;
+    --ink:#e7eaf5;--ink-2:#b9c0d6;--muted:#8a93ad;
+    --accent:#7b95ff;--accent-2:#8f7bff;--accent-soft:#222c52;--accent-soft-2:#2a2552;
+    --good:#4cc98d;--good-soft:#173628;--bad:#f07a82;--bad-soft:#3a1d22;--warn:#e0a84a;
+    --shadow:0 10px 30px -12px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10131f;--bg-hero-a:#161a2c;--bg-hero-b:#1b1a35;
+  --surface:#171b2b;--surface-2:#1c2134;--line:#2a3150;
+  --ink:#e7eaf5;--ink-2:#b9c0d6;--muted:#8a93ad;
+  --accent:#7b95ff;--accent-2:#8f7bff;--accent-soft:#222c52;--accent-soft-2:#2a2552;
+  --good:#4cc98d;--good-soft:#173628;--bad:#f07a82;--bad-soft:#3a1d22;--warn:#e0a84a;
+  --shadow:0 10px 30px -12px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.hero{background:linear-gradient(135deg,var(--bg-hero-a),var(--bg-hero-b));padding:40px 16px 88px}
+.hero-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;box-shadow:0 10px 24px -8px rgba(74,108,247,.6);flex:none}
+.logo svg{width:28px;height:28px}
+.hero h1{margin:0;font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.hero p{margin:4px 0 0;color:var(--ink-2);max-width:60ch}
+.wrap{max-width:1080px;margin:-60px auto 0;padding-inline:16px;padding-block:0 40px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:880px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:24px}
+.card+.card{margin-top:22px}
+.card-h{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.chip-ic{width:38px;height:38px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.chip-ic.alt{background:var(--accent-soft-2);color:var(--accent-2)}
+.chip-ic svg{width:19px;height:19px}
+.card-h h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.card-h small{display:block;color:var(--muted);font-size:13px;font-weight:500}
+
+.presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.preset{font:inherit;text-align:left;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:12px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s}
+.preset:hover{border-color:var(--accent)}
+.preset:focus-visible,.seg button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.preset b{display:block;font-size:14px}
+.preset span{font-size:12.5px;color:var(--muted)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+
+.group-label{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+.field{display:grid;gap:8px;padding:12px 0;border-top:1px dashed var(--line)}
+.group-label+.field{border-top:0;padding-top:0}
+.field-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.field label{font-weight:600;font-size:14px}
+.field .hint{font-size:12.5px;color:var(--muted);margin-top:-4px}
+.num{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-2);overflow:hidden;min-width:0}
+.num span{padding:0 10px;color:var(--muted);font-size:13px;font-weight:600}
+.num input{border:0;background:transparent;color:var(--ink);font:600 14px var(--font);width:96px;padding:8px 10px;font-variant-numeric:tabular-nums;text-align:right}
+.num input:focus{outline:none}
+.num:focus-within{border-color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent);height:22px;margin:0}
+
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;padding:3px;background:var(--surface-2);gap:2px}
+.seg button{font:600 13px var(--font);border:0;background:transparent;color:var(--ink-2);padding:6px 11px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+/* results */
+.results{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+@media (max-width:880px){.results{position:static}}
+.verdict{border-radius:14px;padding:18px 18px 16px;background:var(--good-soft);color:var(--good);display:grid;gap:2px}
+.verdict.neg{background:var(--bad-soft);color:var(--bad)}
+.verdict .lbl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.verdict .big{font-size:clamp(34px,6vw,46px);font-weight:800;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.verdict .sub{color:var(--ink-2);font-size:14px}
+.verdict .sub b{color:var(--ink)}
+
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2)}
+.stat .k{font-size:12.5px;color:var(--muted);font-weight:600}
+.stat .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+.funnel{display:grid;gap:8px;margin-top:4px}
+.stage{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:12px}
+.stage .name{font-size:13px;font-weight:600;color:var(--ink-2)}
+.bar-track{position:relative;height:34px}
+.bar{position:absolute;inset:0 auto 0 50%;transform:translateX(-50%);border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent-2));min-width:56px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;transition:width .35s ease}
+.stage:nth-child(1) .bar{opacity:.55}
+.stage:nth-child(2) .bar{opacity:.78}
+.drop{font-size:12px;color:var(--muted);text-align:center;padding-left:104px}
+
+.tips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tips li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;font-size:14px;color:var(--ink-2)}
+.tips li i{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px}
+.tips b{color:var(--ink);font-variant-numeric:tabular-nums}
+.reset{font:600 13px var(--font);background:none;border:0;color:var(--accent);cursor:pointer;padding:4px 0;margin-top:14px}
+
+footer{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:8px 36px;text-align:center;color:var(--muted);font-size:13.5px}
+footer a{color:var(--accent);font-weight:700;text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media (prefers-reduced-motion:reduce){.bar{transition:none}}
+@media (max-width:480px){.card{padding:18px}.stage{grid-template-columns:72px minmax(0,1fr)}.drop{padding-left:84px}.num input{width:80px}}
+</style>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>
+    </div>
+    <div>
+      <h1>Funnel ROI Calculator</h1>
+      <p>Plug in your traffic, conversion rates and costs to see what your funnel really earns, and which lever moves profit the most.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <div class="card">
+      <div class="card-h">
+        <div class="chip-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div>
+        <div><h2>Start from a funnel type</h2><small>Loads typical numbers. Adjust anything below.</small></div>
+      </div>
+      <div class="presets" id="presets">
+        <button class="preset" type="button" data-p="lead"><b>Lead magnet</b><span>Free guide → core offer</span></button>
+        <button class="preset" type="button" data-p="webinar"><b>Webinar</b><span>Registration → high-ticket</span></button>
+        <button class="preset" type="button" data-p="tripwire"><b>Tripwire</b><span>Low-price offer → upsell</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h" style="justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="chip-ic alt" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
+          <div><h2>Your numbers</h2><small>Monthly figures</small></div>
+        </div>
+        <div class="seg" id="cur" role="group" aria-label="Currency">
+          <button type="button" data-c="$" aria-pressed="true">$</button>
+          <button type="button" data-c="₹">₹</button>
+          <button type="button" data-c="€">€</button>
+          <button type="button" data-c="£">£</button>
+        </div>
+      </div>
+
+      <div id="fields"></div>
+      <button class="reset" type="button" id="reset">Reset to Lead magnet example</button>
+    </div>
+  </section>
+
+  <aside class="results" aria-live="polite">
+    <div class="card">
+      <div class="card-h">
+        <div class="chip-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></div>
+        <div><h2>Your return</h2><small>Updates as you type</small></div>
+      </div>
+      <div class="verdict" id="verdict">
+        <span class="lbl" id="vLbl">Return on investment</span>
+        <span class="big" id="roi">0%</span>
+        <span class="sub" id="vSub"></span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Revenue</div><div class="v" id="sRev">0</div></div>
+        <div class="stat"><div class="k">Total cost</div><div class="v" id="sCost">0</div></div>
+        <div class="stat"><div class="k">Cost per lead</div><div class="v" id="sCpl">0</div></div>
+        <div class="stat"><div class="k">Cost per customer</div><div class="v" id="sCpa">0</div></div>
+        <div class="stat"><div class="k">Value per visitor</div><div class="v" id="sEpc">0</div></div>
+        <div class="stat"><div class="k">ROAS</div><div class="v" id="sRoas">0</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div class="chip-ic alt" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg></div>
+        <div><h2>Your funnel</h2><small>Where people drop off</small></div>
+      </div>
+      <div class="funnel" id="funnel"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div class="chip-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
+        <div><h2>Quick wins</h2><small>Extra monthly profit from small improvements</small></div>
+      </div>
+      <ul class="tips" id="tips"></ul>
+    </div>
+  </aside>
+</main>
+
+<footer>Designed by <a href="https://www.facebook.com/sams2410" target="_blank" rel="noopener">Sam Kushwah</a></footer>
+
+<script>
+const FIELDS = [
+  {group:"Traffic"},
+  {id:"visitors", label:"Visitors to your funnel", hint:"People who land on your first page each month", min:0, max:100000, step:100, unit:""},
+  {id:"optin", label:"Opt-in rate", hint:"Visitors who sign up or register", min:0, max:100, step:0.5, unit:"%"},
+  {id:"close", label:"Sales conversion rate", hint:"Leads who go on to buy", min:0, max:100, step:0.1, unit:"%"},
+  {group:"Revenue"},
+  {id:"price", label:"Main offer price", hint:"Average order value of the front-end offer", min:0, max:10000, step:1, unit:"cur"},
+  {id:"upTake", label:"Upsell take rate", hint:"Buyers who also take the upsell (0 if none)", min:0, max:100, step:1, unit:"%"},
+  {id:"upPrice", label:"Upsell price", hint:"", min:0, max:5000, step:1, unit:"cur"},
+  {group:"Costs"},
+  {id:"ads", label:"Ad spend", hint:"What you pay to bring the traffic in", min:0, max:50000, step:50, unit:"cur"},
+  {id:"tools", label:"Tools & team", hint:"Funnel builder, email tool, freelancers", min:0, max:10000, step:10, unit:"cur"},
+  {id:"cogs", label:"Cost per sale", hint:"Delivery, fees or product cost for each order", min:0, max:2000, step:1, unit:"cur"},
+];
+const PRESETS = {
+  lead:{visitors:10000, optin:30, close:3, price:197, upTake:15, upPrice:97, ads:4000, tools:300, cogs:10},
+  webinar:{visitors:6000, optin:35, close:5, price:997, upTake:0, upPrice:0, ads:6000, tools:500, cogs:40},
+  tripwire:{visitors:15000, optin:20, close:8, price:27, upTake:25, upPrice:197, ads:3500, tools:250, cogs:3},
+};
+let state = {...PRESETS.lead}, cur = "$", preset = "lead";
+
+const $ = id => document.getElementById(id);
+const fmtN = n => Math.round(n).toLocaleString();
+const money = (n, dp) => {
+  const neg = n < 0; n = Math.abs(n);
+  const d = dp ?? (n < 100 ? 2 : 0);
+  return (neg ? "−" : "") + cur + n.toLocaleString(undefined,{minimumFractionDigits:d, maximumFractionDigits:d});
+};
+
+function buildFields(){
+  const box = $("fields"); box.innerHTML = "";
+  FIELDS.forEach(f => {
+    if (f.group){ const g = document.createElement("div"); g.className="group-label"; g.textContent=f.group; box.appendChild(g); return; }
+    const w = document.createElement("div"); w.className = "field";
+    const pre = f.unit === "cur" ? `<span class="cu">${cur}</span>` : "";
+    const post = f.unit === "%" ? `<span>%</span>` : "";
+    w.innerHTML = `<div class="field-top"><label for="n-${f.id}">${f.label}</label>
+      <div class="num">${pre}<input id="n-${f.id}" type="number" inputmode="decimal" min="${f.min}" step="${f.step}">${post}</div></div>
+      ${f.hint ? `<div class="hint">${f.hint}</div>` : ""}
+      <input id="r-${f.id}" type="range" min="${f.min}" max="${f.max}" step="${f.step}" aria-label="${f.label}">`;
+    box.appendChild(w);
+    const n = w.querySelector("input[type=number]"), r = w.querySelector("input[type=range]");
+    n.addEventListener("input", () => { let v = parseFloat(n.value); if (isNaN(v)||v<0) v = 0; if (f.unit==="%") v = Math.min(v,100); state[f.id]=v; r.value=v; clearPreset(); calc(); });
+    r.addEventListener("input", () => { state[f.id]=parseFloat(r.value); n.value=r.value; clearPreset(); calc(); });
+  });
+  syncInputs();
+}
+function syncInputs(){
+  FIELDS.forEach(f => { if (f.group) return; $("n-"+f.id).value = state[f.id]; $("r-"+f.id).value = state[f.id]; });
+}
+function clearPreset(){ preset = null; markPresets(); }
+function markPresets(){ document.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === preset)); }
+
+function model(s){
+  const leads = s.visitors * s.optin/100;
+  const buyers = leads * s.close/100;
+  const ups = buyers * s.upTake/100;
+  const revenue = buyers*s.price + ups*s.upPrice;
+  const cost = s.ads + s.tools + buyers*s.cogs;
+  const profit = revenue - cost;
+  return {leads, buyers, ups, revenue, cost, profit, roi: cost>0 ? profit/cost*100 : 0};
+}
+
+function calc(){
+  const m = model(state), s = state;
+  const pos = m.profit >= 0;
+  $("verdict").classList.toggle("neg", !pos);
+  $("roi").textContent = (m.roi>=0?"+":"−") + Math.abs(m.roi).toFixed(0) + "%";
+  $("vLbl").textContent = pos ? "Return on investment" : "Your funnel is losing money";
+  $("vSub").innerHTML = `${pos?"Profit":"Loss"} of <b>${money(Math.abs(m.profit),0)}</b> a month · <b>${money(Math.abs(m.profit)*12,0)}</b> a year`;
+  $("sRev").textContent = money(m.revenue,0);
+  $("sCost").textContent = money(m.cost,0);
+  $("sCpl").textContent = m.leads ? money((s.ads+s.tools)/m.leads) : "–";
+  $("sCpa").textContent = m.buyers ? money(m.cost/m.buyers) : "–";
+  $("sEpc").textContent = s.visitors ? money(m.revenue/s.visitors) : "–";
+  $("sRoas").textContent = s.ads ? (m.revenue/s.ads).toFixed(2)+"×" : "–";
+
+  const stages = [["Visitors",s.visitors],["Leads",m.leads],["Customers",m.buyers]];
+  if (s.upTake>0 && s.upPrice>0) stages.push(["Upsells",m.ups]);
+  const top = Math.max(s.visitors,1);
+  let html = "";
+  stages.forEach(([name,v],i) => {
+    if (i>0){ const prev = stages[i-1][1]; const pct = prev ? v/prev*100 : 0; html += `<div class="drop">↓ ${pct.toFixed(pct<10?1:0)}% continue</div>`; }
+    const w = Math.max(Math.sqrt(v/top)*100, 0);
+    html += `<div class="stage"><span class="name">${name}</span><div class="bar-track"><div class="bar" style="width:${w}%">${fmtN(v)}</div></div></div>`;
+  });
+  $("funnel").innerHTML = html;
+
+  const gain = patch => model({...s, ...patch}).profit - m.profit;
+  const tips = [
+    [`Raise opt-in rate from ${s.optin}% to ${+(s.optin+5).toFixed(1)}%`, gain({optin:Math.min(s.optin+5,100)})],
+    [`Raise sales conversion from ${s.close}% to ${+(s.close+1).toFixed(1)}%`, gain({close:Math.min(s.close+1,100)})],
+    [`Raise your offer price by 10% to ${money(s.price*1.1,0)}`, gain({price:s.price*1.1})],
+    [`Cut ad spend by 10% at the same traffic`, gain({ads:s.ads*0.9})],
+  ].sort((a,b) => b[1]-a[1]);
+  $("tips").innerHTML = tips.map(([t,g],i) => `<li><i>${i+1}</i><span>${t}: <b>${g>=0?"+":""}${money(g,0)}</b>/mo</span></li>`).join("");
+}
+
+$("presets").addEventListener("click", e => {
+  const b = e.target.closest(".preset"); if (!b) return;
+  preset = b.dataset.p; state = {...PRESETS[preset]}; syncInputs(); markPresets(); calc();
+});
+$("reset").addEventListener("click", () => { preset="lead"; state={...PRESETS.lead}; syncInputs(); markPresets(); calc(); });
+$("cur").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  cur = b.dataset.c;
+  document.querySelectorAll("#cur button").forEach(x => x.setAttribute("aria-pressed", x===b));
+  document.querySelectorAll(".cu").forEach(x => x.textContent = cur);
+  calc();
+});
+
+buildFields(); markPresets(); calc();
+</script>
