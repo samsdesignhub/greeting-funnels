@@ -124,6 +124,9 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 1px var(--acc
 .btn svg{width:16px;height:16px}
 .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
 .btns{display:flex;gap:10px;flex-wrap:wrap}
+.gen-row{flex-wrap:nowrap}
+.gen-row .btn svg{flex:none}
+.gen-row .btn{flex:1 1 0;justify-content:center;white-space:nowrap;padding:11px 10px;gap:6px;font-size:14px;min-width:0}
 
 /* hero result */
 .hero{background:var(--good-soft);border-radius:14px;padding:18px 20px}
@@ -356,8 +359,8 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
           <button type="button" class="chip" data-v="membership" aria-pressed="false">Membership</button>
         </div>
       </div>
-      <div class="btns">
-        <button type="button" class="btn" id="o-ai" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span id="o-ai-lbl">Write with AI</span></button>
+      <div class="btns gen-row">
+        <button type="button" class="btn" id="o-ai" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span id="o-ai-lbl">Generate</span></button>
         <button type="button" class="btn ghost" id="o-stop" hidden>Stop</button>
         <button type="button" class="btn ghost" id="o-gen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Shuffle template</button>
       </div>
@@ -783,12 +786,12 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
   });
   function setStatus(html,err){const st=$("o-status");st.hidden=!html;st.innerHTML=html||"";st.classList.toggle("err",!!err)}
   function inputsChanged(){
-    if(aiDraft){aiDirty=true;setStatus('Your answers changed. Click <b>Write again with AI</b> to update the draft, or <b>Shuffle template</b> for an instant version.');$("o-ai-lbl").textContent="Write again with AI";renderOffer();}
+    if(aiDraft){aiDirty=true;setStatus('Your answers changed. Click <b>Generate</b> to update the draft, or <b>Shuffle template</b> for an instant version.');$("o-ai-lbl").textContent="Generate";renderOffer();}
     else renderOffer();
   }
   $("o-format").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;format=b.dataset.v;
     document.querySelectorAll("#o-format .chip").forEach(c=>c.setAttribute("aria-pressed",c===b));inputsChanged()});
-  $("o-gen").addEventListener("click",()=>{angle++;pickedName=null;aiDraft=false;aiDirty=false;setStatus("");$("o-ai-lbl").textContent="Write with AI";renderOffer()});
+  $("o-gen").addEventListener("click",()=>{angle++;pickedName=null;aiDraft=false;aiDirty=false;setStatus("");$("o-ai-lbl").textContent="Generate";renderOffer()});
   ["o-aud","o-prob","o-out","o-time"].forEach(id=>$(id).addEventListener("input",inputsChanged));
   $("o-price").addEventListener("input",renderOffer);
   $("o-copy").addEventListener("click",()=>{
@@ -798,7 +801,7 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
   });
 
   /* ---- AI writer (uses the viewer's Claude through the sample capability) ---- */
-  let sampleFn=null, aiCtl=null;
+  let sampleFn=null, aiCtl=null, aiOff=false;
   if(window.claude&&typeof window.claude.use==="function"){
     window.claude.use("sample").then(fn=>{if(typeof fn==="function"){sampleFn=fn;$("o-ai").hidden=false}}).catch(()=>{});
   }
@@ -846,24 +849,24 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
     rate_limited:"Too many requests right now. Wait a minute, then try again.",
     session_expired:"Sign in to Claude again, then try again.",
     refused:"Claude couldn't write this one. Try rewording your answers.",
-    invalid_json:"The AI reply came back in an unexpected format. Click Write with AI to try again."
+    invalid_json:"The AI reply came back in an unexpected format. Click Generate to try again."
   };
   $("o-ai").addEventListener("click",async()=>{
     if(!sampleFn)return;
     aiCtl=new AbortController();
-    $("o-ai").disabled=true;$("o-stop").hidden=false;$("o-out-card").classList.add("busy");
+    $("o-ai").disabled=true;$("o-ai").hidden=true;$("o-stop").hidden=false;$("o-out-card").classList.add("busy");
     setStatus('<span class="spin" aria-hidden="true"></span>Claude is writing your offer and name ideas. This can take up to a minute.');
     try{
       const j=await sampleFn.json(aiPrompt(),{signal:aiCtl.signal,cache:false});
       offer=fromAI(j);aiDraft=true;aiDirty=false;renderOffer();
-      setStatus("");$("o-ai-lbl").textContent="Write again with AI";toast("AI draft ready");
+      setStatus("");$("o-ai-lbl").textContent="Generate";toast("AI draft ready");
     }catch(e){
       const code=e&&e.code;
       if(code==="cancelled")setStatus("");
       else setStatus(esc(AI_ERR[code]||"Something went wrong reaching Claude. Try again in a moment."),true);
-      if(code==="not_granted"||code==="sampling_disabled"||code==="not_declared"||code==="capability_disabled")$("o-ai").hidden=true;
+      if(code==="not_granted"||code==="sampling_disabled"||code==="not_declared"||code==="capability_disabled")aiOff=true;
     }finally{
-      $("o-ai").disabled=false;$("o-stop").hidden=true;$("o-out-card").classList.remove("busy");
+      $("o-ai").disabled=false;if(sampleFn&&!aiOff)$("o-ai").hidden=false;$("o-stop").hidden=true;$("o-out-card").classList.remove("busy");
     }
   });
   $("o-stop").addEventListener("click",()=>aiCtl&&aiCtl.abort());
