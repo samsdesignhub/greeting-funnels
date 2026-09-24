@@ -3,7 +3,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
-:root{
+:root,:root[data-theme="dark"]{
+  color-scheme:light;
   --bg:#f4f5fd;
   --bg-top:#e8e9fb;
   --surface:#ffffff;
@@ -26,24 +27,6 @@
   --radius:18px;
   --font:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --bg:#11122a;--bg-top:#1a1b3d;--surface:#191a36;--surface-2:#1f2043;
-    --line:#2b2d55;--line-strong:#3a3d6e;--ink:#eceeff;--ink-2:#b9bce0;--ink-3:#8487b3;
-    --accent:#7b7eff;--accent-2:#9a74ff;--accent-soft:#25275a;--accent-ink:#a9abff;
-    --good:#4ccf8a;--good-soft:#173a2c;--good-ink:#7ee2ad;--warn:#e6b35a;--warn-soft:#3a2e17;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#11122a;--bg-top:#1a1b3d;--surface:#191a36;--surface-2:#1f2043;
-  --line:#2b2d55;--line-strong:#3a3d6e;--ink:#eceeff;--ink-2:#b9bce0;--ink-3:#8487b3;
-  --accent:#7b7eff;--accent-2:#9a74ff;--accent-soft:#25275a;--accent-ink:#a9abff;
-  --good:#4ccf8a;--good-soft:#173a2c;--good-ink:#7ee2ad;--warn:#e6b35a;--warn-soft:#3a2e17;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
