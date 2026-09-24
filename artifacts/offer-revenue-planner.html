@@ -1,0 +1,804 @@
+<title>Offer & Revenue Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f4f5fd;
+  --bg-top:#e8e9fb;
+  --surface:#ffffff;
+  --surface-2:#f7f7fe;
+  --line:#e3e4f3;
+  --line-strong:#cfd1ee;
+  --ink:#1b1d3a;
+  --ink-2:#4b4e72;
+  --ink-3:#7c7fa3;
+  --accent:#5b5ef4;
+  --accent-2:#7a4df2;
+  --accent-soft:#eceeff;
+  --accent-ink:#3f42d6;
+  --good:#23945a;
+  --good-soft:#dff5e8;
+  --good-ink:#1c7a4a;
+  --warn:#b7791f;
+  --warn-soft:#fdf2dc;
+  --shadow:0 1px 2px rgba(40,44,110,.05),0 8px 28px -12px rgba(60,64,160,.18);
+  --radius:18px;
+  --font:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11122a;--bg-top:#1a1b3d;--surface:#191a36;--surface-2:#1f2043;
+    --line:#2b2d55;--line-strong:#3a3d6e;--ink:#eceeff;--ink-2:#b9bce0;--ink-3:#8487b3;
+    --accent:#7b7eff;--accent-2:#9a74ff;--accent-soft:#25275a;--accent-ink:#a9abff;
+    --good:#4ccf8a;--good-soft:#173a2c;--good-ink:#7ee2ad;--warn:#e6b35a;--warn-soft:#3a2e17;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11122a;--bg-top:#1a1b3d;--surface:#191a36;--surface-2:#1f2043;
+  --line:#2b2d55;--line-strong:#3a3d6e;--ink:#eceeff;--ink-2:#b9bce0;--ink-3:#8487b3;
+  --accent:#7b7eff;--accent-2:#9a74ff;--accent-soft:#25275a;--accent-ink:#a9abff;
+  --good:#4ccf8a;--good-soft:#173a2c;--good-ink:#7ee2ad;--warn:#e6b35a;--warn-soft:#3a2e17;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0;font-family:var(--font);font-size:15px;line-height:1.55;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg-top) 0,var(--bg) 340px) var(--bg);
+  padding:0 16px;
+}
+.wrap{max-width:1180px;margin:0 auto;padding-block:36px 28px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- header ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;margin-bottom:26px}
+.brand{display:flex;gap:16px;align-items:center}
+.mark{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));box-shadow:0 10px 22px -8px rgba(91,94,244,.6)}
+.mark svg{width:26px;height:26px;stroke:#fff}
+.brand h1{font-size:clamp(1.55rem,3vw,2.1rem);font-weight:800}
+.brand p{margin:2px 0 0;color:var(--ink-2);max-width:56ch}
+.seg{display:inline-flex;padding:4px;gap:2px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.seg button{border:0;background:none;min-width:36px;height:32px;padding:0 10px;border-radius:8px;cursor:pointer;color:var(--ink-2);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.cur-label{font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-right:8px}
+
+/* ---------- goal strip ---------- */
+.goalstrip{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:18px}
+.goalstrip .g-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.goalstrip label{font-weight:700}
+.goalstrip small{color:var(--ink-3)}
+.goal-facts{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
+.goal-facts div{display:flex;flex-direction:column}
+.goal-facts span{font-size:12px;color:var(--ink-3)}
+.goal-facts b{font-size:17px}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px;scrollbar-width:thin}
+.tab{flex:none;display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);
+  border-radius:14px;padding:10px 14px 10px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.tab:hover{border-color:var(--line-strong)}
+.tab .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tab .ic svg{width:17px;height:17px}
+.tab b{display:block;font-size:14px}
+.tab small{display:block;color:var(--ink-3);font-size:12px;line-height:1.3}
+.tab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tab[aria-selected="true"] .ic{background:var(--accent);color:#fff}
+
+/* ---------- panels ---------- */
+.panel{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:880px){.panel{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+.card-h{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
+.card-h .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent)}
+.card-h .ic svg{width:20px;height:20px}
+.card-h h2{font-size:1.15rem;font-weight:700}
+.card-h p{margin:0;color:var(--ink-3);font-size:13.5px}
+.stack{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field .lbl{font-weight:600;font-size:14px}
+.field .hint{font-size:12.5px;color:var(--ink-3);margin-top:-2px}
+.inp{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--accent);background:var(--surface)}
+textarea.inp{resize:vertical;min-height:62px}
+.inp-row{display:flex;align-items:center;gap:10px}
+.affix{position:relative;flex:none;width:130px}
+.affix .inp{text-align:right;padding-right:34px}
+.affix.pre .inp{padding-left:28px;padding-right:12px}
+.affix i{position:absolute;top:50%;transform:translateY(-50%);font-style:normal;color:var(--ink-3);font-size:13px;pointer-events:none}
+.affix.post i{right:12px}.affix.pre i{left:12px}
+.split{display:flex;justify-content:space-between;align-items:center;gap:10px}
+input[type=range]{width:100%;accent-color:var(--accent);height:22px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 8px 18px -8px rgba(91,94,244,.7)}
+.btn svg{width:16px;height:16px}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* hero result */
+.hero{background:var(--good-soft);border-radius:14px;padding:18px 20px}
+.hero .eyebrow{color:var(--good-ink)}
+.hero .big{font-size:clamp(2.2rem,5vw,3.1rem);font-weight:800;color:var(--good);line-height:1.1;letter-spacing:-.03em}
+.hero p{margin:4px 0 0;color:var(--ink-2)}
+.hero p b{color:var(--ink)}
+.hero.neutral{background:var(--accent-soft)}
+.hero.neutral .eyebrow{color:var(--accent-ink)}
+.hero.neutral .big{color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.tile span{display:block;font-size:13px;color:var(--ink-3)}
+.tile b{font-size:1.3rem;font-weight:700}
+.tile em{display:block;font-style:normal;font-size:12px;color:var(--ink-3)}
+
+/* offer output */
+.offer-name{font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;line-height:1.2}
+.alt-names{display:flex;flex-wrap:wrap;gap:8px}
+.out-sec{border-top:1px dashed var(--line);padding-top:14px}
+.out-sec h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:8px}
+.out-sec p{margin:0;color:var(--ink-2)}
+.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.list li{display:flex;gap:10px;align-items:flex-start;color:var(--ink-2)}
+.list li::before{content:"";flex:none;width:18px;height:18px;margin-top:3px;border-radius:6px;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b5ef4' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
+.list li b{color:var(--ink)}
+.list .val{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink-3);white-space:nowrap;padding-left:8px}
+.stackval{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:baseline;background:var(--surface-2);border-radius:12px;padding:12px 14px;margin-top:10px}
+.stackval s{color:var(--ink-3)}
+.cta-box{background:linear-gradient(140deg,var(--accent),var(--accent-2));color:#fff;border-radius:14px;padding:16px 18px;font-weight:700;font-size:1.05rem}
+.cta-box small{display:block;font-weight:500;opacity:.85;font-size:13px;margin-top:4px}
+
+/* pricing comparison */
+.ptable{width:100%;border-collapse:collapse;min-width:520px}
+.ptable th,.ptable td{padding:11px 10px;text-align:right;border-bottom:1px solid var(--line)}
+.ptable th:first-child,.ptable td:first-child{text-align:left}
+.ptable thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.ptable tr.best td{background:var(--accent-soft)}
+.ptable td b{font-size:1.05rem}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--good-soft);color:var(--good-ink);margin-left:6px;vertical-align:middle}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:grid;grid-template-columns:64px 1fr 92px;gap:12px;align-items:center}
+.bar-row .lab{font-weight:700}
+.bar-track{height:26px;background:var(--surface-2);border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .35s ease;min-width:3px}
+.bar-row .v{text-align:right;font-weight:600}
+.price-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.price-inputs .affix{width:100%}
+
+/* funnel */
+.funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
+.f-step{position:relative;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));color:#fff;transition:width .35s ease;max-width:100%}
+.f-step span{font-size:13px;opacity:.9}
+.f-step b{font-size:1.25rem}
+.f-rate{font-size:12.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.f-rate svg{width:14px;height:14px}
+
+/* ladder */
+.ladder-svg{width:100%;height:auto;display:block}
+.rung-list{display:flex;flex-direction:column;gap:10px}
+.rung{display:grid;grid-template-columns:22px 1fr 112px 88px;gap:10px;align-items:center}
+.rung .dot{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--accent-soft);color:var(--accent-ink)}
+.rung .inp{padding:8px 10px}
+.rung .affix{width:100%}
+.rung-head{display:grid;grid-template-columns:22px 1fr 112px 88px;gap:10px;font-size:11.5px;color:var(--ink-3);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+@media (max-width:460px){
+  .rung,.rung-head{grid-template-columns:22px 1fr 92px 76px;gap:6px}
+  .bar-row{grid-template-columns:52px 1fr 76px;gap:8px}
+  .price-inputs{grid-template-columns:repeat(2,1fr)}
+  .row2{grid-template-columns:1fr}
+}
+.journey{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.j-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface-2)}
+.j-card span{font-size:12px;color:var(--ink-3);display:block}
+.j-card b{display:block;font-size:14px}
+.j-card .p{font-size:1.15rem;font-weight:800;color:var(--accent)}
+.j-card em{font-style:normal;font-size:12.5px;color:var(--ink-2)}
+
+/* bump */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:460px){.compare{grid-template-columns:1fr}}
+.cmp{border:1px solid var(--line);border-radius:14px;padding:16px}
+.cmp.on{border-color:var(--good);background:var(--good-soft)}
+.cmp span{font-size:13px;color:var(--ink-3)}
+.cmp b{display:block;font-size:1.6rem;font-weight:800}
+.cmp em{font-style:normal;font-size:13px;color:var(--ink-2)}
+.stackbar{display:flex;height:34px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.stackbar div{display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;transition:width .35s ease}
+.stackbar .core{background:var(--accent)}
+.stackbar .bump{background:var(--good)}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+
+.note{font-size:12.5px;color:var(--ink-3)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);
+  padding:9px 16px;border-radius:10px;font-weight:600;font-size:13px}
+
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;color:var(--ink-3);font-size:13.5px}
+footer a{color:var(--accent-ink);font-weight:700;text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4v-5h4v-5h4V5h4"/><path d="M16 5h4v4"/></svg>
+      </div>
+      <div>
+        <h1>Offer &amp; Revenue Planner</h1>
+        <p>Shape an offer, price it, and work backwards from your income goal to the traffic you need. Built for coaches and creators.</p>
+      </div>
+    </div>
+    <div>
+      <span class="cur-label">Currency</span>
+      <div class="seg" id="cur" role="group" aria-label="Currency">
+        <button type="button" data-c="USD" aria-pressed="true">$</button>
+        <button type="button" data-c="INR" aria-pressed="false">₹</button>
+        <button type="button" data-c="EUR" aria-pressed="false">€</button>
+        <button type="button" data-c="GBP" aria-pressed="false">£</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="goalstrip" aria-label="Monthly revenue goal">
+    <div class="g-in">
+      <label for="goal">I want to make</label>
+      <div class="affix pre"><i class="cs">$</i><input class="inp num" id="goal" type="number" min="0" step="500" value="10000"></div>
+      <small>per month</small>
+    </div>
+    <div class="goal-facts">
+      <div><span>Per year</span><b class="num" id="gYear">–</b></div>
+      <div><span>Per week</span><b class="num" id="gWeek">–</b></div>
+      <div><span>Per day</span><b class="num" id="gDay">–</b></div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Planner tools">
+    <button class="tab" role="tab" id="t-offer" aria-controls="p-offer" aria-selected="true">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span>
+      <span><b>Offer Builder</b><small>Name, promise, bonuses</small></span>
+    </button>
+    <button class="tab" role="tab" id="t-price" aria-controls="p-price" aria-selected="false">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+      <span><b>Pricing Calculator</b><small>Compare 4 price points</small></span>
+    </button>
+    <button class="tab" role="tab" id="t-goal" aria-controls="p-goal" aria-selected="false">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+      <span><b>Revenue Goal</b><small>Traffic → leads → sales</small></span>
+    </button>
+    <button class="tab" role="tab" id="t-ladder" aria-controls="p-ladder" aria-selected="false">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5v-4h5v-4h5V8h3"/></svg></span>
+      <span><b>Product Ladder</b><small>Free to high-ticket</small></span>
+    </button>
+    <button class="tab" role="tab" id="t-bump" aria-controls="p-bump" aria-selected="false">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 002 1.6h8.6a2 2 0 002-1.6L21.5 7H6"/><path d="M13 9v5M10.5 11.5h5"/></svg></span>
+      <span><b>Order Bump</b><small>Checkout add-on uplift</small></span>
+    </button>
+  </nav>
+
+  <!-- ================= OFFER BUILDER ================= -->
+  <section class="panel" id="p-offer" role="tabpanel" aria-labelledby="t-offer">
+    <div class="card stack">
+      <div class="card-h" style="margin-bottom:0">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+        <div><h2>Describe your client</h2><p>Three answers are enough to draft an offer.</p></div>
+      </div>
+      <div class="field">
+        <label for="o-aud">Who is it for?</label>
+        <input class="inp" id="o-aud" value="new online fitness coaches">
+        <span class="hint">A specific audience, e.g. "busy moms who want to start a side business"</span>
+      </div>
+      <div class="field">
+        <label for="o-prob">What problem do they have right now?</label>
+        <textarea class="inp" id="o-prob">can't find paying clients on Instagram</textarea>
+      </div>
+      <div class="field">
+        <label for="o-out">What result do they want?</label>
+        <textarea class="inp" id="o-out">sign 5 paying clients</textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="o-time">Timeframe</label>
+          <select class="inp" id="o-time">
+            <option value="14">14 days</option><option value="30">30 days</option>
+            <option value="60" selected>60 days</option><option value="90">90 days</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="o-price">Price</label>
+          <div class="affix pre" style="width:100%"><i class="cs">$</i><input class="inp num" id="o-price" type="number" min="0" value="497"></div>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">How you deliver it</span>
+        <div class="chips" id="o-format" role="group" aria-label="Delivery format">
+          <button type="button" class="chip" data-v="course" aria-pressed="false">Online course</button>
+          <button type="button" class="chip" data-v="group" aria-pressed="true">Group program</button>
+          <button type="button" class="chip" data-v="coaching" aria-pressed="false">1:1 coaching</button>
+          <button type="button" class="chip" data-v="dwy" aria-pressed="false">Done-with-you</button>
+        </div>
+      </div>
+      <div class="btns">
+        <button type="button" class="btn" id="o-gen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Try another angle</button>
+      </div>
+    </div>
+
+    <div class="card stack" id="o-out-card">
+      <div class="split">
+        <span class="eyebrow">Your offer draft</span>
+        <button type="button" class="btn ghost" id="o-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy offer</button>
+      </div>
+      <div>
+        <div class="offer-name" id="r-name">–</div>
+        <p class="note" style="margin:8px 0 6px">Other name ideas (click to use)</p>
+        <div class="alt-names" id="r-alts"></div>
+      </div>
+      <div class="out-sec"><h3>Promise</h3><p id="r-promise"></p></div>
+      <div class="out-sec"><h3>Deliverables</h3><ul class="list" id="r-deliv"></ul></div>
+      <div class="out-sec"><h3>Bonuses</h3><ul class="list" id="r-bonus"></ul>
+        <div class="stackval num" id="r-stack"></div>
+      </div>
+      <div class="out-sec"><h3>Positioning</h3><p id="r-pos"></p></div>
+      <div class="out-sec"><h3>Call to action</h3><div class="cta-box" id="r-cta"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= PRICING ================= -->
+  <section class="panel" id="p-price" role="tabpanel" aria-labelledby="t-price" hidden>
+    <div class="card stack">
+      <div class="card-h" style="margin-bottom:0">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10M10 21V4M16 21v-7M22 21H2"/></svg></span>
+        <div><h2>Price points</h2><p>Uses the monthly goal at the top.</p></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Prices to compare</span>
+        <div class="price-inputs">
+          <div class="affix pre"><i class="cs">$</i><input class="inp num pp" id="pp0" type="number" min="1" value="97" aria-label="Price 1"></div>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num pp" id="pp1" type="number" min="1" value="197" aria-label="Price 2"></div>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num pp" id="pp2" type="number" min="1" value="497" aria-label="Price 3"></div>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num pp" id="pp3" type="number" min="1" value="997" aria-label="Price 4"></div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="p-conv">Lead-to-sale rate at lowest price</label>
+          <div class="affix post"><input class="inp num" id="p-conv" type="number" min="0.1" max="100" step="0.1" value="4"><i>%</i></div></div>
+        <input type="range" id="p-conv-r" min="0.5" max="20" step="0.5" value="4" aria-label="Lead-to-sale rate slider">
+        <span class="hint">Share of leads who buy the cheapest offer</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="p-drop">Conversion drop each time price doubles</label>
+          <div class="affix post"><input class="inp num" id="p-drop" type="number" min="0" max="90" step="1" value="30"><i>%</i></div></div>
+        <input type="range" id="p-drop-r" min="0" max="80" step="1" value="30" aria-label="Conversion drop slider">
+        <span class="hint">Higher prices usually convert less. 25–40% is a common rule of thumb.</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="p-opt">Visitor-to-lead rate</label>
+          <div class="affix post"><input class="inp num" id="p-opt" type="number" min="0.1" max="100" step="0.5" value="25"><i>%</i></div></div>
+        <input type="range" id="p-opt-r" min="1" max="60" step="0.5" value="25" aria-label="Visitor-to-lead rate slider">
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card stack">
+        <div class="hero neutral" id="p-hero"></div>
+        <div>
+          <p class="eyebrow" style="margin:0 0 10px">Sales needed each month</p>
+          <div class="bars" id="p-bars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="scroll">
+          <table class="ptable num">
+            <thead><tr><th>Price</th><th>Sales</th><th>Per week</th><th>Conv.</th><th>Leads</th><th>Visitors</th></tr></thead>
+            <tbody id="p-table"></tbody>
+          </table>
+        </div>
+        <p class="note" style="margin:12px 0 0">The highlighted row needs the fewest visitors to hit your goal with these assumptions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REVENUE GOAL ================= -->
+  <section class="panel" id="p-goal" role="tabpanel" aria-labelledby="t-goal" hidden>
+    <div class="card stack">
+      <div class="card-h" style="margin-bottom:0">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></span>
+        <div><h2>Work backwards</h2><p>From the goal to the traffic you need.</p></div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="g-price">Offer price</label>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num" id="g-price" type="number" min="1" value="497"></div></div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="g-opt">Opt-in rate</label>
+          <div class="affix post"><input class="inp num" id="g-opt" type="number" min="0.1" max="100" step="0.5" value="30"><i>%</i></div></div>
+        <input type="range" id="g-opt-r" min="1" max="60" step="0.5" value="30" aria-label="Opt-in rate slider">
+        <span class="hint">Visitors who join your list</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="g-call">Leads who take the next step</label>
+          <div class="affix post"><input class="inp num" id="g-call" type="number" min="0.1" max="100" step="0.5" value="10"><i>%</i></div></div>
+        <input type="range" id="g-call-r" min="1" max="50" step="0.5" value="10" aria-label="Next step rate slider">
+        <span class="hint">Book a call, attend the webinar, or open the sales page</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="g-close">Close rate</label>
+          <div class="affix post"><input class="inp num" id="g-close" type="number" min="0.1" max="100" step="0.5" value="20"><i>%</i></div></div>
+        <input type="range" id="g-close-r" min="1" max="80" step="0.5" value="20" aria-label="Close rate slider">
+        <span class="hint">Of those, how many buy</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="g-cpc">Cost per visitor (if paid)</label>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num" id="g-cpc" type="number" min="0" step="0.05" value="0.80"></div></div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card stack">
+        <div class="hero" id="g-hero"></div>
+        <div class="funnel" id="g-funnel" aria-label="Funnel"></div>
+      </div>
+      <div class="card stack">
+        <p class="eyebrow" style="margin:0">Daily targets</p>
+        <div class="tiles" id="g-tiles"></div>
+        <p class="note" id="g-rate" style="margin:0"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LADDER ================= -->
+  <section class="panel" id="p-ladder" role="tabpanel" aria-labelledby="t-ladder" hidden>
+    <div class="card stack">
+      <div class="card-h" style="margin-bottom:0">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5v-4h5v-4h5V8h3"/></svg></span>
+        <div><h2>Your ladder</h2><p>Each step's take rate is the share of people on the step below who move up.</p></div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="l-leads">New leads per month</label>
+          <div class="affix"><input class="inp num" id="l-leads" type="number" min="0" step="50" value="1000" style="padding-right:12px"></div></div>
+      </div>
+      <div>
+        <div class="rung-head"><span></span><span>Product</span><span>Price</span><span>Take rate</span></div>
+        <div class="rung-list" id="l-rungs" style="margin-top:8px"></div>
+      </div>
+      <p class="note" style="margin:0">Step 1 is your free entry point, so its take rate is 100% of new leads.</p>
+    </div>
+
+    <div class="stack">
+      <div class="card stack">
+        <div class="hero" id="l-hero"></div>
+        <svg class="ladder-svg" id="l-svg" viewBox="0 0 640 300" role="img" aria-label="Customer journey staircase"></svg>
+      </div>
+      <div class="card stack">
+        <p class="eyebrow" style="margin:0">Customer journey</p>
+        <div class="journey" id="l-journey"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BUMP ================= -->
+  <section class="panel" id="p-bump" role="tabpanel" aria-labelledby="t-bump" hidden>
+    <div class="card stack">
+      <div class="card-h" style="margin-bottom:0">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+        <div><h2>Checkout setup</h2><p>A one-click add-on shown before payment.</p></div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="b-orders">Orders per month</label>
+          <div class="affix"><input class="inp num" id="b-orders" type="number" min="0" step="10" value="200" style="padding-right:12px"></div></div>
+        <input type="range" id="b-orders-r" min="10" max="2000" step="10" value="200" aria-label="Orders slider">
+      </div>
+      <div class="field">
+        <div class="split"><label for="b-core">Main product price</label>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num" id="b-core" type="number" min="0" value="97"></div></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Bump price</span>
+        <div class="split">
+          <div class="chips" id="b-quick" role="group" aria-label="Quick bump price">
+            <button type="button" class="chip" data-v="17" aria-pressed="false">17</button>
+            <button type="button" class="chip" data-v="27" aria-pressed="true">27</button>
+            <button type="button" class="chip" data-v="47" aria-pressed="false">47</button>
+          </div>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num" id="b-price" type="number" min="0" value="27" aria-label="Bump price"></div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="split"><label for="b-take">Buyers who add the bump</label>
+          <div class="affix post"><input class="inp num" id="b-take" type="number" min="0" max="100" step="1" value="30"><i>%</i></div></div>
+        <input type="range" id="b-take-r" min="0" max="70" step="1" value="30" aria-label="Bump take rate slider">
+        <span class="hint">20–40% is typical for a well-matched bump</span>
+      </div>
+      <div class="field">
+        <div class="split"><label for="b-cogs">Cost to deliver the bump</label>
+          <div class="affix pre"><i class="cs">$</i><input class="inp num" id="b-cogs" type="number" min="0" value="0"></div></div>
+        <span class="hint">Digital bumps usually cost nothing to deliver</span>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card stack">
+        <div class="hero" id="b-hero"></div>
+        <div class="compare num" id="b-compare"></div>
+        <div>
+          <div class="stackbar" id="b-bar"></div>
+          <div class="legend" style="margin-top:8px"><span><i style="background:var(--accent)"></i>Main product</span><span><i style="background:var(--good)"></i>Order bump</span></div>
+        </div>
+      </div>
+      <div class="card stack">
+        <p class="eyebrow" style="margin:0">27 vs 47 at your numbers</p>
+        <div class="tiles num" id="b-tiles"></div>
+        <p class="note" id="b-note" style="margin:0"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Offer &amp; Revenue Planner. Estimates only; your real numbers will vary.</span>
+    <span>Designed by <a href="https://www.facebook.com/sams2410" target="_blank" rel="noopener">Sam Kushwah</a></span>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  const CUR={USD:{s:"$",l:"en-US"},INR:{s:"₹",l:"en-IN"},EUR:{s:"€",l:"de-DE"},GBP:{s:"£",l:"en-GB"}};
+  let cur=store.get("orp-cur")||"USD"; if(!CUR[cur])cur="USD";
+  const n=v=>{const x=parseFloat(v);return isFinite(x)?x:0};
+  const money=(v,dec)=>{
+    const d=dec===undefined?(Math.abs(v)<100&&v%1!==0?2:0):dec;
+    return new Intl.NumberFormat(CUR[cur].l,{style:"currency",currency:cur,minimumFractionDigits:d,maximumFractionDigits:d}).format(v||0);
+  };
+  const int=v=>new Intl.NumberFormat(CUR[cur].l,{maximumFractionDigits:0}).format(Math.round(v||0));
+  const pct=v=>(Math.round(v*10)/10).toString().replace(/\.0$/,"")+"%";
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const goal=()=>Math.max(0,n($("goal").value));
+
+  /* link number inputs with sliders */
+  function pair(a,b){const A=$(a),B=$(b);A.addEventListener("input",()=>{B.value=A.value;renderAll()});B.addEventListener("input",()=>{A.value=B.value;renderAll()})}
+  [["p-conv","p-conv-r"],["p-drop","p-drop-r"],["p-opt","p-opt-r"],["g-opt","g-opt-r"],["g-call","g-call-r"],["g-close","g-close-r"],
+   ["b-orders","b-orders-r"],["b-take","b-take-r"]].forEach(p=>pair(p[0],p[1]));
+
+  /* tabs */
+  const tabs=[...document.querySelectorAll('[role="tab"]')];
+  function showTab(id){
+    tabs.forEach(t=>{const on=t.id===id;t.setAttribute("aria-selected",on);$(t.getAttribute("aria-controls")).hidden=!on});
+    store.set("orp-tab",id);
+  }
+  tabs.forEach(t=>t.addEventListener("click",()=>showTab(t.id)));
+  const hashMap={offer:"t-offer",pricing:"t-price",goal:"t-goal",ladder:"t-ladder",bump:"t-bump"};
+  const h=location.hash.replace("#","");
+  const saved=store.get("orp-tab");
+  showTab(hashMap[h]||(saved&&$(saved)?saved:"t-offer"));
+
+  /* currency */
+  function paintCur(){
+    document.querySelectorAll("#cur button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===cur));
+    document.querySelectorAll(".cs").forEach(e=>e.textContent=CUR[cur].s);
+    document.querySelectorAll("#b-quick .chip").forEach(c=>c.textContent=CUR[cur].s+c.dataset.v);
+  }
+  document.querySelectorAll("#cur button").forEach(b=>b.addEventListener("click",()=>{cur=b.dataset.c;store.set("orp-cur",cur);paintCur();renderAll()}));
+
+  function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1800)}
+
+  /* ================= OFFER BUILDER ================= */
+  let format="group", angle=0, pickedName=null;
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  const title=s=>s.split(/\s+/).filter(Boolean).map(w=>/^(a|an|the|to|of|in|on|for|and|or|with|from|your|their)$/i.test(w)?w.toLowerCase():cap(w)).join(" ").replace(/^./,c=>c.toUpperCase());
+  const clean=s=>s.trim().replace(/[.!]+$/,"");
+  const FORMAT={
+    course:{noun:"online course",short:"Course",deliv:(o,p,d)=>[
+      ["Module 1: The real reason you "+p,"a short diagnosis so you stop repeating what hasn't worked"],
+      ["Module 2: The core method","the step-by-step system to "+o],
+      ["Module 3: Put it to work","guided exercises with a clear weekly action list"],
+      ["Module 4: Keep it going","how to make results repeatable after the first "+d+" days"],
+      ["Templates and worksheets","plug-and-play files for every module"],
+      ["Lifetime access","plus every future update"]]},
+    group:{noun:"group coaching program",short:"Accelerator",deliv:(o,p,d)=>[
+      [Math.round(d/7)+" weekly live group calls","teaching, then hot seats on your exact situation"],
+      ["The core curriculum","short video lessons that map the path to "+o],
+      ["Private community","ask questions any day and share wins with peers"],
+      ["Accountability pods","small groups of 4–5 who check in every week"],
+      ["Onboarding audit","we review where you are before call one"],
+      ["Call replays","every session recorded if you can't make it live"]]},
+    coaching:{noun:"1:1 coaching program",short:"Intensive",deliv:(o,p,d)=>[
+      [Math.max(2,Math.round(d/14))+" private coaching sessions","60 minutes each, focused only on you"],
+      ["Personal roadmap","a written plan to "+o+", built in session one"],
+      ["Direct message support","voice or text between calls, weekdays"],
+      ["Reviews of your work","send drafts, pages or content for feedback"],
+      ["Progress tracker","clear milestones so you always know what's next"]]},
+    dwy:{noun:"done-with-you program",short:"Build Sprint",deliv:(o,p,d)=>[
+      ["Kickoff strategy session","we map your plan to "+o+" together"],
+      ["Live build workshops","we build the assets side by side, screen shared"],
+      ["Expert review of everything","nothing goes live without a second pair of eyes"],
+      ["Ready-made templates","scripts, pages and posts adapted to your niche"],
+      ["Launch support","we're on hand the week you go live"],
+      [d+"-day implementation window","with fixed milestones and check-ins"]]}
+  };
+  const NAME_PATTERNS=[
+    (O,d,f)=>"The "+d+"-Day "+O+" "+f.short,
+    (O,d,f)=>"The "+O+" Blueprint",
+    (O,d,f)=>O+" in "+d+" Days",
+    (O,d,f)=>"The "+O+" Method",
+    (O,d,f)=>"Project: "+O,
+    (O,d,f)=>"The "+O+" Playbook"
+  ];
+  const PROMISES=[
+    (a,p,o,d)=>"Help "+a+" "+o+" in "+d+" days, even if right now they "+p+".",
+    (a,p,o,d)=>"In the next "+d+" days, you'll "+o+". No more feeling like you "+p+".",
+    (a,p,o,d)=>"A clear, step-by-step path for "+a+" to "+o+" within "+d+" days."
+  ];
+  const BONUSES=[
+    (o,p)=>["Quick-start checklist","the first 5 actions to take today",0.08],
+    (o,p)=>["Swipe file","copy, scripts and examples that already work",0.12],
+    (o,p)=>["Mistakes to avoid guide","the traps that keep people stuck where they "+p,0.06],
+    (o,p)=>["Fast-action bonus","a private 30-minute review call for the first 10 buyers",0.2],
+    (o,p)=>["Resource vault","tools and templates we use every week",0.1],
+    (o,p)=>["Results guarantee session","if you do the work and don't "+o+", we keep working with you",0.15]
+  ];
+  const CTAS=[
+    (n,p)=>["Join "+n+" today for "+p,"Doors close when the group fills."],
+    (n,p)=>["Get instant access for "+p,"Start the first lesson in the next 5 minutes."],
+    (n,p)=>["Claim your spot for "+p,"Backed by a 14-day money-back guarantee."]
+  ];
+  let offerText="";
+  function renderOffer(){
+    const aud=clean($("o-aud").value)||"your audience";
+    const prob=clean($("o-prob").value).replace(/^(they |i )/i,"")||"feel stuck";
+    const out=clean($("o-out").value).replace(/^(to )/i,"")||"get results";
+    const d=n($("o-time").value)||30, price=n($("o-price").value), f=FORMAT[format];
+    const O=title(out.split(/\s+/).slice(0,5).join(" "));
+    const names=NAME_PATTERNS.map(fn=>fn(O,d,f));
+    const main=pickedName&&names.includes(pickedName)?pickedName:names[angle%names.length];
+    $("r-name").textContent=main;
+    $("r-alts").innerHTML=names.filter(x=>x!==main).slice(0,3).map(x=>'<button type="button" class="chip" data-n="'+esc(x)+'">'+esc(x)+'</button>').join("");
+    const promise=PROMISES[angle%PROMISES.length](aud,prob,out,d);
+    $("r-promise").textContent=cap(promise);
+    const del=f.deliv(out,prob,d);
+    $("r-deliv").innerHTML=del.map(x=>"<li><span><b>"+esc(x[0])+"</b> · "+esc(x[1])+"</span></li>").join("");
+    const bset=[0,1,2].map(i=>BONUSES[(angle+i*2)%BONUSES.length](out,prob));
+    const base=Math.max(price,1);
+    const bvals=bset.map(b=>Math.max(9,Math.round(base*b[2]*4/10)*10-3));
+    $("r-bonus").innerHTML=bset.map((b,i)=>"<li><span><b>"+esc(b[0])+"</b> · "+esc(b[1])+'</span><span class="val">'+money(bvals[i],0)+" value</span></li>").join("");
+    const coreVal=Math.round(price*1.6/10)*10-3, total=coreVal+bvals.reduce((a,b)=>a+b,0);
+    $("r-stack").innerHTML='<span>Total value <s>'+money(total,0)+'</s></span><span>Your price <b>'+money(price,0)+'</b></span><span class="pill">'+(total>0?Math.round((1-price/total)*100):0)+'% below value</span>';
+    const pos=cap(f.noun)+" for "+aud+" who "+prob+". Most advice is generic and leaves them to figure out the details alone. "+main+" is built around one outcome, to "+out+" in "+d+" days, with "+(format==="course"?"a clear sequence they can follow at their own pace":format==="coaching"?"personal guidance every step of the way":format==="dwy"?"experts building alongside them":"live support and a group moving at the same pace")+".";
+    $("r-pos").textContent=pos;
+    const c=CTAS[angle%CTAS.length](main,money(price,0));
+    $("r-cta").innerHTML=esc(c[0])+"<small>"+esc(c[1])+"</small>";
+    offerText=[main,"","PROMISE",cap(promise),"","DELIVERABLES",...del.map(x=>"- "+x[0]+": "+x[1]),"","BONUSES",...bset.map((b,i)=>"- "+b[0]+": "+b[1]+" ("+money(bvals[i],0)+" value)"),
+      "Total value "+money(total,0)+", your price "+money(price,0),"","POSITIONING",pos,"","CTA",c[0]+". "+c[1]].join("\n");
+  }
+  $("r-alts").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;pickedName=b.dataset.n;renderOffer()});
+  $("o-format").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;format=b.dataset.v;
+    document.querySelectorAll("#o-format .chip").forEach(c=>c.setAttribute("aria-pressed",c===b));renderOffer()});
+  $("o-gen").addEventListener("click",()=>{angle++;pickedName=null;renderOffer()});
+  ["o-aud","o-prob","o-out","o-time","o-price"].forEach(id=>$(id).addEventListener("input",renderOffer));
+  $("o-copy").addEventListener("click",()=>{
+    const done=()=>toast("Offer copied");
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(offerText).then(done,fallback)}else fallback();
+    function fallback(){const r=document.createRange();r.selectNodeContents($("o-out-card"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Selected. Press Ctrl/Cmd+C to copy")}
+  });
+
+  /* ================= PRICING ================= */
+  function renderPricing(){
+    const G=goal(), base=n($("p-conv").value)/100, drop=n($("p-drop").value)/100, opt=n($("p-opt").value)/100;
+    const prices=[0,1,2,3].map(i=>Math.max(1,n($("pp"+i).value)));
+    const pmin=Math.min(...prices);
+    const rows=prices.map(p=>{
+      const conv=base*Math.pow(1-drop,Math.log2(p/pmin));
+      const sales=Math.ceil(G/p), leads=conv>0?Math.ceil(sales/conv):Infinity, vis=opt>0?Math.ceil(leads/opt):Infinity;
+      return {p,conv,sales,leads,vis};
+    });
+    const best=rows.reduce((a,b)=>b.vis<a.vis?b:a);
+    const maxS=Math.max(...rows.map(r=>r.sales),1);
+    $("p-hero").innerHTML='<div class="eyebrow">Easiest path to '+money(G,0)+'/month</div><div class="big num">'+int(best.sales)+' sales</div><p>at <b>'+money(best.p,0)+'</b>, from about <b>'+int(best.leads)+' leads</b> and <b>'+int(best.vis)+' visitors</b> a month.</p>';
+    $("p-bars").innerHTML=rows.map(r=>'<div class="bar-row num"><span class="lab">'+money(r.p,0)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+(r.sales/maxS*100)+'%"></div></div><span class="v">'+int(r.sales)+' sales</span></div>').join("");
+    $("p-table").innerHTML=rows.map(r=>'<tr class="'+(r===best?"best":"")+'"><td><b>'+money(r.p,0)+'</b>'+(r===best?'<span class="pill">Fewest visitors</span>':'')+'</td><td>'+int(r.sales)+'</td><td>'+(Math.round(r.sales/4.33*10)/10)+'</td><td>'+pct(r.conv*100)+'</td><td>'+int(r.leads)+'</td><td>'+int(r.vis)+'</td></tr>').join("");
+  }
+  document.querySelectorAll(".pp").forEach(i=>i.addEventListener("input",renderAll));
+
+  /* ================= REVENUE GOAL ================= */
+  function renderGoal(){
+    const G=goal(), p=Math.max(1,n($("g-price").value)), opt=n($("g-opt").value)/100, step=n($("g-call").value)/100, close=n($("g-close").value)/100, cpc=n($("g-cpc").value);
+    const cust=Math.ceil(G/p), mid=close>0?Math.ceil(cust/close):0, leads=step>0?Math.ceil(mid/step):0, vis=opt>0?Math.ceil(leads/opt):0;
+    const overall=vis>0?cust/vis*100:0, adSpend=vis*cpc, profit=cust*p-adSpend;
+    $("g-hero").innerHTML='<div class="eyebrow">To make '+money(G,0)+' a month</div><div class="big num">'+int(cust)+' customers</div><p>from <b>'+int(leads)+' leads</b> and <b>'+int(vis)+' visitors</b>. If traffic is paid: <b>'+money(adSpend,0)+'</b> ad spend, <b>'+money(profit,0)+'</b> left after ads.</p>';
+    const steps=[["Visitors",vis,null],["Leads",leads,opt],["Take next step",mid,step],["Customers",cust,close]];
+    const mx=Math.max(vis,1);
+    $("g-funnel").innerHTML=steps.map((s,i)=>{
+      const w=Math.max(42,Math.sqrt(s[1]/mx)*100);
+      return (s[2]!==null?'<div class="f-rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>'+pct(s[2]*100)+' convert</div>':'')+
+        '<div class="f-step num" style="width:'+w+'%"><span>'+s[0]+'</span><b>'+int(s[1])+'</b></div>';
+    }).join("");
+    const day=v=>Math.round(v/30*10)/10;
+    $("g-tiles").innerHTML=[["Visitors a day",day(vis)],["Leads a day",day(leads)],["Sales a day",day(cust)],["Value per lead",null]].map(t=>
+      '<div class="tile num"><span>'+t[0]+'</span><b>'+(t[1]===null?money(leads?G/leads:0):t[1].toLocaleString(CUR[cur].l))+'</b></div>').join("");
+    $("g-rate").textContent="Overall visitor-to-customer rate: "+(Math.round(overall*100)/100)+"%. Raising any one rate by a few points cuts the traffic you need a lot.";
+  }
+  ["g-price","g-cpc"].forEach(id=>$(id).addEventListener("input",renderAll));
+
+  /* ================= LADDER ================= */
+  const rungs=[["Free guide",0,100],["Starter kit",27,8],["Core course",97,25],["Group program",297,20],["VIP coaching",997,15]];
+  $("l-rungs").innerHTML=rungs.map((r,i)=>'<div class="rung"><span class="dot">'+(i+1)+'</span>'+
+    '<input class="inp" id="ln'+i+'" value="'+esc(r[0])+'" aria-label="Step '+(i+1)+' name">'+
+    '<div class="affix pre"><i class="cs">$</i><input class="inp num" id="lp'+i+'" type="number" min="0" value="'+r[1]+'" aria-label="Step '+(i+1)+' price"></div>'+
+    '<div class="affix post"><input class="inp num" id="lt'+i+'" type="number" min="0" max="100" step="1" value="'+r[2]+'" aria-label="Step '+(i+1)+' take rate"'+(i===0?" disabled":"")+'><i>%</i></div></div>').join("");
+  $("l-rungs").addEventListener("input",renderAll);
+  $("l-leads").addEventListener("input",renderAll);
+  function renderLadder(){
+    const L=Math.max(0,n($("l-leads").value));
+    let people=L, total=0;
+    const data=rungs.map((r,i)=>{
+      const name=$("ln"+i).value||"Step "+(i+1), price=Math.max(0,n($("lp"+i).value)), take=i===0?1:n($("lt"+i).value)/100;
+      people=i===0?L:people*take;
+      const rev=people*price; total+=rev;
+      return {name,price,take,people,rev};
+    });
+    const perLead=L?total/L:0;
+    $("l-hero").innerHTML='<div class="eyebrow">Monthly ladder revenue</div><div class="big num">'+money(total,0)+'</div><p>Each new lead is worth <b>'+money(perLead)+'</b> across the ladder. That covers <b>'+(goal()?Math.round(total/goal()*100):0)+'%</b> of your '+money(goal(),0)+' goal.</p>';
+    // staircase svg
+    const W=640,H=300,pad=10,top=40,bottom=40,sw=(W-pad*2)/data.length;
+    const maxRev=Math.max(...data.map(d=>d.rev),1);
+    let s="";
+    data.forEach((d,i)=>{
+      const hStep=(H-top-bottom)*(0.2+0.8*(i/(data.length-1)));
+      const x=pad+i*sw, y=H-bottom-hStep;
+      const op=0.35+0.65*(i/(data.length-1));
+      s+='<rect x="'+(x+3)+'" y="'+y+'" width="'+(sw-6)+'" height="'+hStep+'" rx="10" fill="var(--accent)" fill-opacity="'+op.toFixed(2)+'"></rect>';
+      s+='<text x="'+(x+sw/2)+'" y="'+(y+24)+'" text-anchor="middle" fill="#fff" font-size="15" font-weight="800" font-family="var(--font)">'+esc(d.price?money(d.price,0):"Free")+'</text>';
+      s+='<text x="'+(x+sw/2)+'" y="'+(y+42)+'" text-anchor="middle" fill="#fff" fill-opacity=".9" font-size="11.5" font-family="var(--font)">'+int(d.people)+' people</text>';
+      s+='<text x="'+(x+sw/2)+'" y="'+(y-10)+'" text-anchor="middle" fill="var(--ink-2)" font-size="12" font-weight="700" font-family="var(--font)">'+(d.rev?money(d.rev,0):"")+'</text>';
+      const nm=d.name.length>14?d.name.slice(0,13)+"…":d.name;
+      s+='<text x="'+(x+sw/2)+'" y="'+(H-bottom+22)+'" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="700" font-family="var(--font)">'+esc(nm)+'</text>';
+    });
+    $("l-svg").innerHTML=s;
+    $("l-journey").innerHTML=data.map((d,i)=>'<div class="j-card num"><span>Step '+(i+1)+'</span><b>'+esc(d.name)+'</b><div class="p">'+(d.price?money(d.price,0):"Free")+'</div><em>'+(i===0?"Every new lead starts here":pct(d.take*100)+" move up from step "+i)+'</em></div>').join("");
+  }
+
+  /* ================= BUMP ================= */
+  $("b-quick").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;$("b-price").value=b.dataset.v;renderAll()});
+  ["b-price","b-core","b-cogs"].forEach(id=>$(id).addEventListener("input",renderAll));
+  function renderBump(){
+    const o=Math.max(0,n($("b-orders").value)), core=Math.max(0,n($("b-core").value)), bp=Math.max(0,n($("b-price").value)), take=n($("b-take").value)/100, cogs=Math.max(0,n($("b-cogs").value));
+    document.querySelectorAll("#b-quick .chip").forEach(c=>c.setAttribute("aria-pressed",String(n(c.dataset.v)===bp)));
+    const without=o*core, bumpRev=o*take*bp, bumpProfit=o*take*(bp-cogs), withB=without+bumpRev;
+    const aov0=core, aov1=o?withB/o:0, lift=without?bumpRev/without*100:0;
+    $("b-hero").innerHTML='<div class="eyebrow">Extra revenue from the bump</div><div class="big num">+'+money(bumpRev,0)+'</div><p><b>+'+pct(lift)+'</b> a month with the same traffic, <b>'+money(bumpProfit*12,0)+'</b> extra profit a year.</p>';
+    $("b-compare").innerHTML='<div class="cmp"><span>Without bump</span><b>'+money(without,0)+'</b><em>Average order '+money(aov0)+'</em></div>'+
+      '<div class="cmp on"><span>With a '+money(bp,0)+' bump</span><b>'+money(withB,0)+'</b><em>Average order '+money(aov1)+'</em></div>';
+    const cw=withB?without/withB*100:100;
+    $("b-bar").innerHTML='<div class="core" style="width:'+cw+'%">'+money(without,0)+'</div><div class="bump" style="width:'+(100-cw)+'%">'+(bumpRev?"+"+money(bumpRev,0):"")+'</div>';
+    const tiles=[27,47].map(p=>{const t=p===47?Math.max(0,take-0.08):take;return {p,t,rev:o*t*p}});
+    $("b-tiles").innerHTML=tiles.map(t=>'<div class="tile"><span>'+money(t.p,0)+' bump at '+pct(t.t*100)+' take</span><b>+'+money(t.rev,0)+'</b><em>'+money(t.rev*12,0)+' a year</em></div>').join("");
+    $("b-note").textContent="The "+money(47,0)+" row assumes 8 points fewer buyers add it, since a pricier bump usually converts a little less. Keep the bump under about half the main price.";
+  }
+
+  function renderAll(){
+    const G=goal();
+    $("gYear").textContent=money(G*12,0);$("gWeek").textContent=money(G*12/52,0);$("gDay").textContent=money(G*12/365,0);
+    renderPricing();renderGoal();renderLadder();renderBump();
+  }
+  $("goal").addEventListener("input",renderAll);
+  paintCur();renderOffer();renderAll();
+})();
+</script>
