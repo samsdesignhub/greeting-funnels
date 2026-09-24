@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
+  color-scheme:light;
   --bg:#f3f6ff;
   --bg-hero-a:#eef1fc;
   --bg-hero-b:#e6e8fd;
@@ -24,26 +25,6 @@
   --warn:#b7791f;
   --shadow:0 10px 30px -12px rgba(52,64,120,.22),0 2px 6px rgba(52,64,120,.06);
   --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --bg:#10131f;--bg-hero-a:#161a2c;--bg-hero-b:#1b1a35;
-    --surface:#171b2b;--surface-2:#1c2134;--line:#2a3150;
-    --ink:#e7eaf5;--ink-2:#b9c0d6;--muted:#8a93ad;
-    --accent:#7b95ff;--accent-2:#8f7bff;--accent-soft:#222c52;--accent-soft-2:#2a2552;
-    --good:#4cc98d;--good-soft:#173628;--bad:#f07a82;--bad-soft:#3a1d22;--warn:#e0a84a;
-    --shadow:0 10px 30px -12px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#10131f;--bg-hero-a:#161a2c;--bg-hero-b:#1b1a35;
-  --surface:#171b2b;--surface-2:#1c2134;--line:#2a3150;
-  --ink:#e7eaf5;--ink-2:#b9c0d6;--muted:#8a93ad;
-  --accent:#7b95ff;--accent-2:#8f7bff;--accent-soft:#222c52;--accent-soft-2:#2a2552;
-  --good:#4cc98d;--good-soft:#173628;--bad:#f07a82;--bad-soft:#3a1d22;--warn:#e0a84a;
-  --shadow:0 10px 30px -12px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3);
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
