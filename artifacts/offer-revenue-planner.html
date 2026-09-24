@@ -142,7 +142,21 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 1px var(--acc
 
 /* offer output */
 .offer-name{font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;line-height:1.2}
-.alt-names{display:flex;flex-wrap:wrap;gap:8px}
+.name-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.ng{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.ng-h{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+.ng button{all:unset;cursor:pointer;font-weight:600;font-size:14px;line-height:1.35;color:var(--ink);padding:6px 8px;border-radius:8px}
+.ng button:hover{background:var(--accent-soft)}
+.ng button:focus-visible{outline:2px solid var(--accent)}
+.ng button[aria-current="true"]{background:var(--accent);color:#fff}
+.h3-note{text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink-3);margin-left:6px}
+.src-badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-3);letter-spacing:.04em}
+.src-badge.ai{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.ai-status{margin:0;font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.ai-status.err{color:var(--warn)}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent-soft);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+#o-out-card.busy{opacity:.55;transition:opacity .2s}
 .out-sec{border-top:1px dashed var(--line);padding-top:14px}
 .out-sec h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:8px}
 .out-sec p{margin:0;color:var(--ink-2)}
@@ -330,28 +344,36 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
         </div>
       </div>
       <div class="field">
-        <span class="lbl">How you deliver it</span>
+        <span class="lbl">What are you selling?</span>
         <div class="chips" id="o-format" role="group" aria-label="Delivery format">
           <button type="button" class="chip" data-v="course" aria-pressed="false">Online course</button>
           <button type="button" class="chip" data-v="group" aria-pressed="true">Group program</button>
           <button type="button" class="chip" data-v="coaching" aria-pressed="false">1:1 coaching</button>
           <button type="button" class="chip" data-v="dwy" aria-pressed="false">Done-with-you</button>
+          <button type="button" class="chip" data-v="webinar" aria-pressed="false">Webinar</button>
+          <button type="button" class="chip" data-v="workshop" aria-pressed="false">Workshop</button>
+          <button type="button" class="chip" data-v="challenge" aria-pressed="false">Challenge</button>
+          <button type="button" class="chip" data-v="membership" aria-pressed="false">Membership</button>
         </div>
       </div>
       <div class="btns">
-        <button type="button" class="btn" id="o-gen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Try another angle</button>
+        <button type="button" class="btn" id="o-ai" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span id="o-ai-lbl">Write with AI</span></button>
+        <button type="button" class="btn ghost" id="o-stop" hidden>Stop</button>
+        <button type="button" class="btn ghost" id="o-gen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Shuffle template</button>
       </div>
+      <p class="ai-status" id="o-status" aria-live="polite" hidden></p>
     </div>
 
     <div class="card stack" id="o-out-card">
       <div class="split">
-        <span class="eyebrow">Your offer draft</span>
+        <span class="eyebrow">Your offer draft <span class="src-badge" id="o-src">Template</span></span>
         <button type="button" class="btn ghost" id="o-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy offer</button>
       </div>
       <div>
         <div class="offer-name" id="r-name">–</div>
-        <p class="note" style="margin:8px 0 6px">Other name ideas (click to use)</p>
-        <div class="alt-names" id="r-alts"></div>
+      </div>
+      <div class="out-sec"><h3>Name ideas by format <span class="h3-note">Click one to use it</span></h3>
+        <div class="name-groups" id="r-groups"></div>
       </div>
       <div class="out-sec"><h3>Promise</h3><p id="r-promise"></p></div>
       <div class="out-sec"><h3>Deliverables</h3><ul class="list" id="r-deliv"></ul></div>
@@ -607,103 +629,244 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
   function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1800)}
 
   /* ================= OFFER BUILDER ================= */
-  let format="group", angle=0, pickedName=null;
+  let format="group", angle=0, offer=null, aiDraft=false, aiDirty=false;
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
-  const title=s=>s.split(/\s+/).filter(Boolean).map(w=>/^(a|an|the|to|of|in|on|for|and|or|with|from|your|their)$/i.test(w)?w.toLowerCase():cap(w)).join(" ").replace(/^./,c=>c.toUpperCase());
+  const tc=w=>/^(a|an|the|to|of|in|on|for|and|or|with|from)$/i.test(w)?w.toLowerCase():w.charAt(0).toUpperCase()+w.slice(1);
   const clean=s=>s.trim().replace(/[.!]+$/,"");
+  const STOP=new Set(("i me we you they he she it want wants wanted to a an the this that these my our their your get gets got make makes more be become have has "+
+    "start sign land find build grow every each per month months monthly week weeks weekly day days year years in on for of with and or from by at so can "+
+    "could need needs just finally new really help them us all some any into out up over within without is are am will would should like").split(" "));
+  function core(out,aud){
+    let w=out.toLowerCase().replace(/[^a-z0-9\s'&-]/g," ").split(/\s+/).filter(x=>x&&!STOP.has(x)&&!/^\d+$/.test(x));
+    if(!w.length)w=aud.toLowerCase().split(/\s+/).filter(x=>x&&!STOP.has(x)).slice(-2);
+    return w.slice(0,3).map((x,i)=>i?tc(x):cap(x)).join(" ")||"Breakthrough";
+  }
+  const GROUPS=[["program","Program"],["course","Course"],["webinar","Webinar"],["workshop","Workshop"],["challenge","Challenge"],["membership","Membership"]];
+  const NAME_T={
+    program:C=>["The "+C+" Accelerator",C+" Academy","The "+C+" Inner Circle"],
+    course:C=>[C+" Made Simple","The "+C+" Blueprint",C+" Mastery"],
+    webinar:C=>["The "+C+" Masterclass",C+": The Free Training","The "+C+" Shortcut (Live)"],
+    workshop:C=>["The "+C+" Workshop",C+" Build Day","The "+C+" Intensive"],
+    challenge:C=>["The 5-Day "+C+" Challenge","7 Days to "+C,"The "+C+" Sprint"],
+    membership:C=>["The "+C+" Club","The "+C+" Collective",C+" Lab"],
+    coaching:C=>["Private "+C+" Coaching","The "+C+" 1:1 Intensive",C+" Mentorship"],
+    dwy:C=>["The "+C+" Build Sprint",C+" Done-With-You","The "+C+" Launch Lab"]
+  };
+  NAME_T.group=NAME_T.program;
   const FORMAT={
-    course:{noun:"online course",short:"Course",deliv:(o,p,d)=>[
-      ["Module 1: The real reason you "+p,"a short diagnosis so you stop repeating what hasn't worked"],
+    course:{noun:"online course",how:"a clear sequence they can follow at their own pace",deliv:(o,p,d)=>[
+      ["Module 1: Why it hasn't worked yet","a short diagnosis so they stop repeating what fails"],
       ["Module 2: The core method","the step-by-step system to "+o],
       ["Module 3: Put it to work","guided exercises with a clear weekly action list"],
       ["Module 4: Keep it going","how to make results repeatable after the first "+d+" days"],
       ["Templates and worksheets","plug-and-play files for every module"],
       ["Lifetime access","plus every future update"]]},
-    group:{noun:"group coaching program",short:"Accelerator",deliv:(o,p,d)=>[
-      [Math.round(d/7)+" weekly live group calls","teaching, then hot seats on your exact situation"],
+    group:{noun:"group coaching program",how:"live support and a group moving at the same pace",deliv:(o,p,d)=>[
+      [Math.max(2,Math.round(d/7))+" weekly live group calls","teaching, then hot seats on each member's situation"],
       ["The core curriculum","short video lessons that map the path to "+o],
       ["Private community","ask questions any day and share wins with peers"],
       ["Accountability pods","small groups of 4–5 who check in every week"],
-      ["Onboarding audit","we review where you are before call one"],
-      ["Call replays","every session recorded if you can't make it live"]]},
-    coaching:{noun:"1:1 coaching program",short:"Intensive",deliv:(o,p,d)=>[
-      [Math.max(2,Math.round(d/14))+" private coaching sessions","60 minutes each, focused only on you"],
+      ["Onboarding audit","a review of where each member starts before call one"],
+      ["Call replays","every session recorded for anyone who can't make it live"]]},
+    coaching:{noun:"1:1 coaching program",how:"personal guidance every step of the way",deliv:(o,p,d)=>[
+      [Math.max(2,Math.round(d/14))+" private coaching sessions","60 minutes each, focused on one client"],
       ["Personal roadmap","a written plan to "+o+", built in session one"],
       ["Direct message support","voice or text between calls, weekdays"],
-      ["Reviews of your work","send drafts, pages or content for feedback"],
-      ["Progress tracker","clear milestones so you always know what's next"]]},
-    dwy:{noun:"done-with-you program",short:"Build Sprint",deliv:(o,p,d)=>[
-      ["Kickoff strategy session","we map your plan to "+o+" together"],
-      ["Live build workshops","we build the assets side by side, screen shared"],
+      ["Reviews of their work","drafts, pages or content sent for feedback"],
+      ["Progress tracker","clear milestones so they always know what's next"]]},
+    dwy:{noun:"done-with-you program",how:"experts building alongside them",deliv:(o,p,d)=>[
+      ["Kickoff strategy session","a plan to "+o+", mapped together"],
+      ["Live build workshops","the assets built side by side, screen shared"],
       ["Expert review of everything","nothing goes live without a second pair of eyes"],
-      ["Ready-made templates","scripts, pages and posts adapted to your niche"],
-      ["Launch support","we're on hand the week you go live"],
-      [d+"-day implementation window","with fixed milestones and check-ins"]]}
+      ["Ready-made templates","scripts, pages and posts adapted to their niche"],
+      ["Launch support","on hand the week they go live"],
+      [d+"-day implementation window","with fixed milestones and check-ins"]]},
+    webinar:{noun:"live webinar",how:"one focused session that shows the path and the first step",deliv:(o,p,d)=>[
+      ["60-minute live masterclass","the framework to "+o+", taught live"],
+      ["The 3 mistakes to avoid","why so many "+"people "+p+", and what to do instead"],
+      ["Live Q&A","answers to attendees' own questions at the end"],
+      ["Attendee workbook","a one-page plan filled in during the session"],
+      ["48-hour replay","for anyone who registers but can't attend live"]]},
+    workshop:{noun:"live workshop",how:"a hands-on session where they leave with the work done",deliv:(o,p,d)=>[
+      ["3-hour live workshop","build the plan to "+o+" in one sitting"],
+      ["Step-by-step workbook","every exercise laid out in order"],
+      ["Live feedback","work reviewed in the room, not weeks later"],
+      ["Implementation checklist","what to do in the 7 days after the workshop"],
+      ["Full recording","rewatch any part whenever it's needed"]]},
+    challenge:{noun:"5-day challenge",how:"one small daily win that builds momentum",deliv:(o,p,d)=>[
+      ["5 daily trainings","short lessons, each moving them closer to "+o],
+      ["A daily action task","under 30 minutes, with a clear finish line"],
+      ["Private challenge group","post progress and get feedback from peers"],
+      ["Daily live Q&A","get unstuck the same day"],
+      ["Completion prize","a reward for everyone who finishes all 5 days"]]},
+    membership:{noun:"membership",how:"fresh training and support every month",deliv:(o,p,d)=>[
+      ["New training every month","a focused lesson on the next step to "+o],
+      ["Monthly live coaching call","bring questions, get direct answers"],
+      ["Member community","a place to share wins and stay consistent"],
+      ["Resource library","every template and past training in one place"],
+      ["Monthly challenge","a short sprint to keep momentum"]]}
   };
-  const NAME_PATTERNS=[
-    (O,d,f)=>"The "+d+"-Day "+O+" "+f.short,
-    (O,d,f)=>"The "+O+" Blueprint",
-    (O,d,f)=>O+" in "+d+" Days",
-    (O,d,f)=>"The "+O+" Method",
-    (O,d,f)=>"Project: "+O,
-    (O,d,f)=>"The "+O+" Playbook"
-  ];
   const PROMISES=[
     (a,p,o,d)=>"Help "+a+" "+o+" in "+d+" days, even if right now they "+p+".",
-    (a,p,o,d)=>"In the next "+d+" days, you'll "+o+". No more feeling like you "+p+".",
+    (a,p,o,d)=>"In the next "+d+" days, "+a+" will "+o+", without the guesswork that keeps them stuck.",
     (a,p,o,d)=>"A clear, step-by-step path for "+a+" to "+o+" within "+d+" days."
   ];
   const BONUSES=[
     (o,p)=>["Quick-start checklist","the first 5 actions to take today",0.08],
     (o,p)=>["Swipe file","copy, scripts and examples that already work",0.12],
-    (o,p)=>["Mistakes to avoid guide","the traps that keep people stuck where they "+p,0.06],
+    (o,p)=>["Mistakes to avoid guide","the traps that keep people stuck",0.06],
     (o,p)=>["Fast-action bonus","a private 30-minute review call for the first 10 buyers",0.2],
-    (o,p)=>["Resource vault","tools and templates we use every week",0.1],
-    (o,p)=>["Results guarantee session","if you do the work and don't "+o+", we keep working with you",0.15]
+    (o,p)=>["Resource vault","tools and templates used every week",0.1],
+    (o,p)=>["Results guarantee session","extra support until they "+o,0.15]
   ];
   const CTAS=[
-    (n,p)=>["Join "+n+" today for "+p,"Doors close when the group fills."],
+    (n,p)=>["Join "+n+" today for "+p,"Spots close when the group fills."],
     (n,p)=>["Get instant access for "+p,"Start the first lesson in the next 5 minutes."],
     (n,p)=>["Claim your spot for "+p,"Backed by a 14-day money-back guarantee."]
   ];
-  let offerText="";
-  function renderOffer(){
-    const aud=clean($("o-aud").value)||"your audience";
-    const prob=clean($("o-prob").value).replace(/^(they |i )/i,"")||"feel stuck";
-    const out=clean($("o-out").value).replace(/^(to )/i,"")||"get results";
-    const d=n($("o-time").value)||30, price=n($("o-price").value), f=FORMAT[format];
-    const O=title(out.split(/\s+/).slice(0,5).join(" "));
-    const names=NAME_PATTERNS.map(fn=>fn(O,d,f));
-    const main=pickedName&&names.includes(pickedName)?pickedName:names[angle%names.length];
-    $("r-name").textContent=main;
-    $("r-alts").innerHTML=names.filter(x=>x!==main).slice(0,3).map(x=>'<button type="button" class="chip" data-n="'+esc(x)+'">'+esc(x)+'</button>').join("");
-    const promise=PROMISES[angle%PROMISES.length](aud,prob,out,d);
-    $("r-promise").textContent=cap(promise);
-    const del=f.deliv(out,prob,d);
-    $("r-deliv").innerHTML=del.map(x=>"<li><span><b>"+esc(x[0])+"</b> · "+esc(x[1])+"</span></li>").join("");
-    const bset=[0,1,2].map(i=>BONUSES[(angle+i*2)%BONUSES.length](out,prob));
-    const base=Math.max(price,1);
-    const bvals=bset.map(b=>Math.max(9,Math.round(base*b[2]*4/10)*10-3));
-    $("r-bonus").innerHTML=bset.map((b,i)=>"<li><span><b>"+esc(b[0])+"</b> · "+esc(b[1])+'</span><span class="val">'+money(bvals[i],0)+" value</span></li>").join("");
-    const coreVal=Math.round(price*1.6/10)*10-3, total=coreVal+bvals.reduce((a,b)=>a+b,0);
-    $("r-stack").innerHTML='<span>Total value <s>'+money(total,0)+'</s></span><span>Your price <b>'+money(price,0)+'</b></span><span class="pill">'+(total>0?Math.round((1-price/total)*100):0)+'% below value</span>';
-    const pos=cap(f.noun)+" for "+aud+" who "+prob+". Most advice is generic and leaves them to figure out the details alone. "+main+" is built around one outcome, to "+out+" in "+d+" days, with "+(format==="course"?"a clear sequence they can follow at their own pace":format==="coaching"?"personal guidance every step of the way":format==="dwy"?"experts building alongside them":"live support and a group moving at the same pace")+".";
-    $("r-pos").textContent=pos;
-    const c=CTAS[angle%CTAS.length](main,money(price,0));
-    $("r-cta").innerHTML=esc(c[0])+"<small>"+esc(c[1])+"</small>";
-    offerText=[main,"","PROMISE",cap(promise),"","DELIVERABLES",...del.map(x=>"- "+x[0]+": "+x[1]),"","BONUSES",...bset.map((b,i)=>"- "+b[0]+": "+b[1]+" ("+money(bvals[i],0)+" value)"),
-      "Total value "+money(total,0)+", your price "+money(price,0),"","POSITIONING",pos,"","CTA",c[0]+". "+c[1]].join("\n");
+  const VERBS=new Set("sign land lose gain build grow launch make earn find start get become create write book reach hit double triple quit save run sell attract close win feel learn master stop fix heal pay buy travel speak improve increase reduce scale fill go turn replace leave retire publish finish sleep eat".split(" "));
+  const verbify=t=>!t?t:(VERBS.has(t.split(/\s+/)[0].toLowerCase())?t:"get "+t);
+  function inputs(){
+    return {
+      aud:clean($("o-aud").value)||"your audience",
+      prob:clean($("o-prob").value).replace(/^(they |i |we )/i,"")||"feel stuck",
+      out:verbify(clean($("o-out").value).replace(/^(i |we |they )?(want|wants|need|needs)( to)? /i,"").replace(/^to /i,"").replace(/\s+(this|every|each|per|a) (week|month|year|quarter)$/i,""))||"get results",
+      d:n($("o-time").value)||30, price:n($("o-price").value)
+    };
   }
-  $("r-alts").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;pickedName=b.dataset.n;renderOffer()});
+  function templateOffer(){
+    const I=inputs(), f=FORMAT[format], C=core(I.out,I.aud);
+    const groups={}; GROUPS.forEach(g=>groups[g[0]]=NAME_T[g[0]](C));
+    const own=NAME_T[format](C), all=[...own,...GROUPS.flatMap(g=>groups[g[0]])];
+    const name=pickedName&&all.includes(pickedName)?pickedName:own[angle%own.length];
+    const pr=I.price>0?money(I.price,0):"free";
+    return {
+      name, groups, forFormat:format,
+      promise:cap(PROMISES[angle%PROMISES.length](I.aud,I.prob,I.out,I.d)),
+      deliverables:f.deliv(I.out,I.prob,I.d),
+      bonuses:[0,1,2].map(i=>BONUSES[(angle+i*2)%BONUSES.length](I.out,I.prob)).map(b=>[b[0],b[1],Math.max(9,Math.round(Math.max(I.price,97)*b[2]*4/10)*10-3)]),
+      positioning:cap(f.noun)+" for "+I.aud+" who "+I.prob+". Most advice is generic and leaves them to work out the details alone. "+name+" is built around one outcome, to "+I.out+", with "+f.how+".",
+      cta:I.price>0?CTAS[angle%CTAS.length](name,pr):["Save your free seat for "+name,"Seats are limited so everyone gets their questions answered."]
+    };
+  }
+  function renderOffer(){
+    if(!aiDraft)offer=templateOffer();
+    const o=offer, price=n($("o-price").value);
+    $("o-src").textContent=aiDraft?"Written by AI":"Template";
+    $("o-src").classList.toggle("ai",aiDraft);
+    $("r-name").textContent=o.name;
+    $("r-groups").innerHTML=GROUPS.map(g=>{
+      const list=(o.groups[g[0]]||[]).slice(0,3);
+      if(!list.length)return "";
+      return '<div class="ng"><span class="ng-h">'+g[1]+'</span>'+list.map(x=>'<button type="button" data-n="'+esc(x)+'"'+(x===o.name?' aria-current="true"':'')+'>'+esc(x)+'</button>').join("")+'</div>';
+    }).join("");
+    $("r-promise").textContent=o.promise;
+    $("r-deliv").innerHTML=o.deliverables.map(x=>"<li><span><b>"+esc(x[0])+"</b> · "+esc(x[1])+"</span></li>").join("");
+    $("r-bonus").innerHTML=o.bonuses.map(b=>"<li><span><b>"+esc(b[0])+"</b> · "+esc(b[1])+'</span><span class="val">'+money(b[2],0)+" value</span></li>").join("");
+    const coreVal=Math.round(Math.max(price,97)*1.6/10)*10-3, total=coreVal+o.bonuses.reduce((a,b)=>a+b[2],0);
+    $("r-stack").innerHTML='<span>Total value <s>'+money(total,0)+'</s></span><span>Your price <b>'+(price>0?money(price,0):"Free")+'</b></span>'+(price>0&&total>price?'<span class="pill">'+Math.round((1-price/total)*100)+'% below value</span>':'');
+    $("r-pos").textContent=o.positioning;
+    $("r-cta").innerHTML=esc(o.cta[0])+"<small>"+esc(o.cta[1])+"</small>";
+  }
+  function offerText(){
+    const o=offer, price=n($("o-price").value);
+    return [o.name,"","PROMISE",o.promise,"","DELIVERABLES",...o.deliverables.map(x=>"- "+x[0]+": "+x[1]),"","BONUSES",
+      ...o.bonuses.map(b=>"- "+b[0]+": "+b[1]+" ("+money(b[2],0)+" value)"),"Price: "+(price>0?money(price,0):"Free"),"",
+      "POSITIONING",o.positioning,"","CALL TO ACTION",o.cta[0]+". "+o.cta[1],"","NAME IDEAS",
+      ...GROUPS.map(g=>g[1]+": "+(o.groups[g[0]]||[]).join(" / "))].join("\n");
+  }
+  let pickedName=null;
+  $("r-groups").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;
+    const nm=b.dataset.n, old=offer.name;
+    if(aiDraft){offer.name=nm;offer.cta=[offer.cta[0].split(old).join(nm),offer.cta[1]];offer.positioning=offer.positioning.split(old).join(nm);renderOffer()}
+    else{pickedName=nm;renderOffer()}
+  });
+  function setStatus(html,err){const st=$("o-status");st.hidden=!html;st.innerHTML=html||"";st.classList.toggle("err",!!err)}
+  function inputsChanged(){
+    if(aiDraft){aiDirty=true;setStatus('Your answers changed. Click <b>Write again with AI</b> to update the draft, or <b>Shuffle template</b> for an instant version.');$("o-ai-lbl").textContent="Write again with AI";renderOffer();}
+    else renderOffer();
+  }
   $("o-format").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;format=b.dataset.v;
-    document.querySelectorAll("#o-format .chip").forEach(c=>c.setAttribute("aria-pressed",c===b));renderOffer()});
-  $("o-gen").addEventListener("click",()=>{angle++;pickedName=null;renderOffer()});
-  ["o-aud","o-prob","o-out","o-time","o-price"].forEach(id=>$(id).addEventListener("input",renderOffer));
+    document.querySelectorAll("#o-format .chip").forEach(c=>c.setAttribute("aria-pressed",c===b));inputsChanged()});
+  $("o-gen").addEventListener("click",()=>{angle++;pickedName=null;aiDraft=false;aiDirty=false;setStatus("");$("o-ai-lbl").textContent="Write with AI";renderOffer()});
+  ["o-aud","o-prob","o-out","o-time"].forEach(id=>$(id).addEventListener("input",inputsChanged));
+  $("o-price").addEventListener("input",renderOffer);
   $("o-copy").addEventListener("click",()=>{
-    const done=()=>toast("Offer copied");
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(offerText).then(done,fallback)}else fallback();
+    const txt=offerText(), done=()=>toast("Offer copied");
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,fallback)}else fallback();
     function fallback(){const r=document.createRange();r.selectNodeContents($("o-out-card"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Selected. Press Ctrl/Cmd+C to copy")}
   });
+
+  /* ---- AI writer (uses the viewer's Claude through the sample capability) ---- */
+  let sampleFn=null, aiCtl=null;
+  if(window.claude&&typeof window.claude.use==="function"){
+    window.claude.use("sample").then(fn=>{if(typeof fn==="function"){sampleFn=fn;$("o-ai").hidden=false}}).catch(()=>{});
+  }
+  const str=(v,max)=>typeof v==="string"?v.trim().slice(0,max||400):"";
+  function aiPrompt(){
+    const I=inputs(), label=$("o-format").querySelector('[aria-pressed="true"]').textContent;
+    return [
+      "You are an expert offer strategist and copywriter for coaches and online creators.",
+      "Write an irresistible offer and memorable names from the client details below. Fix any clumsy grammar in the details; never paste them in word for word.",
+      "",
+      "Audience: "+I.aud,
+      "Their problem right now: "+I.prob,
+      "Result they want: "+I.out,
+      "Timeframe: "+I.d+" days",
+      "What is being sold: "+label,
+      "Price: "+(I.price>0?CUR[cur].s+I.price:"free"),
+      "",
+      "Naming rules: 2 to 5 words each, easy to say and remember, specific to this audience and result. Use devices like alliteration, a vivid metaphor, a number or a clear before-and-after. Avoid cliches such as Blueprint, Mastery, Unlocked, Secrets and Ultimate. Every name must be different. Webinar names can be phrased as the training's title; challenge names should say how many days.",
+      "",
+      "Reply with only this JSON object:",
+      '{"name":"best name for the '+label+'",',
+      ' "nameIdeas":{"program":[3 names],"course":[3],"webinar":[3],"workshop":[3],"challenge":[3],"membership":[3]},',
+      ' "promise":"one sentence, specific and measurable",',
+      ' "deliverables":[{"title":"short","detail":"one line"}] (4 to 6 items that fit a '+label+'),',
+      ' "bonuses":[{"title":"short","detail":"one line","value":number}] (exactly 3, value in '+cur+' as a plain number),',
+      ' "positioning":"2 to 3 sentences: who it is for, what makes it different from the usual advice",',
+      ' "cta":{"button":"call to action text, max 8 words","subline":"one short line that adds urgency or removes risk"}}'
+    ].join("\n");
+  }
+  function fromAI(j){
+    const I=inputs();
+    const groups={};
+    GROUPS.forEach(g=>{const arr=j&&j.nameIdeas&&Array.isArray(j.nameIdeas[g[0]])?j.nameIdeas[g[0]]:[];groups[g[0]]=arr.map(x=>str(x,80)).filter(Boolean).slice(0,3)});
+    const name=str(j&&j.name,90)||(groups.program&&groups.program[0]);
+    const del=(Array.isArray(j&&j.deliverables)?j.deliverables:[]).map(x=>[str(x&&x.title,90),str(x&&x.detail,200)]).filter(x=>x[0]).slice(0,6);
+    const bon=(Array.isArray(j&&j.bonuses)?j.bonuses:[]).map(x=>[str(x&&x.title,90),str(x&&x.detail,200),Math.max(0,Math.round(n(x&&x.value)))]).filter(x=>x[0]).slice(0,3);
+    if(!name||del.length<2)throw {code:"invalid_json"};
+    const t=templateOffer();
+    return {name,groups,promise:str(j.promise,300)||t.promise,deliverables:del,bonuses:bon.length?bon:t.bonuses,
+      positioning:str(j.positioning,600)||t.positioning,cta:[str(j.cta&&j.cta.button,90)||t.cta[0],str(j.cta&&j.cta.subline,160)||t.cta[1]]};
+  }
+  const AI_ERR={
+    not_granted:"AI writing is off because Claude wasn't allowed for this page. The template draft still works.",
+    sampling_disabled:"AI writing isn't available on this account. The template draft still works.",
+    rate_limited:"Too many requests right now. Wait a minute, then try again.",
+    session_expired:"Sign in to Claude again, then try again.",
+    refused:"Claude couldn't write this one. Try rewording your answers.",
+    invalid_json:"The AI reply came back in an unexpected format. Click Write with AI to try again."
+  };
+  $("o-ai").addEventListener("click",async()=>{
+    if(!sampleFn)return;
+    aiCtl=new AbortController();
+    $("o-ai").disabled=true;$("o-stop").hidden=false;$("o-out-card").classList.add("busy");
+    setStatus('<span class="spin" aria-hidden="true"></span>Claude is writing your offer and name ideas. This can take up to a minute.');
+    try{
+      const j=await sampleFn.json(aiPrompt(),{signal:aiCtl.signal,cache:false});
+      offer=fromAI(j);aiDraft=true;aiDirty=false;renderOffer();
+      setStatus("");$("o-ai-lbl").textContent="Write again with AI";toast("AI draft ready");
+    }catch(e){
+      const code=e&&e.code;
+      if(code==="cancelled")setStatus("");
+      else setStatus(esc(AI_ERR[code]||"Something went wrong reaching Claude. Try again in a moment."),true);
+      if(code==="not_granted"||code==="sampling_disabled"||code==="not_declared"||code==="capability_disabled")$("o-ai").hidden=true;
+    }finally{
+      $("o-ai").disabled=false;$("o-stop").hidden=true;$("o-out-card").classList.remove("busy");
+    }
+  });
+  $("o-stop").addEventListener("click",()=>aiCtl&&aiCtl.abort());
 
   /* ================= PRICING ================= */
   function renderPricing(){
