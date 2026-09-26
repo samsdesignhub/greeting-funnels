@@ -541,7 +541,7 @@ const Index = {
         if (!f) for (const [k, v] of d.tf) if (k.length > 4 && t.length > 4 && (k.startsWith(t) || t.startsWith(k))) { f = v * 0.6; break; }
         if (f) { hits++; s += (1 + Math.log(f)) * Math.log(1 + N / (this.df.get(t) || 1)); }
       }
-      if (hits) res.push({ type: d.type, id: d.id, score: s * (0.6 + 0.4 * hits / qt.length) });
+      if (hits) res.push({ type: d.type, id: d.id, score: s * (0.6 + 0.4 * hits / qt.length), cover: hits / qt.length });
     }
     return res.filter(r => r.score >= min).sort((a, b) => b.score - a.score).slice(0, limit);
   }
@@ -612,11 +612,11 @@ function selectIntelligence(q, budget = 11000) {
   for (const x of scored) { const len = (x.i.principle || '').length + (x.i.trigger || '').length + (x.i.how || '').length + (x.i.avoid || '').length + 90; if (used + len > budget) continue; out.push(x); used += len; }
   return out;
 }
-function selectCases(q, n = 3) {
+function selectCases(q, n = 2) {
   const all = Store.all('cases'); if (!all.length) return [];
   const qt = new Set(tokens(q));
   return all.map(c => ({ c, s: tokens([c.situation, c.noticed].join(' ')).filter(t => qt.has(t)).length }))
-    .filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.c);
+    .filter(x => x.s >= 3).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.c);
 }
 
 /* ---------------- Engine: prompts ---------------- */
@@ -640,6 +640,8 @@ TRUTHFULNESS
 - Never invent history: no made-up sessions, dates, quotes, numbers or past events. Only refer to past events that appear under HISTORY.
 - Keep "how coaching works" (layer 1) apart from "what happened to Sam before" (layer 3). Never present a coaching principle as an event in Sam's past, and never present general knowledge as the coach's own view.
 - A single historical statement is not a universal rule.
+- When you mention a past event, restate only what HISTORY records. Don't add details (what Sam's instinct was, how he reacted, who else was involved) and don't attribute a line the coach said to Sam or to a client. If you are not sure a detail is recorded, leave it out.
+- History is a possible parallel, not a diagnosis: say how the current situation might differ, and never let an old situation replace asking about this one.
 
 NATURAL VOICE
 - Talk like one coach. Do not mention layers, session numbers, reference tags, databases, retrieval, "the knowledge base", "the coaching material" or "the sessions" in your reply.
@@ -654,15 +656,20 @@ DEFAULT COACHING BEHAVIOUR (learned Coaching Intelligence overrides these where 
 - Teaching: assess understanding → gap → explain → example → Sam applies → correct and explain why → new scenario → principle → exercise. Practice raises difficulty gradually.
 - Reviewing work: what works, what's unclear/missing/weak, why, what to change; ask Sam to fix it first where useful.
 - Decisions: improve his thinking, don't decide for him. Reflection on personal behaviour: no mental-health diagnoses, no claims about hidden motives. Commitments are done only when Sam says so.
-- Style: conversational, clear, direct, warm, practical, curious. Short paragraphs. No motivational filler or generic praise. Usually under 220 words unless teaching or reviewing.
+- Let Sam reach the diagnosis himself when he can: lead with a question that points at the gap rather than announcing the answer. Switch to explaining when his answers show a genuine knowledge gap, not before.
+- Don't challenge sound reasoning, a straightforward procedural question, or an accurate self-assessment: confirm briefly and move on (or just answer).
+- Don't guess at motives ("that's the comfortable answer", "it's easier than…"); ask instead.
+- Once the problem is clear enough, move to a concrete, small, time-bound next step. Not every reply should end in questions.
+- Vary the shape of replies. Do not use the same skeleton every time (reflection → numbered questions → "I ask because…" → evidence question). Use a numbered list only when the questions are genuinely separate. Don't end every reply by asking whether something is data or a guess.
+- Style: conversational, clear, direct, warm, practical, curious. Short paragraphs. No motivational filler, stock metaphors or generic praise. Usually under 180 words unless teaching or reviewing.
 - Silent check before replying: real problem or symptom? assumptions named? history used only where it helps and only if real? should I ask before answering? is there a clear next step? am I building Sam's independence?`;
 
 const META_SPEC = `OUTPUT FORMAT
 Write your reply to Sam in Markdown with no reference tags in it. Then, on new lines, append exactly:
 <<<META
-{"mode":"<one of: ${MODES.join(', ')}>","intelligence":["I3"],"history":["S04","P2"],"general":true,"assumptions":["short assumption Sam is making, if any"],"note":"one sentence: why you approached the reply this way","commitment":null}
+{"mode":"<one of: ${MODES.join(', ')}>","intelligence":[],"history":[],"general":false,"assumptions":[],"note":"one sentence: why you approached the reply this way","commitment":null}
 META>>>
-"intelligence" = tags of the coaching-intelligence items that shaped this reply. "history" = tags of HISTORY items you actually drew on (usually empty). "general" = true if you relied on general knowledge or reasoning. "commitment" stays null unless Sam explicitly agreed in this conversation to a concrete action; then {"text":"…","quantity":"…","deadline":"YYYY-MM-DD or empty","reason":"…"}.`;
+"intelligence" = the [I…] tags listed under LAYER 1 that shaped this reply; leave it empty if none are listed or none applied — never write a tag that isn't listed. "history" = [S…]/[P…] tags from LAYER 3 you actually drew on (usually empty). "assumptions" = short assumptions Sam is making, if any. "general" = true if you relied on general knowledge or reasoning. "commitment" stays null unless Sam explicitly agreed in this conversation to a concrete action; then {"text":"…","quantity":"…","deadline":"YYYY-MM-DD or empty","reason":"…"}.`;
 
 function contextBlock() {
   const items = Store.all('context');
@@ -692,10 +699,12 @@ function knowledgeBlock(q, extraSessionIds = []) {
   const caseLines = cases.map(c => `- Situation: ${c.situation} → Noticed: ${c.noticed} → Did: ${c.did} → Why: ${c.why}`);
   const meth = methodologyBlock();
   // Layer 3 (only strong matches)
-  const hits = Index.search(q, { types: ['sessions'], limit: 5, min: 2.2 });
+  const all = Index.search(q, { types: ['sessions'], limit: 8, min: 2.2 });
+  const top = all.length ? all[0].score : 0;
+  const hits = all.filter(x => x.cover >= 0.34 && x.score >= top * 0.75).slice(0, 3);
   const sess = uniq([...extraSessionIds, ...hits.map(x => x.id)]).map(id => Store.get('sessions', id)).filter(Boolean).slice(0, 5);
   const sLines = sess.map(s => { refs[sref(s)] = { type: 'sessions', id: s.id }; return `[${sref(s)}] ${s.date ? s.date + ' — ' : ''}${s.title}: ${trunc(s.summary, 380)} Sam's problems then: ${trunc(arr(s.problems).join('; '), 220)}. His beliefs/assumptions then: ${trunc([...arr(s.beliefs), ...arr(s.assumptions)].join('; '), 220)}. Commitments then: ${trunc(arr(s.commitments).join('; '), 160)}`; });
-  const pHits = Index.search(q, { types: ['patterns'], limit: 3, min: 1.2 }).map(x => Store.get('patterns', x.id)).filter(p => p && p.status !== 'dismissed');
+  const pHits = Index.search(q, { types: ['patterns'], limit: 3, min: 1.2 }).filter(x => x.cover >= 0.3).map(x => Store.get('patterns', x.id)).filter(p => p && p.status !== 'dismissed');
   const pLines = pHits.map((p, i) => { const tag = 'P' + (i + 1); refs[tag] = { type: 'patterns', id: p.id }; const c = patternConf(p); return `[${tag}] Sam's recurring pattern "${p.name}" (${c.label}): ${trunc(p.description, 220)}`; });
   const active = Store.all('commitments').filter(c => c.status !== 'Done').slice(0, 6);
   const cLines = active.map(c => `- "${c.text}" — ${c.status}${c.deadline ? ', due ' + c.deadline : ''}`);
@@ -770,7 +779,8 @@ function trimTurns(turns, budget = 22000) {
 function fitInput(prompt, turns) {
   const enc = s => new TextEncoder().encode(s).length;
   let budget = 22000, input;
-  do { input = [{ role: 'user', content: prompt }, ...trimTurns(turns, budget)]; budget -= 4000; }
+  const remind = t => { const x = t.slice(); const last = x[x.length - 1]; if (last && last.role === 'user') x[x.length - 1] = { ...last, content: last.content + '\n\n(Reply to this, then append the <<<META … META>>> block as specified.)' }; return x; };
+  do { input = [{ role: 'user', content: prompt }, ...remind(trimTurns(turns, budget))]; budget -= 4000; }
   while (enc(input.map(t => t.content).join('')) > 60000 && budget > 2000);
   return input;
 }
@@ -780,7 +790,7 @@ function copyCheck(text) {
   const words = s => String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
   const out = words(text); if (out.length < 8) return null;
   const grams = new Set(); for (let i = 0; i + 8 <= out.length; i++) grams.add(out.slice(i, i + 8).join(' '));
-  const sources = [...Store.all('cases').map(c => [c.situation, c.noticed, c.did, c.why].join(' . ')), ...Store.all('sessions').map(s => [...arr(s.questions), ...arr(s.interventions), ...arr(s.examples), ...arr(s.analogies)].join(' . '))];
+  const sources = [...Store.all('cases').map(c => [c.situation, c.noticed, c.did, c.why].join(' . ')), ...Store.all('sessions').map(s => [...arr(s.questions), ...arr(s.interventions), ...arr(s.examples), ...arr(s.analogies), ...arr(s.corrections), ...arr(s.beliefs)].join(' . '))];
   for (const src of sources) { const w = words(src); for (let i = 0; i + 8 <= w.length; i++) { const g = w.slice(i, i + 8).join(' '); if (grams.has(g)) return g; } }
   return null;
 }
