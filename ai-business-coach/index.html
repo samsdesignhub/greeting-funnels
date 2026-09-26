@@ -600,16 +600,18 @@ function ciConf(item) {
 function activeIntelligence() { return Store.all('intelligence').filter(i => i.status !== 'archived'); }
 /* choose the intelligence to put in front of the model: every strong/repeated item
    (ordered by relevance), plus observed items only when they are relevant */
-function selectIntelligence(q, budget = 11000) {
+function selectIntelligence(q, budget = 17000) {
   const qt = new Set(tokens(q));
   const scored = activeIntelligence().map(i => {
-    const t = tokens([i.name, i.principle, i.trigger].join(' '));
-    const rel = t.filter(x => qt.has(x)).length;
+    const rel = tokens([i.name, i.principle, i.trigger].join(' ')).filter(x => qt.has(x)).length;
     return { i, c: ciConf(i), rel };
-  }).filter(x => x.c.rank >= 2 || x.rel > 0 || x.c.key === 'curated')
-    .sort((a, b) => (b.c.rank - a.c.rank) || (b.rel - a.rel));
+  }).filter(x => x.c.rank >= 2 || x.rel > 0 || x.c.key === 'curated');
+  // the most relevant principles go in full; strong/repeated ones follow as one-liners
+  const full = scored.filter(x => x.rel > 0).sort((a, b) => (b.rel - a.rel) || (b.c.rank - a.c.rank)).slice(0, 12);
+  const rest = scored.filter(x => !full.includes(x) && x.c.rank >= 2).sort((a, b) => (b.c.rank - a.c.rank) || (b.c.n - a.c.n) || (b.rel - a.rel));
   const out = []; let used = 0;
-  for (const x of scored) { const len = (x.i.principle || '').length + (x.i.trigger || '').length + (x.i.how || '').length + (x.i.avoid || '').length + 90; if (used + len > budget) continue; out.push(x); used += len; }
+  for (const x of full) { const len = (x.i.principle || '').length + (x.i.trigger || '').length + (x.i.how || '').length + (x.i.avoid || '').length + 90; if (used + len > budget) continue; out.push({ ...x, compact: false }); used += len; }
+  for (const x of rest) { const len = Math.min((x.i.principle || '').length, 170) + (x.i.name || '').length + 40; if (used + len > budget) continue; out.push({ ...x, compact: true }); used += len; }
   return out;
 }
 function selectCases(q, n = 2) {
@@ -642,6 +644,12 @@ TRUTHFULNESS
 - A single historical statement is not a universal rule.
 - When you mention a past event, restate only what HISTORY records. Don't add details (what Sam's instinct was, how he reacted, who else was involved) and don't attribute a line the coach said to Sam or to a client. If you are not sure a detail is recorded, leave it out.
 - History is a possible parallel, not a diagnosis: say how the current situation might differ, and never let an old situation replace asking about this one.
+
+TRANSLATING THE COACH'S LIVE STYLE TO WRITTEN CHAT
+- The learned style comes from spoken, face-to-face sessions. Keep the intent, not the mannerisms: at most one short understanding check ("does that fit?") after an explanation, never a string of "Right? Correct?".
+- Never invent personal experiences, anecdotes, clients, credentials or stories about yourself. Where the coach used self-disclosure or a personal story, use a plainly hypothetical example instead ("imagine a coach who…").
+- Reply in the language Sam writes in. Dictate exact wording only when he is writing a script, copy or a message.
+- Never promise or guarantee results.
 
 NATURAL VOICE
 - Talk like one coach. Do not mention layers, session numbers, reference tags, databases, retrieval, "the knowledge base", "the coaching material" or "the sessions" in your reply.
@@ -694,7 +702,7 @@ function knowledgeBlock(q, extraSessionIds = []) {
   const refs = {};
   // Layer 1
   const ci = selectIntelligence(q);
-  const ciLines = ci.map((x, n) => { const tag = 'I' + (n + 1); refs[tag] = { type: 'intelligence', id: x.i.id }; return `[${tag}] (${(CI_DIM[x.i.dimension] || [, 'General'])[1]} · ${x.c.label}) ${x.i.name}: ${x.i.principle}${x.i.trigger ? ' | When: ' + x.i.trigger : ''}${x.i.how ? ' | Do: ' + x.i.how : ''}${x.i.avoid ? ' | Avoid / not when: ' + x.i.avoid : ''}`; });
+  const ciLines = ci.map((x, n) => { const tag = 'I' + (n + 1); refs[tag] = { type: 'intelligence', id: x.i.id }; const head = `[${tag}] (${(CI_DIM[x.i.dimension] || [, 'General'])[1]} · ${x.c.label}) ${x.i.name}: `; return x.compact ? head + trunc(x.i.principle, 170) : head + `${x.i.principle}${x.i.trigger ? ' | When: ' + x.i.trigger : ''}${x.i.how ? ' | Do: ' + x.i.how : ''}${x.i.avoid ? ' | Avoid / not when: ' + x.i.avoid : ''}`; });
   const cases = selectCases(q);
   const caseLines = cases.map(c => `- Situation: ${c.situation} → Noticed: ${c.noticed} → Did: ${c.did} → Why: ${c.why}`);
   const meth = methodologyBlock();
@@ -711,7 +719,7 @@ function knowledgeBlock(q, extraSessionIds = []) {
   const decs = Index.search(q, { types: ['decisions'], limit: 2, min: 1.5 }).map(x => Store.get('decisions', x.id)).filter(Boolean).map(d => `- Decision "${d.title}" — ${d.status}${d.finalChoice ? ', chose: ' + d.finalChoice : ''}`);
   // lessons Sam took from earlier sessions are history, not coaching method
   const lessons = Index.search(q, { types: ['methodology'], limit: 4, min: 1.5 }).map(x => Store.get('methodology', x.id)).filter(m => m && m.kind === 'insight').slice(0, 2).map(m => `- Lesson from an earlier session: ${m.title}: ${trunc(m.body, 200)}`);
-  const fw = Index.search(q, { types: ['frameworks'], limit: 3, min: 1.5 }).map(x => Store.get('frameworks', x.id)).filter(Boolean);
+  const fw = Index.search(q, { types: ['frameworks'], limit: 3, min: 1.5 }).filter(x => x.cover >= 0.3).map(x => Store.get('frameworks', x.id)).filter(Boolean);
   const text = `LAYER 1 — COACHING INTELLIGENCE (learned from ${Store.all('sessions').length} sessions; principles, not scripts)
 ${ciLines.join('\n') || '- No learned intelligence yet: rely on the default coaching behaviour above.'}
 ${meth ? 'Curated methodology notes:\n' + meth : ''}${caseLines.length ? 'Illustrative cases of the coach\'s reasoning (to understand the thinking; never reuse their wording or solutions):\n' + caseLines.join('\n') + '\n' : ''}${fw.length ? 'Frameworks that may fit (use only if they genuinely fit):\n' + frameworksBlock(fw) : ''}
@@ -975,7 +983,8 @@ async function storeJob(job) {
       setStage(job, 'detect', 'done');
       setStage(job, 'suggest', 'run');
       job.suggestions = await queueSuggestions(found, [sid]);
-      if (activeIntelligence().length && job.ci) job.suggestions += await queueCISuggestions(Store.get('sessions', sid));
+      // batch imports skip this: re-synthesising after the batch covers it without flooding the Review Queue
+      if (activeIntelligence().length && job.ci && !job.auto) job.suggestions += await queueCISuggestions(Store.get('sessions', sid));
       setStage(job, 'suggest', 'done');
     } else { setStage(job, 'detect', 'skip'); setStage(job, 'suggest', 'skip'); }
     job.done = true; refreshImportUI();
@@ -1102,20 +1111,30 @@ Reply with only JSON: {"patternEvidence":[{"pattern":"P1","session":"S03","note"
   return queueSuggestions({ out: { patternEvidence: out.patternEvidence, newPatterns: out.newPatterns }, pats, meth });
 }
 /* apply a Review Queue item */
+/* the same suggestion can arrive from several imports: accepting it again merges evidence instead of duplicating */
+function sameName(col, key, name) { const n = String(name || '').trim().toLowerCase(); return n ? Store.all(col).find(x => String(x[key] || '').trim().toLowerCase() === n && x.status !== 'archived') : null; }
 async function applyInsight(ins, extra = {}) {
-  const p = ins.payload || {};
+  const p = ins.payload || {}; let dup;
   if (ins.kind === 'evidence') {
     const pat = Store.get('patterns', p.patternId); if (!pat) throw new Error('Pattern no longer exists.');
     await Store.patch('patterns', pat.id, { sessionIds: uniq([...arr(pat.sessionIds), p.sessionId]), evidence: [...arr(pat.evidence), { sessionId: p.sessionId, note: p.note }] });
+  } else if (ins.kind === 'pattern' && (dup = sameName('patterns', 'name', p.name))) {
+    await Store.patch('patterns', dup.id, { sessionIds: uniq([...arr(dup.sessionIds), ...liveSessionIds(p.sessionIds)]), evidence: [...arr(dup.evidence), ...liveSessionIds(p.sessionIds).filter(id => !arr(dup.sessionIds).includes(id)).map(id => ({ sessionId: id, note: p.note }))] });
   } else if (ins.kind === 'pattern') {
     await Store.put('patterns', { id: uid('pat'), name: p.name, description: p.description, category: p.category, sessionIds: liveSessionIds(p.sessionIds), evidence: liveSessionIds(p.sessionIds).map(id => ({ sessionId: id, note: p.note })), status: 'active', source: 'review-queue' });
+  } else if (ins.kind === 'framework' && (dup = sameName('frameworks', 'name', p.name))) {
+    await Store.patch('frameworks', dup.id, { sessionIds: uniq([...arr(dup.sessionIds), ...arr(p.sessionIds)]) });
   } else if (ins.kind === 'framework') {
     await Store.put('frameworks', { id: uid('fw'), name: p.name, steps: p.steps, whenToUse: p.whenToUse, example: '', sessionIds: p.sessionIds, source: 'Extracted from sessions', confidence: p.sessionIds.length > 1 ? 'Supported' : 'Possible' });
+  } else if (ins.kind === 'insight' && (dup = sameName('methodology', 'title', p.title))) {
+    await Store.patch('methodology', dup.id, { sessionIds: uniq([...arr(dup.sessionIds), ...arr(p.sessionIds)]) });
   } else if (ins.kind === 'insight') {
     await Store.put('methodology', { id: uid('m'), kind: 'insight', title: p.title, body: p.body, when: '', sessionIds: p.sessionIds, source: 'Session insight (reviewed)', confidence: p.sessionIds.length > 1 ? 'Supported' : 'Possible', status: 'active' });
   } else if (ins.kind === 'ci-evidence') {
     const it = Store.get('intelligence', p.intelligenceId); if (!it) throw new Error('That coaching principle no longer exists.');
     await Store.patch('intelligence', it.id, { sessionIds: uniq([...arr(it.sessionIds), p.sessionId]), evidence: [...arr(it.evidence), { sessionId: p.sessionId, note: p.note }] });
+  } else if (ins.kind === 'ci-principle' && (dup = sameName('intelligence', 'name', p.name))) {
+    await Store.patch('intelligence', dup.id, { sessionIds: uniq([...arr(dup.sessionIds), ...liveSessionIds(p.sessionIds)]) });
   } else if (ins.kind === 'ci-principle') {
     await Store.put('intelligence', { id: uid('ci'), dimension: CI_DIM[p.dimension] ? p.dimension : 'thinking', name: p.name, principle: p.principle, trigger: p.trigger, how: p.how, avoid: p.avoid, sessionIds: liveSessionIds(p.sessionIds), evidence: liveSessionIds(p.sessionIds).map(id => ({ sessionId: id, note: p.note || '' })), status: 'active', source: 'review-queue' });
   } else if (ins.kind === 'conflict') {
