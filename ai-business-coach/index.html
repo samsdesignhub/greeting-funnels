@@ -15,26 +15,8 @@
   --font:'Plus Jakarta Sans',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --bg:#0e0f1f; --bg-2:#14152a; --surface:#171930; --surface-2:#1c1e38; --surface-3:#22244a;
-    --line:#2a2d4f; --line-2:#383c66;
-    --ink:#eceefe; --ink-2:#aeb1d6; --ink-3:#7c80a8;
-    --accent:#7f72ff; --accent-2:#9a8fff; --accent-ink:#ffffff; --accent-soft:#25234d; --accent-line:#433d86; --accent-text:#b3abff;
-    --good:#4cc792; --good-soft:#15332a; --warn:#e3a94a; --warn-soft:#3a2d14; --bad:#f07288; --bad-soft:#3d1a24; --info:#7aa7f5; --info-soft:#1a2745;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#0e0f1f; --bg-2:#14152a; --surface:#171930; --surface-2:#1c1e38; --surface-3:#22244a;
-  --line:#2a2d4f; --line-2:#383c66;
-  --ink:#eceefe; --ink-2:#aeb1d6; --ink-3:#7c80a8;
-  --accent:#7f72ff; --accent-2:#9a8fff; --accent-ink:#ffffff; --accent-soft:#25234d; --accent-line:#433d86; --accent-text:#b3abff;
-  --good:#4cc792; --good-soft:#15332a; --warn:#e3a94a; --warn-soft:#3a2d14; --bad:#f07288; --bad-soft:#3d1a24; --info:#7aa7f5; --info-soft:#1a2745;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
-}
+/* One theme only: the lavender theme stays the same when the device or Claude is in dark mode. */
+:root,:root[data-theme="dark"]{color-scheme:light}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -1253,34 +1235,44 @@ ${lines.join('\n')}
 
 Reply with only JSON: {"principles":[{"name":"short name","principle":"1-2 sentences","trigger":"","how":"","avoid":"","sessions":["S01","S07"]}]}`;
 }
-/* One save at a time (a second click, or a second run, used to start a parallel save and duplicate every principle).
-   New principles are written first; then every other active synthesis item is archived, including any written meanwhile. */
+/* Saving can never duplicate a principle:
+   - one save at a time in this tab (a second click is ignored while the first runs);
+   - each principle's id comes from its dimension + name, so a repeated save (second click, second tab,
+     re-run with the same principles) overwrites the same record instead of adding a copy.
+   New principles are written first; then every other active synthesis item is archived. */
 let synthSaving = false;
+const ciKey = (dim, name) => String(dim || '') + '|' + String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+function ciStableId(dim, name) {
+  const s = ciKey(dim, name); let a = 0x811c9dc5, b = 0x01000193;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); a = Math.imul(a ^ c, 16777619) >>> 0; b = Math.imul(b ^ c, 2246822519) >>> 0; }
+  return 'ci_s' + a.toString(36) + b.toString(36);
+}
 async function saveSynthesis(drafts, onProgress) {
   if (synthSaving) return false;
   synthSaving = true;
   try {
-    const runAt = nowISO(), keepIds = new Set(), seen = new Set();
+    const runAt = nowISO(), keepIds = new Set();
     const kept = drafts.filter(x => x.keep);
     for (const d of kept) {
-      const k = d.dimension + '|' + String(d.name).trim().toLowerCase(); if (seen.has(k)) continue; seen.add(k);
-      const { keep, ...rest } = d, id = uid('ci'); keepIds.add(id);
-      await Store.put('intelligence', { id, ...rest, evidence: [], status: 'active', source: 'synthesis', synthesizedAt: runAt });
+      const id = ciStableId(d.dimension, d.name); if (keepIds.has(id)) continue; keepIds.add(id);
+      const { keep, ...rest } = d;
+      await Store.put('intelligence', { ...rest, id, evidence: [], status: 'active', source: 'synthesis', synthesizedAt: runAt });
       onProgress && onProgress(keepIds.size, kept.length);
     }
     for (const old of Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived' && !keepIds.has(i.id))) await Store.patch('intelligence', old.id, { status: 'archived', archivedAt: nowISO() });
     return true;
   } finally { synthSaving = false; }
 }
-/* Repair: remove exact copies of the same active synthesis principle (left by overlapping saves). Keeps the oldest copy. */
+/* Repair on every load: only one active synthesis principle per dimension + name. Keeps the most recently saved copy. */
 async function dedupeIntelligence() {
   const groups = new Map();
   Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived').forEach(i => {
-    const k = JSON.stringify([i.dimension, i.name, i.principle, i.trigger, i.how, i.avoid, arr(i.sessionIds)]);
+    const k = ciKey(i.dimension, i.name);
     (groups.get(k) || groups.set(k, []).get(k)).push(i);
   });
   const extra = [];
-  groups.forEach(list => { list.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || a.id.localeCompare(b.id)); extra.push(...list.slice(1)); });
+  const when = x => String(x.synthesizedAt || x.createdAt || '');
+  groups.forEach(list => { list.sort((a, b) => when(b).localeCompare(when(a)) || a.id.localeCompare(b.id)); extra.push(...list.slice(1)); });
   for (let i = 0; i < extra.length; i += 25) await Promise.all(extra.slice(i, i + 25).map(x => Store.del('intelligence', x.id)));
   return extra.length;
 }
