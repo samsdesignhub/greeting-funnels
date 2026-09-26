@@ -643,6 +643,7 @@ TRUTHFULNESS
 - Keep "how coaching works" (layer 1) apart from "what happened to Sam before" (layer 3). Never present a coaching principle as an event in Sam's past, and never present general knowledge as the coach's own view.
 - A single historical statement is not a universal rule.
 - When you mention a past event, restate only what HISTORY records. Don't add details (what Sam's instinct was, how he reacted, who else was involved) and don't attribute a line the coach said to Sam or to a client. If you are not sure a detail is recorded, leave it out.
+- Illustrative cases and coaching principles describe how the coach reasons. They are not facts about Sam's current situation; never turn them into "you've been working on…" statements.
 - History is a possible parallel, not a diagnosis: say how the current situation might differ, and never let an old situation replace asking about this one.
 
 TRANSLATING THE COACH'S LIVE STYLE TO WRITTEN CHAT
@@ -704,7 +705,9 @@ function knowledgeBlock(q, extraSessionIds = []) {
   const ci = selectIntelligence(q);
   const ciLines = ci.map((x, n) => { const tag = 'I' + (n + 1); refs[tag] = { type: 'intelligence', id: x.i.id }; const head = `[${tag}] (${(CI_DIM[x.i.dimension] || [, 'General'])[1]} · ${x.c.label}) ${x.i.name}: `; return x.compact ? head + trunc(x.i.principle, 170) : head + `${x.i.principle}${x.i.trigger ? ' | When: ' + x.i.trigger : ''}${x.i.how ? ' | Do: ' + x.i.how : ''}${x.i.avoid ? ' | Avoid / not when: ' + x.i.avoid : ''}`; });
   const cases = selectCases(q);
-  const caseLines = cases.map(c => `- Situation: ${c.situation} → Noticed: ${c.noticed} → Did: ${c.did} → Why: ${c.why}`);
+  // cases teach reasoning; strip the client's name so their details can't pass as current history
+  const anon = s => String(s || '').replace(/\bSam's\b/g, "the client's").replace(/\bSam\b/g, 'the client');
+  const caseLines = cases.map(c => `- Situation: ${anon(c.situation)} → Noticed: ${anon(c.noticed)} → Did: ${anon(c.did)} → Why: ${anon(c.why)}`);
   const meth = methodologyBlock();
   // Layer 3 (only strong matches)
   const all = Index.search(q, { types: ['sessions'], limit: 8, min: 2.2 });
@@ -2330,7 +2333,7 @@ async function runTest(t, onText) {
 async function judgeTest(t) {
   const ci = arr(t.actualMeta && t.actualMeta.intelligence).map(id => Store.get('intelligence', id)).filter(Boolean);
   const r = await AI.json(`You evaluate one reply from a coaching engine that should coach with learned Coaching Intelligence, Sam's context, optional history and general reasoning, and must never pretend a situation appeared in a past session.
-Score each check 0 (poor), 1 (partial) or 2 (strong). If a check was correctly not needed (e.g. no challenge was warranted, no teaching was asked for), score 2.
+Score each check 0 (poor), 1 (partial), 2 (strong), or "na" when the check was correctly not needed in this reply (e.g. no challenge was warranted, no teaching was asked for yet). Use 0 only for a real failure.
 Checks: ${EVAL_DIMS.map(([k, l]) => `${k} = ${l}`).join('; ')}.
 Facts for the checks: history items offered to the engine: ${t.actualMeta && t.actualMeta.historyOffered || 0}; unverifiable references it made: ${arr(t.actualMeta && t.actualMeta.invalid).join(', ') || 'none'}; 8+ words copied verbatim from training material: ${t.copyFlag ? '"' + t.copyFlag + '"' : 'none'}; relied on general reasoning: ${t.actualMeta && t.actualMeta.general ? 'yes' : 'no'}.
 Coaching Intelligence it applied: ${ci.map(i => `${i.name}: ${i.principle}`).join(' | ') || 'none named (default behaviour)'}.
@@ -2338,8 +2341,8 @@ USER INPUT: ${t.input}
 EXPECTED BEHAVIOR: ${t.expected || '(not specified)'}
 ACTUAL REPLY:
 ${t.actual}
-Reply with only JSON: {"scores":{${EVAL_DIMS.map(([k]) => `"${k}":0`).join(',')}},"evaluation":"2-4 sentences: what it did well, what it missed"}`, { modelTier: 'quick' });
-  const scores = {}; EVAL_DIMS.forEach(([k]) => { const v = +((r.scores || {})[k]); if (v === 0 || v === 1 || v === 2) scores[k] = v; });
+Reply with only JSON: {"scores":{${EVAL_DIMS.map(([k]) => `"${k}":0`).join(',')}} (each value 0, 1, 2 or "na"),"evaluation":"2-4 sentences: what it did well, what it missed"}`, { modelTier: 'quick' });
+  const scores = {}; EVAL_DIMS.forEach(([k]) => { const raw = (r.scores || {})[k]; const v = String(raw).toLowerCase() === 'na' ? 2 : +raw; if (v === 0 || v === 1 || v === 2) scores[k] = v; });
   if (t.copyFlag) scores.original = 0;
   if (arr(t.actualMeta && t.actualMeta.invalid).length) scores.honesty = 0;
   await Store.patch('tests', t.id, { scores, evaluation: String(r.evaluation || ''), judgedBy: 'AI judge' });
