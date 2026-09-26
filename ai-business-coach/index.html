@@ -2047,13 +2047,17 @@ VIEWS.accountability = function () {
 const CONTENT_MODES = {
   Generate: { a: 'Idea', aph: 'The idea, opinion or lesson you want to share', b: 'Angle or example', bph: 'A client story, number or example to anchor it (optional)', formats: true },
   Improve: { a: 'Your draft', aph: 'Paste the content to improve', b: 'What should it do better?', bph: 'e.g. stronger hook, clearer CTA, less generic' },
-  Ideate: { a: 'Theme', aph: 'e.g. why webinar funnels fail for new coaches', b: 'How many ideas', bph: '10' },
+  Ideate: { a: 'Theme', aph: 'e.g. why webinar funnels fail for new coaches', b: 'How many ideas', bph: '10', noLength: true },
   'Belief Shift': { a: 'Belief your audience holds now', aph: 'e.g. "I need a bigger audience before I can sell"', b: 'Belief you want them to hold', bph: 'e.g. "A small, warm audience with a clear offer is enough to start"', formats: true },
-  Hooks: { a: 'Topic', aph: 'What the post is about', b: 'How many hooks', bph: '10' },
+  Hooks: { a: 'Topic', aph: 'What the post is about', b: 'How many hooks', bph: '10', noLength: true },
   Story: { a: 'The experience', aph: 'What happened, with you or a client', b: 'The lesson', bph: 'What should the reader take away?', formats: true },
   Framework: { a: 'Process or idea', aph: 'Describe how you do it, messy is fine', b: 'Name ideas (optional)', bph: 'Words you like' },
   Repurpose: { a: 'Source content or idea', aph: 'Paste the piece to repurpose', b: 'Extra notes', bph: 'optional', multi: true }
 };
+/* Optional target length. Models aim for it; the actual count is shown under the result. */
+const wantWords = v => { const n = parseInt(String(v || '').replace(/[^0-9]/g, ''), 10); return n > 0 && n <= 5000 ? n : 0; };
+const countWords = t => (String(t || '').replace(/[#*_>`\-]+/g, ' ').match(/[\p{L}\p{N}'’]+/gu) || []).length;
+const lengthRule = (n, what) => n ? `LENGTH: ${what} must be about ${n} words (stay within 10% of ${n}). Count the words before you answer; this limit overrides the usual length for the format.` : '';
 const FORMATS = ['Social post', 'LinkedIn post', 'Facebook post', 'Email', 'Short-video script', 'Carousel', 'Caption'];
 VIEWS.content = function () {
   const mode = ui.contentMode, cfg = CONTENT_MODES[mode];
@@ -2072,6 +2076,7 @@ TASK: ${mode}
 ${cfg.a}: ${c.a}
 ${c.b ? cfg.b + ': ' + c.b : ''}
 ${cfg.formats || cfg.multi ? 'Format(s): ' + c.formats.join(', ') : ''}
+${cfg.noLength ? '' : lengthRule(wantWords(c.words), c.formats.length > 1 && (cfg.formats || cfg.multi) ? 'Each format\'s piece (not counting headings or the diagnosis)' : mode === 'Improve' ? 'The improved version (not counting the diagnosis)' : 'The piece')}
 
 ${{
         Generate: 'Write the piece in the chosen format(s). Start with a strong hook. End with one clear, low-pressure call to action.',
@@ -2096,11 +2101,12 @@ Reply in Markdown.`;
       h('div', { class: 'card pad col' },
         field(cfg.a, tarea('c-a-' + mode, c, 'a', cfg.aph, mode === 'Improve' || mode === 'Repurpose' ? 8 : 4)),
         field(cfg.b, tinput('c-b-' + mode, c, 'b', cfg.bph)),
+        cfg.noLength ? null : field('Word count', tinput('c-w-' + mode, c, 'words', 'optional, e.g. 150', 'number'), 'how many words you want in the result'),
         cfg.formats || cfg.multi ? field(cfg.multi ? 'Formats' : 'Format', h('div', { class: 'row' }, FORMATS.map(f => h('button', { class: 'chip' + (c.formats.includes(f) ? ' on' : ''), onclick: () => { c.formats = cfg.multi ? (c.formats.includes(f) ? c.formats.filter(x => x !== f) : [...c.formats, f]) : [f]; if (!c.formats.length) c.formats = [f]; render(); } }, f)))) : null,
         h('div', { class: 'small muted' }, ctxItems.length ? `Uses ${plural(ctxItems.length, 'context item')} about your positioning and audience.` : 'No positioning or audience context stored yet. ', h('button', { class: 'linkbtn', onclick: () => go('knowledge', { kTab: 'context' }) }, ctxItems.length ? 'Edit context' : 'Add it')),
         h('div', null, aiButton(c.busy ? 'Writing…' : mode === 'Improve' ? 'Review & improve' : 'Create', run))),
       h('div', { class: 'card pad col' },
-        h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Output'), c.out && !c.busy ? h('button', { class: 'btn sm', onclick: e => copyText(c.out, e.currentTarget) }, icon('copy'), 'Copy') : null, c.out && !c.busy ? h('button', { class: 'btn sm', onclick: run, disabled: !AI.ok() }, 'Regenerate') : null),
+        h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Output', c.out && !c.busy ? h('span', { class: 'tiny faint', style: 'margin-left:8px;text-transform:none;letter-spacing:0' }, `${countWords(c.out)} words` + (wantWords(c.words) && !cfg.noLength ? ` · target ${wantWords(c.words)}` : '')) : null), c.out && !c.busy ? h('button', { class: 'btn sm', onclick: e => copyText(c.out, e.currentTarget) }, icon('copy'), 'Copy') : null, c.out && !c.busy ? h('button', { class: 'btn sm', onclick: run, disabled: !AI.ok() }, 'Regenerate') : null),
         c.out ? h('div', { class: 'md out', id: 'cout', html: md(c.out) }) : c.busy ? h('div', { id: 'cout' }, thinking('Writing')) : h('p', { class: 'muted small' }, 'Your draft appears here. Edit it in your own words before you publish.'))));
 };
 
@@ -2119,7 +2125,7 @@ Style: ${ui.socialStyle} (${STYLES[ui.socialStyle]}).
 Sam's context:
 ${contextBlock()}
 ${s.angle ? 'Sam\'s angle: ' + s.angle : ''}
-Rules: each reply must contribute something meaningful (a specific point, example, question or respectful disagreement). No engagement bait, no "Great post!", no generic agreement, no self-promotion or links, no invented results. Sound like a real practitioner. Match the platform's normal reply length.
+Rules: each reply must contribute something meaningful (a specific point, example, question or respectful disagreement). No engagement bait, no "Great post!", no generic agreement, no self-promotion or links, no invented results. Sound like a real practitioner. ${wantWords(s.words) ? lengthRule(wantWords(s.words), 'Each reply') : "Match the platform's normal reply length."}
 POST${s.author ? ' by ' + s.author : ''}:
 """
 ${s.post}
@@ -2136,10 +2142,11 @@ Reply with only JSON: {"replies":[{"text":"","why":"what it adds to the conversa
         field('Author or context', tinput('so-author', s, 'author', 'optional, e.g. "a business coach with 20k followers"')),
         field('Style', h('div', { class: 'row' }, Object.keys(STYLES).map(k => h('button', { class: 'chip' + (ui.socialStyle === k ? ' on' : ''), title: STYLES[k], onclick: () => { ui.socialStyle = k; render(); } }, k)))),
         field('Your angle', tinput('so-angle', s, 'angle', 'optional, the point you want to make')),
+        field('Word count', tinput('so-words', s, 'words', 'optional, e.g. 40', 'number'), 'words per reply'),
         h('div', null, aiButton(s.busy ? 'Writing…' : 'Write replies', run))),
       h('div', { class: 'col' },
         s.busy ? h('div', { class: 'card pad' }, thinking('Writing replies')) :
-          s.out && s.out.length ? s.out.map(r => h('div', { class: 'reply' }, h('p', { style: 'white-space:pre-wrap' }, r.text), h('div', { class: 'row' }, h('span', { class: 'tiny faint grow' }, r.why), h('button', { class: 'btn sm', onclick: e => copyText(r.text, e.currentTarget) }, icon('copy'), 'Copy')))) :
+          s.out && s.out.length ? s.out.map(r => h('div', { class: 'reply' }, h('p', { style: 'white-space:pre-wrap' }, r.text), h('div', { class: 'row' }, h('span', { class: 'tiny faint grow' }, r.why), h('span', { class: 'tiny faint' }, `${countWords(r.text)} words`), h('button', { class: 'btn sm', onclick: e => copyText(r.text, e.currentTarget) }, icon('copy'), 'Copy')))) :
             h('div', { class: 'card pad muted small' }, 'Three reply options appear here, each with a note on what it adds.'))));
 };
 
