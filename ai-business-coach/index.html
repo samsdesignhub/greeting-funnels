@@ -1253,12 +1253,36 @@ ${lines.join('\n')}
 
 Reply with only JSON: {"principles":[{"name":"short name","principle":"1-2 sentences","trigger":"","how":"","avoid":"","sessions":["S01","S07"]}]}`;
 }
-async function saveSynthesis(drafts) {
-  for (const old of Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived')) await Store.patch('intelligence', old.id, { status: 'archived', archivedAt: nowISO() });
-  for (const d of drafts.filter(x => x.keep)) {
-    const { keep, ...rest } = d;
-    await Store.put('intelligence', { id: uid('ci'), ...rest, evidence: [], status: 'active', source: 'synthesis', synthesizedAt: nowISO() });
-  }
+/* One save at a time (a second click, or a second run, used to start a parallel save and duplicate every principle).
+   New principles are written first; then every other active synthesis item is archived, including any written meanwhile. */
+let synthSaving = false;
+async function saveSynthesis(drafts, onProgress) {
+  if (synthSaving) return false;
+  synthSaving = true;
+  try {
+    const runAt = nowISO(), keepIds = new Set(), seen = new Set();
+    const kept = drafts.filter(x => x.keep);
+    for (const d of kept) {
+      const k = d.dimension + '|' + String(d.name).trim().toLowerCase(); if (seen.has(k)) continue; seen.add(k);
+      const { keep, ...rest } = d, id = uid('ci'); keepIds.add(id);
+      await Store.put('intelligence', { id, ...rest, evidence: [], status: 'active', source: 'synthesis', synthesizedAt: runAt });
+      onProgress && onProgress(keepIds.size, kept.length);
+    }
+    for (const old of Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived' && !keepIds.has(i.id))) await Store.patch('intelligence', old.id, { status: 'archived', archivedAt: nowISO() });
+    return true;
+  } finally { synthSaving = false; }
+}
+/* Repair: remove exact copies of the same active synthesis principle (left by overlapping saves). Keeps the oldest copy. */
+async function dedupeIntelligence() {
+  const groups = new Map();
+  Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived').forEach(i => {
+    const k = JSON.stringify([i.dimension, i.name, i.principle, i.trigger, i.how, i.avoid, arr(i.sessionIds)]);
+    (groups.get(k) || groups.set(k, []).get(k)).push(i);
+  });
+  const extra = [];
+  groups.forEach(list => { list.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || a.id.localeCompare(b.id)); extra.push(...list.slice(1)); });
+  for (let i = 0; i < extra.length; i += 25) await Promise.all(extra.slice(i, i + 25).map(x => Store.del('intelligence', x.id)));
+  return extra.length;
 }
 /* after a later import: does the new session support, extend or contradict the learned layer? */
 async function queueCISuggestions(s) {
@@ -2418,7 +2442,7 @@ function editIntelligence(i) {
   });
 }
 function openSynthesis() {
-  let drafts = null, busy = '', err = '';
+  let drafts = null, busy = '', err = '', saving = false;
   let m;
   const start = async () => {
     busy = 'Starting…'; err = ''; m.setBody(draw());
@@ -2434,8 +2458,14 @@ function openSynthesis() {
       h('p', { class: 'small muted' }, 'Confidence is calculated from evidence: Observed = 1 session, Repeated = 2+, Strong pattern = 3+ sessions across different situations. Saving replaces the previous synthesis (it is archived, not deleted). Principles you added by hand are kept.'),
       h('div', null, h('button', { class: 'btn primary', disabled: !nObs || !AI.ok(), onclick: start }, icon('spark'), 'Start synthesis')));
     const byDim = CI_DIMS.filter(([k]) => drafts.some(d => d.dimension === k));
-    return h('div', { class: 'col' },
-      h('div', { class: 'row' }, h('span', { class: 'small muted grow' }, `${drafts.length} principles proposed. Untick any you don't want.`), h('button', { class: 'btn primary', onclick: async () => { await saveSynthesis(drafts); m.close(); toast('Coaching Intelligence saved'); ui.kTab = 'intel'; go('knowledge'); } }, `Save ${drafts.filter(d => d.keep).length} principles`)),
+    return h('div', { class: 'col' }, err ? h('div', { class: 'note warn' }, err) : null,
+      h('div', { class: 'row' }, h('span', { class: 'small muted grow' }, `${drafts.length} principles proposed. Untick any you don't want.`), h('button', { class: 'btn primary', disabled: saving, onclick: async () => {
+        if (saving) return; saving = true; busy = 'Saving…'; m.setBody(draw());
+        let ok = false; try { ok = await saveSynthesis(drafts, (n, t) => { busy = `Saving ${n} of ${t}…`; m.setBody(draw()); }); } catch (e) { err = e.message; }
+        saving = false; busy = '';
+        if (!ok) { if (!err) err = 'A save is already running. Wait for it to finish.'; m.setBody(draw()); return; }
+        m.close(); toast('Coaching Intelligence saved'); ui.kTab = 'intel'; go('knowledge');
+      } }, `Save ${drafts.filter(d => d.keep).length} principles`)),
       byDim.map(([k, l]) => h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('h3', null, l)), h('div', { class: 'list' }, drafts.filter(d => d.dimension === k).map(d => { const c = ciConf(d); return h('label', { class: 'li' }, h('input', { type: 'checkbox', checked: d.keep, onchange: e => d.keep = e.target.checked }), h('div', { class: 'grow' }, h('b', null, d.name), h('div', { class: 'small' }, d.principle), d.trigger ? h('div', { class: 'tiny faint' }, 'When: ' + d.trigger) : null, d.avoid ? h('div', { class: 'tiny faint' }, 'Avoid: ' + d.avoid) : null), h('div', { class: 'col', style: 'gap:4px;align-items:flex-end' }, h('span', { class: 'pill ' + c.cls }, c.label), h('div', { class: 'row', style: 'gap:3px' }, sessChips(d.sessionIds, 5)))); })))));
   }
 }
@@ -2519,5 +2549,6 @@ function runSearch(q) {
   await Promise.all([Store.init(), AI.init()]);
   $('#gsearch').addEventListener('keydown', e => { if (e.key === 'Enter') { runSearch(e.target.value); } });
   render();
+  try { const n = await dedupeIntelligence(); if (n) toast(`Removed ${n} duplicate Coaching Intelligence copies`); } catch (e) { console.warn(e); }
 })();
 </script>
