@@ -644,6 +644,7 @@ TRUTHFULNESS
 - A single historical statement is not a universal rule.
 - When you mention a past event, restate only what HISTORY records. Don't add details (what Sam's instinct was, how he reacted, who else was involved) and don't attribute a line the coach said to Sam or to a client. If you are not sure a detail is recorded, leave it out.
 - Illustrative cases and coaching principles describe how the coach reasons. They are not facts about Sam's current situation; never turn them into "you've been working on…" statements.
+- Some principles were learned in group trainings. Apply them only as they transfer to this private one-to-one conversation: diagnose Sam's own situation, never talk to him as an audience.
 - History is a possible parallel, not a diagnosis: say how the current situation might differ, and never let an old situation replace asking about this one.
 
 TRANSLATING THE COACH'S LIVE STYLE TO WRITTEN CHAT
@@ -714,7 +715,7 @@ function knowledgeBlock(q, extraSessionIds = []) {
   const top = all.length ? all[0].score : 0;
   const hits = all.filter(x => x.cover >= 0.34 && x.score >= top * 0.75).slice(0, 3);
   const sess = uniq([...extraSessionIds, ...hits.map(x => x.id)]).map(id => Store.get('sessions', id)).filter(Boolean).slice(0, 5);
-  const sLines = sess.map(s => { refs[sref(s)] = { type: 'sessions', id: s.id }; return `[${sref(s)}] ${s.date ? s.date + ' — ' : ''}${s.title}: ${trunc(s.summary, 380)} Sam's problems then: ${trunc(arr(s.problems).join('; '), 220)}. His beliefs/assumptions then: ${trunc([...arr(s.beliefs), ...arr(s.assumptions)].join('; '), 220)}. Commitments then: ${trunc(arr(s.commitments).join('; '), 160)}`; });
+  const sLines = sess.map(s => { refs[sref(s)] = { type: 'sessions', id: s.id }; return `[${sref(s)}] ${s.ci && s.ci.format === 'group training' ? '(group training — general teaching, not Sam\'s personal situation) ' : ''}${s.date ? s.date + ' — ' : ''}${s.title}: ${trunc(s.summary, 380)} Sam's problems then: ${trunc(arr(s.problems).join('; '), 220)}. His beliefs/assumptions then: ${trunc([...arr(s.beliefs), ...arr(s.assumptions)].join('; '), 220)}. Commitments then: ${trunc(arr(s.commitments).join('; '), 160)}`; });
   const pHits = Index.search(q, { types: ['patterns'], limit: 3, min: 1.2 }).filter(x => x.cover >= 0.3).map(x => Store.get('patterns', x.id)).filter(p => p && p.status !== 'dismissed');
   const pLines = pHits.map((p, i) => { const tag = 'P' + (i + 1); refs[tag] = { type: 'patterns', id: p.id }; const c = patternConf(p); return `[${tag}] Sam's recurring pattern "${p.name}" (${c.label}): ${trunc(p.description, 220)}`; });
   const active = Store.all('commitments').filter(c => c.status !== 'Done').slice(0, 6);
@@ -962,7 +963,7 @@ async function storeJob(job) {
       ...Object.fromEntries(ARR_FIELDS.map(k => [k, ex[k]])),
       commitments: ex.commitmentsFull.map(c => c.text), relatedSessionIds: [], source: job.fileName || 'pasted transcript',
       transcriptChars: job.stats.chars, importedAt: nowISO(),
-      ci: job.ci ? { situation: job.ci.situation, interpretation: job.ci.interpretation, observations: job.ci.observations } : null
+      ci: job.ci ? { format: job.ci.format, situation: job.ci.situation, interpretation: job.ci.interpretation, observations: job.ci.observations } : null
     };
     await Store.put('sessions', session);
     if (job.ci) await storeCases(sid, job.ci.cases);
@@ -1164,13 +1165,14 @@ Rules:
   Good: "When the client makes a confident market prediction without evidence, she checks whether it comes from real feedback or an untested assumption before discussing tactics."
 - Every observation must be grounded in something that actually happens in this transcript. Give a short paraphrase of that moment as evidence (max 25 words, no long quotes).
 - Facts about Sam's business, offers or life are NOT coaching behaviour; leave them out here.
+- If this is a group training or lecture rather than 1:1 coaching, say so in "format", and skip behaviours that only make sense for managing a group or an audience (call-and-response, polling the room, holding content back for a paid tier).
 - Include what she deliberately does NOT do when it is visible (dimension "avoid"), e.g. holding back the answer so Sam works it out.
 - Only observable behaviour. Don't invent personality traits. Don't label every negative statement a "limiting belief".
 - Max 4 observations per dimension; skip dimensions with nothing clear.
 - Cases: 1-3 representative moments written as training examples, with the situation generalised (no private numbers or names).
 
 Reply with only JSON:
-{"situation":"one line: what Sam brought to this session","interpretation":"one line: how the coach read the situation",
+{"format":"1:1 coaching | group training | recorded lecture","situation":"one line: what Sam brought to this session","interpretation":"one line: how the coach read the situation",
  "observations":[{"dimension":"${CI_DIMS.map(d => d[0]).join('|')}","principle":"generalised behaviour","trigger":"when / in what kind of situation","how":"what she does, concretely","why":"its apparent purpose","evidence":"short paraphrase of the moment"}],
  "cases":[{"situation":"","noticed":"what the coach noticed","did":"what she did","why":"why it appears to have been the right move","result":"result or next step if known, else empty","dimensions":["questioning"]}]}
 
@@ -1183,13 +1185,13 @@ function normCI(x) {
   x = x || {};
   const s = v => String(v || '').trim();
   return {
-    situation: s(x.situation), interpretation: s(x.interpretation),
+    format: /group|lecture|training|webinar|class/i.test(s(x.format)) ? 'group training' : (s(x.format) ? '1:1 coaching' : ''), situation: s(x.situation), interpretation: s(x.interpretation),
     observations: arr(x.observations).filter(o => o && o.principle && CI_DIM[o.dimension]).map(o => ({ dimension: o.dimension, principle: s(o.principle), trigger: s(o.trigger), how: s(o.how), why: s(o.why), evidence: s(o.evidence) })),
     cases: arr(x.cases).filter(c => c && c.situation && c.did).map(c => ({ situation: s(c.situation), noticed: s(c.noticed), did: s(c.did), why: s(c.why), result: s(c.result), dimensions: arr(c.dimensions).filter(d => CI_DIM[d]) }))
   };
 }
 function mergeCI(parts) {
-  return { situation: parts.map(p => p.situation).filter(Boolean)[0] || '', interpretation: parts.map(p => p.interpretation).filter(Boolean)[0] || '', observations: parts.flatMap(p => p.observations), cases: parts.flatMap(p => p.cases).slice(0, 4) };
+  return { format: parts.map(p => p.format).filter(Boolean)[0] || '', situation: parts.map(p => p.situation).filter(Boolean)[0] || '', interpretation: parts.map(p => p.interpretation).filter(Boolean)[0] || '', observations: parts.flatMap(p => p.observations), cases: parts.flatMap(p => p.cases).slice(0, 4) };
 }
 async function storeCases(sid, cases) {
   for (const c of arr(cases)) await Store.put('cases', { id: uid('case'), sessionId: sid, ...c });
@@ -1202,7 +1204,7 @@ async function extractCIForSession(s, onProgress) {
   const p = parseTranscript(tx); const parts = [];
   for (let i = 0; i < p.chunks.length; i++) { onProgress && onProgress(`${sref(s)} part ${i + 1}/${p.chunks.length}`); parts.push(normCI(await AI.json(ciPrompt(p.chunks[i], i, p.chunks.length)))); }
   const ci = mergeCI(parts);
-  await Store.patch('sessions', s.id, { ci: { situation: ci.situation, interpretation: ci.interpretation, observations: ci.observations } });
+  await Store.patch('sessions', s.id, { ci: { format: ci.format, situation: ci.situation, interpretation: ci.interpretation, observations: ci.observations } });
   for (const c of Store.all('cases').filter(c => c.sessionId === s.id)) await Store.del('cases', c.id);
   await storeCases(s.id, ci.cases);
 }
@@ -1212,7 +1214,7 @@ async function synthesizeIntelligence(onProgress) {
   if (!sess.length) throw new Error('No sessions have coaching-behaviour observations yet.');
   const drafts = [];
   for (const [dim, label, desc] of CI_DIMS) {
-    const obs = []; sess.forEach(s => s.ci.observations.filter(o => o.dimension === dim).forEach(o => obs.push(`[${sref(s)}] ${o.principle}${o.trigger ? ' | when: ' + o.trigger : ''}${o.how ? ' | how: ' + o.how : ''}${o.evidence ? ' | moment: ' + o.evidence : ''}`)));
+    const obs = []; sess.forEach(s => s.ci.observations.filter(o => o.dimension === dim).forEach(o => obs.push(`[${sref(s)}${s.ci.format === 'group training' ? ' · group' : ''}] ${o.principle}${o.trigger ? ' | when: ' + o.trigger : ''}${o.how ? ' | how: ' + o.how : ''}${o.evidence ? ' | moment: ' + o.evidence : ''}`)));
     if (!obs.length) continue;
     const groups = []; let g = [], used = 0;
     obs.forEach(l => { if (used + l.length > 38000 && g.length) { groups.push(g); g = []; used = 0; } g.push(l); used += l.length; }); if (g.length) groups.push(g);
@@ -1243,6 +1245,7 @@ ${merging ? 'Merge these partial principles' : 'Merge observations that describe
 - be phrased so it applies to NEW situations the sessions never covered (principle and reasoning, never a script or stock phrase);
 - say when to apply it ("trigger"), what to do ("how"), and what to avoid or when NOT to apply it ("avoid");
 - list in "sessions" every session tag whose ${merging ? 'principles' : 'observations'} support it — only tags that appear below.
+The principles will drive a PRIVATE one-to-one coaching chat. Observations tagged "group" come from group trainings or lectures: keep what transfers to 1:1 coaching, and drop behaviour that only makes sense with a group or audience (call-and-response, polling the room, not diagnosing individuals, withholding content for a paid tier).
 Do not invent behaviour that isn't in the material. Don't merge unrelated behaviours. Keep single-session behaviours as separate principles (they will be marked "observed"). Don't copy transcript wording. Max 10 principles.
 
 ${merging ? 'PARTIAL PRINCIPLES' : 'OBSERVATIONS'}:
