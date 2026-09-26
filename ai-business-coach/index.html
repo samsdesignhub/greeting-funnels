@@ -451,6 +451,21 @@ function handleDbError(e) {
 }
 
 /* ---------------- AI ---------------- */
+/* Every AI answer in the tool is written in very easy English (added to every request in one place). */
+const PLAIN_ENGLISH = `LANGUAGE (very important, applies to everything the reader will see):
+Write in very easy, beginner-friendly English, the way a kind coach talks in a live 1-to-1 session.
+- Short sentences. Most sentences under 15 words. One idea per sentence.
+- Common everyday words only. No jargon, no idioms, no slang, no fancy or academic words.
+- If a business word is needed (for example funnel, offer, conversion, positioning), explain it in a few simple words the first time.
+- Talk to the reader as "you". Be warm and clear.
+- Use short bullet points instead of long paragraphs when it helps.
+- Keep every name, number and fact exactly the same. Do not remove important meaning.
+- Inside JSON: write all text values in this easy English, but keep keys, ids, tags, labels and the required structure exactly as asked.`;
+function plainInput(input) {
+  if (typeof input === 'string') return input + '\n\n' + PLAIN_ENGLISH;
+  if (Array.isArray(input) && input.length && typeof input[0].content === 'string') return [{ ...input[0], content: input[0].content + '\n\n' + PLAIN_ENGLISH }, ...input.slice(1)];
+  return input;
+}
 const AI = {
   fn: null, off: false, reason: '',
   async init() {
@@ -469,8 +484,8 @@ const AI = {
     };
     return c in copy ? copy[c] : 'The AI request failed. Try again.';
   },
-  async text(input, o = {}) { if (!this.ok()) throw { code: 'not_granted', message: this.reason }; return this.fn(input, { cache: false, ...o }); },
-  async json(input, o = {}) { if (!this.ok()) throw { code: 'not_granted', message: this.reason }; return this.fn.json(input, { cache: false, ...o }); }
+  async text(input, o = {}) { if (!this.ok()) throw { code: 'not_granted', message: this.reason }; return this.fn(plainInput(input), { cache: false, ...o }); },
+  async json(input, o = {}) { if (!this.ok()) throw { code: 'not_granted', message: this.reason }; return this.fn.json(plainInput(input), { cache: false, ...o }); }
 };
 
 /* ---------------- Index (retrieval) ---------------- */
