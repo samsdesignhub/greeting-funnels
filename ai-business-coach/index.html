@@ -321,12 +321,16 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
    ===================================================================== */
 
 /* ---------------- constants ---------------- */
-const COLS = ['context','methodology','frameworks','sessions','patterns','commitments','decisions','insights','beliefs','conversations','tests'];
+const COLS = ['context','methodology','intelligence','cases','frameworks','sessions','patterns','commitments','decisions','insights','beliefs','conversations','tests'];
 const CATEGORIES = ['Business','Strategy','Execution','Decision-making','Content','Communication','Beliefs','Learning','Recurring behavior'];
 const C_STATUS = ['Not Started','In Progress','Done','Blocked'];
 const D_STATUS = ['Open','Exploring','Testing','Decided'];
 const MODES = ['Explore','Diagnose','Challenge','Teach','Practice','Review','Decide','Reflect','Accountability','Follow-up'];
-const EVAL_DIMS = ['diagnosis','questioning','evidence use','teaching','challenge','practice','action','historical accuracy','independence'];
+const EVAL_DIMS = [
+  ['issue', 'Identified the real issue'], ['questions', 'Asked useful questions'], ['challenge', 'Challenged when appropriate'], ['restraint', 'Avoided unnecessary challenge'],
+  ['teaching', 'Taught when appropriate'], ['evidence', 'Used evidence appropriately'], ['honesty', 'Did not pretend it appeared in a session'], ['general', 'Used general reasoning when needed'],
+  ['consistency', 'Consistent with Coaching Intelligence'], ['original', 'Did not copy a session response']
+];
 const CHUNK = 36000;
 
 /* ---------------- utils ---------------- */
@@ -507,13 +511,14 @@ const Index = {
       case 'context': return [[o.label, 2], [o.value, 1]];
       case 'beliefs': return [[o.belief, 3], [Object.values(o.steps || {}).join(' '), 1]];
       case 'insights': return [[o.title, 3], [o.body, 1]];
+      case 'intelligence': return [[o.name, 3], [o.principle, 2], [o.trigger, 1]];
       default: return [];
     }
   },
   build() {
     if (this.ver === Store.ver) return;
     this.docs = []; this.df = new Map();
-    ['sessions', 'patterns', 'frameworks', 'commitments', 'decisions', 'methodology', 'context', 'beliefs'].forEach(type => {
+    ['sessions', 'patterns', 'frameworks', 'commitments', 'decisions', 'methodology', 'context', 'beliefs', 'intelligence'].forEach(type => {
       Store.all(type).forEach(o => {
         const tf = new Map();
         this.fields(type, o).forEach(([txt, w]) => tokens(txt).forEach(t => tf.set(t, (tf.get(t) || 0) + w)));
@@ -561,107 +566,161 @@ function nextSessionNumber() { return Store.all('sessions').reduce((m, s) => Mat
 function sessionsSorted() { return Store.all('sessions').sort((a, b) => (+a.number || 0) - (+b.number || 0)); }
 function ctxValue(key) { const c = Store.all('context').find(x => x.key === key); return c ? c.value : ''; }
 
+/* =====================================================================
+   COACHING INTELLIGENCE (Layer 1)
+   Learned HOW-to-coach principles, synthesised across sessions. Stored in
+   `intelligence`; representative situation→response cases in `cases`.
+   Kept strictly apart from historical context about Sam (Layer 3).
+   ===================================================================== */
+const CI_DIMS = [
+  ['thinking', 'Thinking patterns', 'how the coach analyses a situation: what she notices first, what she questions, how she prioritises information, identifies the real issue, separates facts from interpretations and reasons from evidence'],
+  ['diagnostic', 'Diagnostic patterns', 'how she diagnoses problems: the actual recurring sequence she uses to get from a presented symptom to the real issue'],
+  ['questioning', 'Questioning patterns', 'the types of questions she asks, when and why, what she is trying to uncover, how she follows up on answers, and when she stops questioning and starts teaching'],
+  ['challenge', 'Challenge patterns', 'what makes her challenge, how she challenges unsupported assumptions and contradictions, how direct she is, when she pushes deeper and when she does NOT challenge'],
+  ['teaching', 'Teaching patterns', 'when she teaches, how she explains, examples, analogies, frameworks, sequencing, how she checks understanding and moves from explanation to application'],
+  ['feedback', 'Feedback patterns', 'how she responds when the client is wrong, partially correct, misunderstands, gives a weak or strong answer, avoids the question or changes direction'],
+  ['decision', 'Decision-coaching patterns', 'how she helps the client think through choices, uncertainty, risks, assumptions, trade-offs, consequences, experiments and next steps'],
+  ['belief', 'Belief & assumption patterns', 'how she handles beliefs, assumptions, fears, predictions, interpretations and limiting conclusions (without labelling every negative statement a limiting belief)'],
+  ['style', 'Response style', 'observable communication characteristics: conversational vs formal, direct vs indirect, length, questioning vs explaining, challenging vs reassuring, practical vs conceptual, use of examples, repetition, analogies, pacing, emotional tone'],
+  ['avoid', 'What she avoids', 'what the coach deliberately does NOT do, and what makes her coaching different from generic advice']
+];
+const CI_DIM = Object.fromEntries(CI_DIMS.map(d => [d[0], d]));
+/* confidence: OBSERVED = 1 session · REPEATED = 2+ · STRONG = 3+ sessions across different situations */
+function ciConf(item) {
+  const ids = liveSessionIds(item.sessionIds);
+  const n = ids.length;
+  if (item.status === 'archived') return { key: 'archived', label: 'Archived', cls: 'neutral', rank: 0, n };
+  if (!n) return { key: 'curated', label: item.source === 'manual' ? 'Curated' : 'Unverified', cls: 'neutral', rank: 1, n };
+  if (n === 1) return { key: 'observed', label: 'Observed', cls: 'warn', rank: 1, n };
+  const cats = new Set(); const tops = new Set();
+  ids.forEach(id => { const s = Store.get('sessions', id); arr(s.categories).forEach(c => cats.add(c)); tops.add(arr(s.topics).slice(0, 2).join('|')); });
+  if (n >= 3 && (cats.size >= 2 || tops.size >= 3)) return { key: 'strong', label: 'Strong pattern', cls: 'good', rank: 3, n };
+  return { key: 'repeated', label: 'Repeated', cls: 'info', rank: 2, n };
+}
+function activeIntelligence() { return Store.all('intelligence').filter(i => i.status !== 'archived'); }
+/* choose the intelligence to put in front of the model: every strong/repeated item
+   (ordered by relevance), plus observed items only when they are relevant */
+function selectIntelligence(q, budget = 11000) {
+  const qt = new Set(tokens(q));
+  const scored = activeIntelligence().map(i => {
+    const t = tokens([i.name, i.principle, i.trigger].join(' '));
+    const rel = t.filter(x => qt.has(x)).length;
+    return { i, c: ciConf(i), rel };
+  }).filter(x => x.c.rank >= 2 || x.rel > 0 || x.c.key === 'curated')
+    .sort((a, b) => (b.c.rank - a.c.rank) || (b.rel - a.rel));
+  const out = []; let used = 0;
+  for (const x of scored) { const len = (x.i.principle || '').length + (x.i.trigger || '').length + (x.i.how || '').length + (x.i.avoid || '').length + 90; if (used + len > budget) continue; out.push(x); used += len; }
+  return out;
+}
+function selectCases(q, n = 3) {
+  const all = Store.all('cases'); if (!all.length) return [];
+  const qt = new Set(tokens(q));
+  return all.map(c => ({ c, s: tokens([c.situation, c.noticed].join(' ')).filter(t => qt.has(t)).length }))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.c);
+}
+
 /* ---------------- Engine: prompts ---------------- */
 const ENGINE_RULES = `IDENTITY
-- You are the coaching engine inside "AI Business Coach", Sam's private coaching system. It is built from Sam's own coaching-session material.
-- You are NOT the original human coach and not any real person. Never claim to be the coach (e.g. never "I am Simran"). You have no memories beyond the KNOWLEDGE block below.
-- Never invent sessions, session numbers, quotes, conversations, dates or facts about Sam. Cite only items listed in KNOWLEDGE, using their exact reference tags like [S04] or [P2]. If KNOWLEDGE has nothing relevant, say the knowledge base holds no evidence on it yet.
-- Say "Based on the coaching material…" when you draw on KNOWLEDGE and "Based on general reasoning…" when you use your own general knowledge. Never attribute general knowledge to the coach or the sessions.
-- A single historical statement is not a universal rule. Patterns need repeated evidence. Confidence words: Confirmed / Supported (multiple sessions) / Possible (limited evidence) / Unknown.
+- You are the coaching engine inside "AI Business Coach", Sam's private coaching system. Your coaching approach was learned from Sam's own coaching sessions.
+- You are NOT the original human coach and not any real person. Never claim to be the coach (e.g. never "I am Simran"). You have no memories beyond what is given below.
 
-CORE LOOP (adaptive, never force every stage)
-Listen → Understand → Question → Diagnose → Identify assumptions → Teach/Challenge → Apply → Correct → Practice → Extract pattern → Action → Accountability → Review.
+THE FOUR LAYERS YOU COMBINE (experienced by Sam as ONE coach)
+1. COACHING INTELLIGENCE governs HOW you think, diagnose, question, challenge, teach, give feedback and respond. Apply "Strong" patterns by default, "Repeated" ones when the situation fits, "Observed" ones only tentatively. These are principles, not scripts: generalise them to the new situation. Never copy the coach's wording, examples or old solutions, and don't force a framework onto a problem it doesn't fit.
+2. SAM'S CONTEXT tells you who you are coaching.
+3. HISTORY is optional context from earlier sessions with Sam. Use it only when it genuinely helps (continuity, a recurring pattern, a past commitment or decision). Never assume the current problem is the same as an old one.
+4. GENERAL KNOWLEDGE & REASONING: use freely for business, marketing, pricing, product, psychology and anything the sessions never covered.
 
-MODES — silently choose ONE per reply:
-- Explore: situation still vague. Understand what happened and what Sam wants.
-- Diagnose: a problem is stated. Separate what happened / what Sam thinks happened / the visible symptom / the actual problem / possible causes / assumptions / what Sam wants. Work Symptom → Problem → Root cause → Solution → Test. Business areas to consider: traffic, audience, positioning, messaging, offer, pricing, conversion, follow-up, funnel structure, customer journey, tracking, execution. Never assume the root cause without evidence.
-- Challenge: only with evidence of an unsupported assumption, rationalization, avoidance, contradiction, repeated unproductive behavior, symptom-focused thinking, or desire mistaken for evidence. Respectful directness, e.g. "Let's slow down. You're saying X, but what you've told me points to Y. What explains that gap?" Never challenge just to sound like a coach.
-- Teach: assess current understanding first → find the gap → explain → example → ask Sam to apply → review, correct, explain why → new scenario → extract the general principle → practical exercise. Avoid lectures.
-- Practice: concept → simple example → Sam attempts → correction → new example → attempt → different context → attempt → general principle. Increase difficulty gradually. Understanding is not execution.
-- Review (Sam submits work): what is working, unclear, missing, weak, and why; what should change. Do not rewrite everything; where useful ask Sam to fix it himself first.
-- Decide: clarify the decision, options, desired outcome, constraints, assumptions, evidence, risks, unknowns, failure conditions, a small experiment, the next action. Do not make the decision for him.
-- Reflect (recurring personal behavior): Event → Feeling → Thought → Belief → Action → Result → possible pattern. No mental-health diagnoses. No claims about hidden motives.
-- Accountability / Follow-up: compare commitments with what actually happened. A commitment is only done when Sam says so.
+PRIORITY
+- Relevant history exists → weave it in naturally.
+- A learned coaching pattern applies → use that behaviour.
+- Nothing in history matches → coach anyway with layers 1, 2 and 4. Never say you lack a session about it; never apologise for missing history.
+- General knowledge conflicts with something from history → don't pick blindly; weigh the context and name the uncertainty when it matters.
 
-QUESTION-FIRST
-- When Sam may already know the answer, ask what he thinks before explaining. Right → strengthen it. Incomplete → name the missing part. Wrong → explain why and let him try again.
-- Ask 1–3 questions at a time, only those needed to move forward. Don't advise before you understand the problem, but answer simple factual questions directly.
-- Assumptions ("people won't buy this"): ask for the evidence, then explore supporting evidence, contradicting evidence, unknowns, alternative explanations, and a small experiment. Never replace a negative belief with artificial positivity.
+TRUTHFULNESS
+- Never invent history: no made-up sessions, dates, quotes, numbers or past events. Only refer to past events that appear under HISTORY.
+- Keep "how coaching works" (layer 1) apart from "what happened to Sam before" (layer 3). Never present a coaching principle as an event in Sam's past, and never present general knowledge as the coach's own view.
+- A single historical statement is not a universal rule.
 
-STYLE
-Conversational, clear, direct, warm, practical, curious, occasionally challenging. Short paragraphs. Examples when they help. No motivational filler, no generic praise. No headings in short replies. Usually under 220 words unless teaching or reviewing.
+NATURAL VOICE
+- Talk like one coach. Do not mention layers, session numbers, reference tags, databases, retrieval, "the knowledge base", "the coaching material" or "the sessions" in your reply.
+- When a past event helps, mention it in plain words (e.g. "when you priced the group program, you…"). Put reference tags only in META.
 
-SILENT QUALITY CHECK before replying: Did I find the actual problem, not just the symptom? Did I name relevant assumptions? Did I use relevant history, and only real history? Am I making unsupported claims? Should I ask before answering? Would an example or practice help? Is there a clear next step? Am I building Sam's independence rather than dependence?
-
-SESSION CLOSE: after a substantial conversation reaches an action, you may offer a short close (What we discovered / What changed / Action / Practice / Commitment). Never force this on simple questions.`;
+DEFAULT COACHING BEHAVIOUR (learned Coaching Intelligence overrides these where it is more specific)
+- Adaptive loop: listen → understand → question → diagnose → identify assumptions → teach/challenge → apply → correct → practise → extract pattern → action → accountability → review. Never force every stage.
+- Modes (silently choose one): Explore, Diagnose, Challenge, Teach, Practice, Review, Decide, Reflect, Accountability, Follow-up.
+- Diagnose before advising: what happened, what Sam thinks happened, the symptom, the real problem, possible causes, assumptions, what he wants. Business areas include traffic, audience, positioning, messaging, offer, pricing, conversion, follow-up, funnel structure, customer journey, tracking, execution.
+- Question-first when Sam may already know; 1–3 questions at a time; answer simple factual questions directly.
+- Challenge only with evidence (unsupported assumption, rationalisation, avoidance, contradiction, repeated unproductive behaviour, symptom focus, desire mistaken for evidence); respectful directness. Don't challenge to sound like a coach.
+- Teaching: assess understanding → gap → explain → example → Sam applies → correct and explain why → new scenario → principle → exercise. Practice raises difficulty gradually.
+- Reviewing work: what works, what's unclear/missing/weak, why, what to change; ask Sam to fix it first where useful.
+- Decisions: improve his thinking, don't decide for him. Reflection on personal behaviour: no mental-health diagnoses, no claims about hidden motives. Commitments are done only when Sam says so.
+- Style: conversational, clear, direct, warm, practical, curious. Short paragraphs. No motivational filler or generic praise. Usually under 220 words unless teaching or reviewing.
+- Silent check before replying: real problem or symptom? assumptions named? history used only where it helps and only if real? should I ask before answering? is there a clear next step? am I building Sam's independence?`;
 
 const META_SPEC = `OUTPUT FORMAT
-Write your reply to Sam in Markdown. Then, on new lines, append exactly:
+Write your reply to Sam in Markdown with no reference tags in it. Then, on new lines, append exactly:
 <<<META
-{"mode":"<one of: ${MODES.join(', ')}>","basis":"coaching_material|general_reasoning|mixed|none","cited":["S04","P2"],"assumptions":["short assumption Sam is making, if any"],"commitment":null}
+{"mode":"<one of: ${MODES.join(', ')}>","intelligence":["I3"],"history":["S04","P2"],"general":true,"assumptions":["short assumption Sam is making, if any"],"note":"one sentence: why you approached the reply this way","commitment":null}
 META>>>
-"cited" lists only reference tags from KNOWLEDGE that you actually used. "commitment" stays null unless Sam explicitly agreed in this conversation to a concrete action; then {"text":"…","quantity":"…","deadline":"YYYY-MM-DD or empty","reason":"…"}.`;
+"intelligence" = tags of the coaching-intelligence items that shaped this reply. "history" = tags of HISTORY items you actually drew on (usually empty). "general" = true if you relied on general knowledge or reasoning. "commitment" stays null unless Sam explicitly agreed in this conversation to a concrete action; then {"text":"…","quantity":"…","deadline":"YYYY-MM-DD or empty","reason":"…"}.`;
 
 function contextBlock() {
   const items = Store.all('context');
   if (!items.length) return 'No personal context stored yet.';
-  return items.map(c => `- ${c.label}: ${c.value} (source: ${c.source || 'unspecified'})`).join('\n');
+  return items.map(c => `- ${c.label}: ${c.value}`).join('\n');
 }
-function methodologyBlock(limit = 9000) {
-  const items = Store.all('methodology').filter(m => m.status !== 'archived');
-  let out = '', used = 0;
-  for (const m of items) { const line = `- [${m.kind || 'principle'}] ${m.title}: ${m.body}${m.when ? ' (use when: ' + m.when + ')' : ''}\n`; if (used + line.length > limit) break; out += line; used += line.length; }
-  return out || 'No methodology items stored yet.';
+function methodologyBlock(limit = 4000) {
+  const items = Store.all('methodology').filter(m => m.status !== 'archived' && m.kind !== 'insight');
+  let out = '';
+  for (const m of items) { const line = `- ${m.title}: ${m.body}${m.when ? ' (when: ' + m.when + ')' : ''}\n`; if (out.length + line.length > limit) break; out += line; }
+  return out;
 }
-function frameworksBlock(list, limit = 3500) {
+function frameworksBlock(list, limit = 2200) {
   let out = '';
   for (const f of list) { const l = `- ${f.name}: ${arr(f.steps).join(' → ')}${f.whenToUse ? ' — when: ' + f.whenToUse : ''}\n`; if (out.length + l.length > limit) break; out += l; }
   return out || '- none';
 }
-/* builds the KNOWLEDGE block + a ref map used to validate citations afterwards */
+/* Builds all four layers for one request, plus a tag→entity map used to
+   validate what the model says it used. History is included only when
+   retrieval finds something genuinely similar. */
 function knowledgeBlock(q, extraSessionIds = []) {
-  const r = retrieve(q);
-  const sess = uniq([...extraSessionIds, ...r.sessions.map(s => s.id)]).map(id => Store.get('sessions', id)).filter(Boolean).slice(0, 7);
-  const pats = uniq([...r.patterns.map(p => p.id), ...Store.all('patterns').filter(p => p.status !== 'dismissed').sort((a, b) => patternConf(b).n - patternConf(a).n).slice(0, 4).map(p => p.id)]).map(id => Store.get('patterns', id)).filter(Boolean).slice(0, 6);
   const refs = {};
-  const sLines = sess.map(s => {
-    refs[sref(s)] = { type: 'sessions', id: s.id };
-    return `[${sref(s)}] Session ${s.number}${s.date ? ' (' + s.date + ')' : ''} — ${s.title}\n  Summary: ${trunc(s.summary, 600)}\n  Key lesson: ${trunc(s.keyLesson, 240)}\n  Problems: ${trunc(arr(s.problems).join('; '), 300)}\n  Beliefs/assumptions: ${trunc([...arr(s.beliefs), ...arr(s.assumptions)].join('; '), 300)}\n  Interventions: ${trunc(arr(s.interventions).join('; '), 300)}\n  Commitments: ${trunc(arr(s.commitments).join('; '), 240)}`;
-  });
-  const pLines = pats.map((p, i) => {
-    const tag = 'P' + (i + 1); refs[tag] = { type: 'patterns', id: p.id }; const c = patternConf(p);
-    return `[${tag}] Pattern "${p.name}" (${p.category}; ${c.label}; evidence: ${liveSessionIds(p.sessionIds).map(id => sref(Store.get('sessions', id))).join(', ') || 'none'}) — ${trunc(p.description, 300)}`;
-  });
-  const active = Store.all('commitments').filter(c => c.status !== 'Done').slice(0, 8);
-  const cLines = active.map(c => `- "${c.text}" — status: ${c.status}${c.deadline ? ', due ' + c.deadline : ''}${c.quantity ? ', quantity ' + c.quantity : ''}`);
-  const decs = r.decisions.slice(0, 3).map(d => `- Decision "${d.title}" — status ${d.status}${d.finalChoice ? ', chose: ' + d.finalChoice : ''}`);
-  const fw = r.frameworks.length ? r.frameworks : Store.all('frameworks').slice(0, 6);
-  const text = `KNOWLEDGE (the only history you may cite; retrieved by keyword from ${Store.all('sessions').length} stored sessions)
-SESSIONS:
-${sLines.join('\n') || '- No relevant sessions found.'}
-PATTERNS:
-${pLines.join('\n') || '- No relevant patterns found.'}
-ACTIVE COMMITMENTS:
+  // Layer 1
+  const ci = selectIntelligence(q);
+  const ciLines = ci.map((x, n) => { const tag = 'I' + (n + 1); refs[tag] = { type: 'intelligence', id: x.i.id }; return `[${tag}] (${(CI_DIM[x.i.dimension] || [, 'General'])[1]} · ${x.c.label}) ${x.i.name}: ${x.i.principle}${x.i.trigger ? ' | When: ' + x.i.trigger : ''}${x.i.how ? ' | Do: ' + x.i.how : ''}${x.i.avoid ? ' | Avoid / not when: ' + x.i.avoid : ''}`; });
+  const cases = selectCases(q);
+  const caseLines = cases.map(c => `- Situation: ${c.situation} → Noticed: ${c.noticed} → Did: ${c.did} → Why: ${c.why}`);
+  const meth = methodologyBlock();
+  // Layer 3 (only strong matches)
+  const hits = Index.search(q, { types: ['sessions'], limit: 5, min: 2.2 });
+  const sess = uniq([...extraSessionIds, ...hits.map(x => x.id)]).map(id => Store.get('sessions', id)).filter(Boolean).slice(0, 5);
+  const sLines = sess.map(s => { refs[sref(s)] = { type: 'sessions', id: s.id }; return `[${sref(s)}] ${s.date ? s.date + ' — ' : ''}${s.title}: ${trunc(s.summary, 380)} Sam's problems then: ${trunc(arr(s.problems).join('; '), 220)}. His beliefs/assumptions then: ${trunc([...arr(s.beliefs), ...arr(s.assumptions)].join('; '), 220)}. Commitments then: ${trunc(arr(s.commitments).join('; '), 160)}`; });
+  const pHits = Index.search(q, { types: ['patterns'], limit: 3, min: 1.2 }).map(x => Store.get('patterns', x.id)).filter(p => p && p.status !== 'dismissed');
+  const pLines = pHits.map((p, i) => { const tag = 'P' + (i + 1); refs[tag] = { type: 'patterns', id: p.id }; const c = patternConf(p); return `[${tag}] Sam's recurring pattern "${p.name}" (${c.label}): ${trunc(p.description, 220)}`; });
+  const active = Store.all('commitments').filter(c => c.status !== 'Done').slice(0, 6);
+  const cLines = active.map(c => `- "${c.text}" — ${c.status}${c.deadline ? ', due ' + c.deadline : ''}`);
+  const decs = Index.search(q, { types: ['decisions'], limit: 2, min: 1.5 }).map(x => Store.get('decisions', x.id)).filter(Boolean).map(d => `- Decision "${d.title}" — ${d.status}${d.finalChoice ? ', chose: ' + d.finalChoice : ''}`);
+  // lessons Sam took from earlier sessions are history, not coaching method
+  const lessons = Index.search(q, { types: ['methodology'], limit: 4, min: 1.5 }).map(x => Store.get('methodology', x.id)).filter(m => m && m.kind === 'insight').slice(0, 2).map(m => `- Lesson from an earlier session: ${m.title}: ${trunc(m.body, 200)}`);
+  const fw = Index.search(q, { types: ['frameworks'], limit: 3, min: 1.5 }).map(x => Store.get('frameworks', x.id)).filter(Boolean);
+  const text = `LAYER 1 — COACHING INTELLIGENCE (learned from ${Store.all('sessions').length} sessions; principles, not scripts)
+${ciLines.join('\n') || '- No learned intelligence yet: rely on the default coaching behaviour above.'}
+${meth ? 'Curated methodology notes:\n' + meth : ''}${caseLines.length ? 'Illustrative cases of the coach\'s reasoning (to understand the thinking; never reuse their wording or solutions):\n' + caseLines.join('\n') + '\n' : ''}${fw.length ? 'Frameworks that may fit (use only if they genuinely fit):\n' + frameworksBlock(fw) : ''}
+LAYER 2 — SAM'S CONTEXT
+${contextBlock()}
+Current focus: ${ctxValue('focus') || 'not set'} · Today: ${today()}
+Active commitments:
 ${cLines.join('\n') || '- none'}
-RELATED DECISIONS:
-${decs.join('\n') || '- none'}
-FRAMEWORKS:
-${frameworksBlock(fw)}`;
-  return { text, refs, sessions: sess, patterns: pats, frameworks: fw, commitments: active };
+
+LAYER 3 — HISTORY (optional; ${sLines.length || pLines.length || decs.length ? 'possibly relevant items only' : 'nothing relevant found — coach from layers 1, 2 and 4'})
+${[...sLines, ...pLines, ...decs, ...lessons].join('\n') || '- none'}`;
+  return { text, refs, sessions: sess, patterns: pHits, intelligence: ci.map(x => x.i), cases, frameworks: fw, commitments: active };
 }
 const INTENT_HINTS = {
   coach: 'Coach me', decide: 'Help me decide', review: 'Review my work', teach: 'Teach me', pattern: 'Find a pattern', accountability: 'Review a commitment', reflect: 'Reflect'
 };
 function buildCoachPrompt(kb, intent, hintExtra) {
   return `${ENGINE_RULES}
-
-METHODOLOGY (Coach Bible layer, from the knowledge base):
-${methodologyBlock()}
-
-SAM'S CONTEXT (only facts stored by Sam; do not invent more):
-${contextBlock()}
-Current focus: ${ctxValue('focus') || 'not set'}
-Today: ${today()}
 
 ${kb.text}
 ${intent ? `\nSam started with the quick action "${INTENT_HINTS[intent] || intent}". Lean toward the matching mode unless his message clearly needs another.` : ''}${hintExtra ? '\n' + hintExtra : ''}
@@ -672,35 +731,58 @@ The conversation with Sam follows. Reply only to his latest message.`;
 }
 function parseMeta(raw, refs) {
   const m = /<<<META\s*([\s\S]*?)\s*(?:META>>>|$)/.exec(raw);
-  const body = raw.split('<<<META')[0].trim();
+  let body = raw.split('<<<META')[0].trim();
   let meta = {};
   if (m) { try { const j = m[1].slice(m[1].indexOf('{'), m[1].lastIndexOf('}') + 1); meta = JSON.parse(j); } catch { meta = {}; } }
-  const cited = uniq([...arr(meta.cited), ...(body.match(/\[(S\d+|P\d+)\]/g) || []).map(x => x.slice(1, -1))]);
+  const inline = (body.match(/\[(S\d+|P\d+|I\d+)\]/g) || []).map(x => x.slice(1, -1));
+  const tags = uniq([...arr(meta.intelligence), ...arr(meta.history), ...arr(meta.cited), ...inline]);
   const valid = [], invalid = [];
-  cited.forEach(c => {
+  tags.forEach(c => {
     const r = refs[c];
     if (r && Store.get(r.type, r.id)) valid.push(r);
-    else if (/^S\d+$/i.test(c) && sessionByRef(c)) valid.push({ type: 'sessions', id: sessionByRef(c).id });
+    else if (/^S\d+$/i.test(c) && sessionByRef(c) && inline.includes(c)) valid.push({ type: 'sessions', id: sessionByRef(c).id });
     else invalid.push(c);
   });
+  // tags never belong in the visible reply; valid ones become plain text, invalid ones are dropped
+  body = body.replace(/\s?\[(I\d+|P\d+)\]/g, '').replace(/\s?\[(S\d+)\]/g, '').replace(/ {2,}/g, ' ').replace(/ +([.,;:!?])/g, '$1');
+  // a reply that claims a numbered session we don't have is flagged
+  const claimed = (body.match(/\bsession\s*#?\s*(\d+)/gi) || []).map(x => +x.match(/\d+/)[0]).filter(n => !Store.all('sessions').some(s => +s.number === n));
+  claimed.forEach(n => invalid.push('Session ' + n));
   return {
-    body, mode: MODES.includes(meta.mode) ? meta.mode : null, basis: meta.basis || null,
+    body, mode: MODES.includes(meta.mode) ? meta.mode : null, general: !!meta.general || meta.basis === 'general_reasoning' || meta.basis === 'mixed',
+    intelligence: uniq(valid.filter(v => v.type === 'intelligence').map(v => v.id)),
     sessions: uniq(valid.filter(v => v.type === 'sessions').map(v => v.id)),
     patterns: uniq(valid.filter(v => v.type === 'patterns').map(v => v.id)),
-    invalid, assumptions: arr(meta.assumptions).filter(x => typeof x === 'string' && x.trim()).slice(0, 4),
+    invalid: uniq(invalid), note: typeof meta.note === 'string' ? meta.note : '',
+    assumptions: arr(meta.assumptions).filter(x => typeof x === 'string' && x.trim()).slice(0, 4),
     commitment: meta.commitment && meta.commitment.text ? meta.commitment : null,
     refs
   };
 }
-/* Pattern refs (P1…) are per-reply; rewrite them in stored text to stable pattern ids */
-function normalizeRefs(body, refs) {
-  return body.replace(/\[(P\d+)\]/g, (m, t) => refs[t] ? `[pat:${refs[t].id}]` : m);
-}
-function trimTurns(turns, budget = 30000) {
+function normalizeRefs(body) { return body; }
+function trimTurns(turns, budget = 22000) {
   const out = []; let used = 0;
-  for (let i = turns.length - 1; i >= 0; i--) { const c = turns[i].content || ''; if (used + c.length > budget && out.length) break; out.unshift({ role: turns[i].role === 'user' ? 'user' : 'assistant', content: c.slice(0, 12000) || '…' }); used += c.length; }
+  for (let i = turns.length - 1; i >= 0; i--) { const c = turns[i].content || ''; if (used + c.length > budget && out.length) break; out.unshift({ role: turns[i].role === 'user' ? 'user' : 'assistant', content: c.slice(0, 10000) || '…' }); used += c.length; }
   while (out.length && out[0].role !== 'user') out.shift();
   return out;
+}
+/* keep every request under the 64 KiB input cap */
+function fitInput(prompt, turns) {
+  const enc = s => new TextEncoder().encode(s).length;
+  let budget = 22000, input;
+  do { input = [{ role: 'user', content: prompt }, ...trimTurns(turns, budget)]; budget -= 4000; }
+  while (enc(input.map(t => t.content).join('')) > 60000 && budget > 2000);
+  return input;
+}
+/* deterministic overfit check: longest run of identical words shared with
+   the training material (cases, session questions/interventions) */
+function copyCheck(text) {
+  const words = s => String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const out = words(text); if (out.length < 8) return null;
+  const grams = new Set(); for (let i = 0; i + 8 <= out.length; i++) grams.add(out.slice(i, i + 8).join(' '));
+  const sources = [...Store.all('cases').map(c => [c.situation, c.noticed, c.did, c.why].join(' . ')), ...Store.all('sessions').map(s => [...arr(s.questions), ...arr(s.interventions), ...arr(s.examples), ...arr(s.analogies)].join(' . '))];
+  for (const src of sources) { const w = words(src); for (let i = 0; i + 8 <= w.length; i++) { const g = w.slice(i, i + 8).join(' '); if (grams.has(g)) return g; } }
+  return null;
 }
 /* =====================================================================
    IMPORT PIPELINE
@@ -708,7 +790,7 @@ function trimTurns(turns, budget = 30000) {
    Nothing here writes to the Coach Bible, patterns or frameworks directly:
    all new knowledge lands in the Review Queue (insights collection).
    ===================================================================== */
-const STAGES = [['parse', 'Parse transcript'], ['extract', 'Extract knowledge'], ['classify', 'Classify & tag'], ['review', 'Review extraction'], ['store', 'Store session'], ['relate', 'Find related sessions'], ['detect', 'Detect patterns, frameworks, conflicts'], ['suggest', 'Queue knowledge suggestions']];
+const STAGES = [['parse', 'Parse transcript'], ['extract', 'Extract session history'], ['ci', 'Extract coaching behaviour'], ['classify', 'Classify & tag'], ['review', 'Review extraction'], ['store', 'Store session'], ['relate', 'Find related sessions'], ['detect', 'Detect patterns, frameworks, conflicts'], ['suggest', 'Queue knowledge suggestions']];
 const Imports = { jobs: [], running: false };
 
 function newJob({ number, date, title, text, fileName, auto }) {
@@ -825,6 +907,15 @@ async function processJob(job) {
     }
     job.progress = '';
     setStage(job, 'extract', 'done');
+    setStage(job, 'ci', 'run');
+    const ciParts = [];
+    for (let i = 0; i < p.chunks.length; i++) {
+      job.progress = `part ${i + 1} of ${p.chunks.length}`; refreshImportUI();
+      ciParts.push(normCI(await AI.json(ciPrompt(p.chunks[i], i, p.chunks.length))));
+    }
+    job.progress = '';
+    job.ci = mergeCI(ciParts);
+    setStage(job, 'ci', 'done');
     setStage(job, 'classify', 'run');
     if (job.title) ex.title = job.title;
     if (!ex.categories.length) ex.categories = [];
@@ -849,9 +940,11 @@ async function storeJob(job) {
       id: sid, number: +job.number, date: job.date || '', title: ex.title || `Session ${job.number}`, summary: ex.summary, keyLesson: ex.keyLesson,
       ...Object.fromEntries(ARR_FIELDS.map(k => [k, ex[k]])),
       commitments: ex.commitmentsFull.map(c => c.text), relatedSessionIds: [], source: job.fileName || 'pasted transcript',
-      transcriptChars: job.stats.chars, importedAt: nowISO()
+      transcriptChars: job.stats.chars, importedAt: nowISO(),
+      ci: job.ci ? { situation: job.ci.situation, interpretation: job.ci.interpretation, observations: job.ci.observations } : null
     };
     await Store.put('sessions', session);
+    if (job.ci) await storeCases(sid, job.ci.cases);
     await Store.putTranscript(sid, job.parsed.clean);
     // commitments the user ticked become tracked commitments
     for (let i = 0; i < ex.commitmentsFull.length; i++) if (ex.commitPick && ex.commitPick[i]) {
@@ -872,6 +965,7 @@ async function storeJob(job) {
       setStage(job, 'detect', 'done');
       setStage(job, 'suggest', 'run');
       job.suggestions = await queueSuggestions(found, [sid]);
+      if (activeIntelligence().length && job.ci) job.suggestions += await queueCISuggestions(Store.get('sessions', sid));
       setStage(job, 'suggest', 'done');
     } else { setStage(job, 'detect', 'skip'); setStage(job, 'suggest', 'skip'); }
     job.done = true; refreshImportUI();
@@ -1009,10 +1103,147 @@ async function applyInsight(ins, extra = {}) {
     await Store.put('frameworks', { id: uid('fw'), name: p.name, steps: p.steps, whenToUse: p.whenToUse, example: '', sessionIds: p.sessionIds, source: 'Extracted from sessions', confidence: p.sessionIds.length > 1 ? 'Supported' : 'Possible' });
   } else if (ins.kind === 'insight') {
     await Store.put('methodology', { id: uid('m'), kind: 'insight', title: p.title, body: p.body, when: '', sessionIds: p.sessionIds, source: 'Session insight (reviewed)', confidence: p.sessionIds.length > 1 ? 'Supported' : 'Possible', status: 'active' });
+  } else if (ins.kind === 'ci-evidence') {
+    const it = Store.get('intelligence', p.intelligenceId); if (!it) throw new Error('That coaching principle no longer exists.');
+    await Store.patch('intelligence', it.id, { sessionIds: uniq([...arr(it.sessionIds), p.sessionId]), evidence: [...arr(it.evidence), { sessionId: p.sessionId, note: p.note }] });
+  } else if (ins.kind === 'ci-principle') {
+    await Store.put('intelligence', { id: uid('ci'), dimension: CI_DIM[p.dimension] ? p.dimension : 'thinking', name: p.name, principle: p.principle, trigger: p.trigger, how: p.how, avoid: p.avoid, sessionIds: liveSessionIds(p.sessionIds), evidence: liveSessionIds(p.sessionIds).map(id => ({ sessionId: id, note: p.note || '' })), status: 'active', source: 'review-queue' });
   } else if (ins.kind === 'conflict') {
     // resolution only records Sam's classification; nothing is overwritten
   }
   await Store.patch('insights', ins.id, { status: 'added', resolvedAt: nowISO(), ...extra });
+}
+
+/* =====================================================================
+   COACHING INTELLIGENCE EXTRACTION & SYNTHESIS
+   Per session: observe HOW the coach coached (generalised behaviour),
+   kept apart from facts about Sam.  Across sessions: merge observations
+   into principles whose confidence comes from how many sessions show them.
+   ===================================================================== */
+function ciPrompt(chunk, i, n) {
+  return `You are studying HOW a coach coaches, in order to train a coaching system that must later handle situations the coach never saw. Read ${n > 1 ? `part ${i + 1} of ${n} of ` : ''}this coaching-session transcript between the coach and Sam (a funnel / sales-system builder).
+
+Extract observations about the COACH'S behaviour, generalised into reusable principles, for these dimensions:
+${CI_DIMS.map(([k, l, d]) => `- ${k}: ${l} — ${d}`).join('\n')}
+
+Rules:
+- GENERALISE, DON'T COPY. Describe the underlying reasoning so it transfers to new situations.
+  Bad: "When Sam says nobody will buy, she asks these three questions."
+  Good: "When the client makes a confident market prediction without evidence, she checks whether it comes from real feedback or an untested assumption before discussing tactics."
+- Every observation must be grounded in something that actually happens in this transcript. Give a short paraphrase of that moment as evidence (max 25 words, no long quotes).
+- Facts about Sam's business, offers or life are NOT coaching behaviour; leave them out here.
+- Include what she deliberately does NOT do when it is visible (dimension "avoid"), e.g. holding back the answer so Sam works it out.
+- Only observable behaviour. Don't invent personality traits. Don't label every negative statement a "limiting belief".
+- Max 4 observations per dimension; skip dimensions with nothing clear.
+- Cases: 1-3 representative moments written as training examples, with the situation generalised (no private numbers or names).
+
+Reply with only JSON:
+{"situation":"one line: what Sam brought to this session","interpretation":"one line: how the coach read the situation",
+ "observations":[{"dimension":"${CI_DIMS.map(d => d[0]).join('|')}","principle":"generalised behaviour","trigger":"when / in what kind of situation","how":"what she does, concretely","why":"its apparent purpose","evidence":"short paraphrase of the moment"}],
+ "cases":[{"situation":"","noticed":"what the coach noticed","did":"what she did","why":"why it appears to have been the right move","result":"result or next step if known, else empty","dimensions":["questioning"]}]}
+
+TRANSCRIPT${n > 1 ? ` (part ${i + 1}/${n})` : ''}:
+"""
+${chunk}
+"""`;
+}
+function normCI(x) {
+  x = x || {};
+  const s = v => String(v || '').trim();
+  return {
+    situation: s(x.situation), interpretation: s(x.interpretation),
+    observations: arr(x.observations).filter(o => o && o.principle && CI_DIM[o.dimension]).map(o => ({ dimension: o.dimension, principle: s(o.principle), trigger: s(o.trigger), how: s(o.how), why: s(o.why), evidence: s(o.evidence) })),
+    cases: arr(x.cases).filter(c => c && c.situation && c.did).map(c => ({ situation: s(c.situation), noticed: s(c.noticed), did: s(c.did), why: s(c.why), result: s(c.result), dimensions: arr(c.dimensions).filter(d => CI_DIM[d]) }))
+  };
+}
+function mergeCI(parts) {
+  return { situation: parts.map(p => p.situation).filter(Boolean)[0] || '', interpretation: parts.map(p => p.interpretation).filter(Boolean)[0] || '', observations: parts.flatMap(p => p.observations), cases: parts.flatMap(p => p.cases).slice(0, 4) };
+}
+async function storeCases(sid, cases) {
+  for (const c of arr(cases)) await Store.put('cases', { id: uid('case'), sessionId: sid, ...c });
+}
+/* sessions imported before this layer existed (or whose extraction failed) */
+function sessionsMissingCI() { return sessionsSorted().filter(s => !s.ci || !arr(s.ci.observations).length); }
+async function extractCIForSession(s, onProgress) {
+  const tx = await Store.getTranscript(s.id);
+  if (!tx) throw new Error(`${sref(s)} has no stored transcript.`);
+  const p = parseTranscript(tx); const parts = [];
+  for (let i = 0; i < p.chunks.length; i++) { onProgress && onProgress(`${sref(s)} part ${i + 1}/${p.chunks.length}`); parts.push(normCI(await AI.json(ciPrompt(p.chunks[i], i, p.chunks.length)))); }
+  const ci = mergeCI(parts);
+  await Store.patch('sessions', s.id, { ci: { situation: ci.situation, interpretation: ci.interpretation, observations: ci.observations } });
+  for (const c of Store.all('cases').filter(c => c.sessionId === s.id)) await Store.del('cases', c.id);
+  await storeCases(s.id, ci.cases);
+}
+/* Synthesis: one call per dimension (map-reduce when there are many sessions) */
+async function synthesizeIntelligence(onProgress) {
+  const sess = sessionsSorted().filter(s => s.ci && arr(s.ci.observations).length);
+  if (!sess.length) throw new Error('No sessions have coaching-behaviour observations yet.');
+  const drafts = [];
+  for (const [dim, label, desc] of CI_DIMS) {
+    const obs = []; sess.forEach(s => s.ci.observations.filter(o => o.dimension === dim).forEach(o => obs.push(`[${sref(s)}] ${o.principle}${o.trigger ? ' | when: ' + o.trigger : ''}${o.how ? ' | how: ' + o.how : ''}${o.evidence ? ' | moment: ' + o.evidence : ''}`)));
+    if (!obs.length) continue;
+    const groups = []; let g = [], used = 0;
+    obs.forEach(l => { if (used + l.length > 38000 && g.length) { groups.push(g); g = []; used = 0; } g.push(l); used += l.length; }); if (g.length) groups.push(g);
+    let principles = [];
+    for (let gi = 0; gi < groups.length; gi++) {
+      onProgress && onProgress(`${label}${groups.length > 1 ? ` (${gi + 1}/${groups.length})` : ''}`);
+      const r = await AI.json(synthPrompt(label, desc, groups[gi], sess.length));
+      principles.push(...arr(r.principles));
+    }
+    if (groups.length > 1) {
+      onProgress && onProgress(`${label} (merging)`);
+      const r = await AI.json(synthPrompt(label, desc, principles.map(p => `[${arr(p.sessions).join(',')}] ${p.name}: ${p.principle} | when: ${p.trigger} | how: ${p.how} | avoid: ${p.avoid}`), sess.length, true));
+      principles = arr(r.principles);
+    }
+    principles.filter(p => p && p.name && p.principle).forEach(p => {
+      const ids = uniq(arr(p.sessions).flatMap(t => String(t).split(/[,\s]+/)).map(t => sessionByRef(t)).filter(Boolean).map(s => s.id));
+      if (!ids.length) return;             // a principle must be grounded in at least one real session
+      drafts.push({ dimension: dim, name: String(p.name), principle: String(p.principle), trigger: String(p.trigger || ''), how: String(p.how || ''), avoid: String(p.avoid || ''), sessionIds: ids, keep: true });
+    });
+  }
+  return drafts;
+}
+function synthPrompt(label, desc, lines, nSessions, merging) {
+  return `You are building the Coaching Intelligence layer of a coaching system from ${merging ? 'partial syntheses' : 'observations'} across ${nSessions} coaching sessions.
+Dimension: ${label} — ${desc}.
+
+${merging ? 'Merge these partial principles' : 'Merge observations that describe the same underlying behaviour'} into generalised principles. Each principle must:
+- be phrased so it applies to NEW situations the sessions never covered (principle and reasoning, never a script or stock phrase);
+- say when to apply it ("trigger"), what to do ("how"), and what to avoid or when NOT to apply it ("avoid");
+- list in "sessions" every session tag whose ${merging ? 'principles' : 'observations'} support it — only tags that appear below.
+Do not invent behaviour that isn't in the material. Don't merge unrelated behaviours. Keep single-session behaviours as separate principles (they will be marked "observed"). Don't copy transcript wording. Max 10 principles.
+
+${merging ? 'PARTIAL PRINCIPLES' : 'OBSERVATIONS'}:
+${lines.join('\n')}
+
+Reply with only JSON: {"principles":[{"name":"short name","principle":"1-2 sentences","trigger":"","how":"","avoid":"","sessions":["S01","S07"]}]}`;
+}
+async function saveSynthesis(drafts) {
+  for (const old of Store.all('intelligence').filter(i => i.source === 'synthesis' && i.status !== 'archived')) await Store.patch('intelligence', old.id, { status: 'archived', archivedAt: nowISO() });
+  for (const d of drafts.filter(x => x.keep)) {
+    const { keep, ...rest } = d;
+    await Store.put('intelligence', { id: uid('ci'), ...rest, evidence: [], status: 'active', source: 'synthesis', synthesizedAt: nowISO() });
+  }
+}
+/* after a later import: does the new session support, extend or contradict the learned layer? */
+async function queueCISuggestions(s) {
+  const items = activeIntelligence();
+  const obs = arr(s.ci && s.ci.observations); if (!obs.length) return 0;
+  const out = await AI.json(`A new coaching session was analysed for the coach's behaviour. Compare its observations with the existing Coaching Intelligence principles.
+- "support": existing principles this session clearly demonstrates again (use I-tags).
+- "newPrinciples": genuinely new, generalised behaviours not covered by any existing principle (max 4).
+- "tensions": places where this session's behaviour seems to contradict an existing principle; explain the possible context difference.
+Only use the tags given. Empty lists are fine.
+EXISTING PRINCIPLES:
+${items.map((i, n) => `[I${n + 1}] (${i.dimension}) ${i.name}: ${trunc(i.principle, 200)}`).join('\n')}
+NEW SESSION ${sref(s)} OBSERVATIONS:
+${obs.map(o => `- (${o.dimension}) ${o.principle} | when: ${o.trigger} | moment: ${o.evidence}`).join('\n')}
+Reply with only JSON: {"support":[{"principle":"I3","note":""}],"newPrinciples":[{"dimension":"","name":"","principle":"","trigger":"","how":"","avoid":""}],"tensions":[{"principle":"I2","explanation":""}]}`);
+  let n = 0; const get = t => { const m = /^I(\d+)$/.exec(String(t || '').trim()); return m ? items[+m[1] - 1] : null; };
+  for (const x of arr(out.support).slice(0, 8)) { const it = get(x.principle); if (!it || arr(it.sessionIds).includes(s.id)) continue; await Store.put('insights', { id: uid('ins'), status: 'pending', kind: 'ci-evidence', title: `${sref(s)} supports "${it.name}"`, body: String(x.note || ''), sessionIds: [s.id], confidence: 'Medium', payload: { intelligenceId: it.id, sessionId: s.id, note: String(x.note || '') } }); n++; }
+  for (const x of arr(out.newPrinciples).slice(0, 4)) { if (!x || !x.name || !CI_DIM[x.dimension]) continue; await Store.put('insights', { id: uid('ins'), status: 'pending', kind: 'ci-principle', title: String(x.name), body: String(x.principle || ''), sessionIds: [s.id], confidence: 'Low', payload: { dimension: x.dimension, name: String(x.name), principle: String(x.principle || ''), trigger: String(x.trigger || ''), how: String(x.how || ''), avoid: String(x.avoid || ''), sessionIds: [s.id] } }); n++; }
+  for (const x of arr(out.tensions).slice(0, 3)) { const it = get(x.principle); if (!it) continue; await Store.put('insights', { id: uid('ins'), status: 'pending', kind: 'conflict', title: `Possible tension with "${it.name}"`, body: String(x.explanation || ''), sessionIds: [s.id], confidence: 'Low', payload: { a: { type: 'intelligence', id: it.id, label: it.name }, b: { type: 'sessions', id: s.id, label: sref(s) }, contextA: it.principle, contextB: '', explanation: String(x.explanation || '') } }); n++; }
+  return n;
 }
 
 /* =====================================================================
@@ -1228,7 +1459,7 @@ async function coachSend(text, extra = {}) {
   const q = [text, ...c.turns.slice(-4, -1).map(t => t.content)].join(' ');
   const kb = knowledgeBlock(q, extra.sessionIds || []);
   const prompt = buildCoachPrompt(kb, intent, extra.commitmentId ? 'He is reviewing a commitment. Ask what actually happened before judging it; never mark it done yourself.' : '');
-  const input = [{ role: 'user', content: prompt }, ...trimTurns(c.turns)];
+  const input = fitInput(prompt, c.turns);
   const ctl = new AbortController();
   ui.streaming = { convoId: c.id, text: '', ctl, kb };
   render();
@@ -1244,7 +1475,7 @@ async function finishTurn(cid, raw, kb, truncated) {
   const meta = parseMeta(raw, kb.refs);
   const c = clone(Store.get('conversations', cid) || { id: cid, turns: [] });
   const content = normalizeRefs(meta.body, kb.refs) + (truncated ? '\n\n*(answer was cut short)*' : '');
-  c.turns.push({ role: 'assistant', content, at: nowISO(), meta: { mode: meta.mode, basis: meta.basis, sessions: meta.sessions, patterns: meta.patterns, invalid: meta.invalid, assumptions: meta.assumptions, commitment: meta.commitment, retrieved: kb.sessions.map(s => s.id) } });
+  c.turns.push({ role: 'assistant', content, at: nowISO(), meta: { mode: meta.mode, general: meta.general, note: meta.note, intelligence: meta.intelligence, sessions: meta.sessions, patterns: meta.patterns, invalid: meta.invalid, assumptions: meta.assumptions, commitment: meta.commitment, retrieved: kb.sessions.map(s => s.id), offered: kb.intelligence.map(i => i.id) } });
   c.lastMode = meta.mode || c.lastMode;
   let size = JSON.stringify(c).length; while (size > 200000 && c.turns.length > 6) { c.turns.splice(0, 2); c.trimmed = true; size = JSON.stringify(c).length; }
   await Store.put('conversations', c).catch(() => { });
@@ -1299,7 +1530,7 @@ VIEWS.coach = function () {
     log.append(h('div', { class: 'intro' },
       h('div', { class: 'eyebrow' }, 'Continue coaching'),
       h('h3', null, 'Bring the real situation, not the tidy version.'),
-      h('p', { class: 'muted' }, 'The coach works out what kind of conversation this is (diagnosing, deciding, teaching, reviewing, reflecting) and usually asks before it advises. It cites past sessions only when they exist in your knowledge base, and you can open every citation.'),
+      h('p', { class: 'muted' }, 'The coach works out what kind of conversation this is (diagnosing, deciding, teaching, reviewing, reflecting) and usually asks before it advises. It coaches from what it learned in your sessions, your context and general reasoning, so it works on new situations too. Tap “Why this response?” under any reply to see what shaped it.'),
       h('div', { class: 'starter' }, ["I'm struggling to launch this offer.", 'My webinar funnel gets registrations but almost no sales.', "I think people won't pay more than $497 for this program.", 'Teach me how to write a hook that stops a coach mid-scroll.'].map(s => h('button', { onclick: () => { ui.draft = s; render(); $('#composer') && $('#composer').focus(); } }, s)))
     ));
   }
@@ -1350,20 +1581,31 @@ VIEWS.coach = function () {
 function renderTurn(t) {
   if (t.role === 'user') return h('div', { class: 'msg user' }, h('div', { class: 'bubble' }, t.content));
   const m = t.meta || {};
-  const nS = arr(m.sessions).length;
-  const basisTxt = { coaching_material: 'Based on coaching material', general_reasoning: 'General reasoning', mixed: 'Coaching material + general reasoning', none: '' }[m.basis] || '';
   return h('div', { class: 'msg coach' },
-    h('div', { class: 'msg-meta' }, h('span', { class: 'coach-av' }, icon('spark')), m.mode ? h('span', { class: 'pill accent' }, m.mode) : null, basisTxt ? h('span', { class: 'tag' }, basisTxt) : null),
+    h('div', { class: 'msg-meta' }, h('span', { class: 'coach-av' }, icon('spark')), h('span', { class: 'tiny faint' }, 'Coach')),
     h('div', { class: 'bubble' }, mdNode(t.content)),
-    (nS || arr(m.patterns).length || arr(m.invalid).length) ? h('div', { class: 'msg-meta' },
-      nS ? h('span', null, `Based on ${plural(nS, 'session')}`) : null, nS ? sessChips(m.sessions) : null,
-      nS || arr(m.patterns).length ? h('button', { class: 'linkbtn', onclick: () => showEvidence('Evidence for this reply', m.sessions, m.patterns) }, 'View evidence') : null,
-      arr(m.invalid).length ? h('span', { class: 'pill bad', title: 'The model referenced items that do not exist in your knowledge base. They were not counted as evidence.' }, `${m.invalid.length} unverified reference${m.invalid.length > 1 ? 's' : ''} removed`) : null) : null,
-    arr(m.assumptions).length ? h('div', { class: 'msg-meta' }, h('span', null, 'Assumptions spotted:'), m.assumptions.map(a => h('span', { class: 'tag' }, a))) : null,
+    t.meta ? h('div', { class: 'msg-meta' }, h('button', { class: 'linkbtn', style: 'font-weight:500;color:var(--ink-3);font-size:11.5px', onclick: () => whyResponse(m) }, 'Why this response?'), arr(m.invalid).length ? h('span', { class: 'dot bad', title: 'An unverifiable reference was removed from this reply' }) : null) : null,
     m.commitment ? h('div', { class: 'suggest' }, h('span', { class: 'grow' }, h('span', { class: 'eyebrow' }, 'Commitment you agreed to '), h('br'), h('b', null, m.commitment.text), m.commitment.deadline ? ' · due ' + fmtDate(m.commitment.deadline) : ''),
       Store.all('commitments').some(x => x.text === m.commitment.text) ? h('span', { class: 'pill good' }, 'Tracked') :
         h('button', { class: 'btn sm primary', onclick: () => Store.put('commitments', { id: uid('com'), text: m.commitment.text, quantity: m.commitment.quantity || '', deadline: /^\d{4}-\d\d-\d\d$/.test(m.commitment.deadline || '') ? m.commitment.deadline : '', reason: m.commitment.reason || '', status: 'Not Started', result: '', learning: '', nextStep: '', sessionIds: [], conversationId: ui.convoId, source: 'coach' }).then(() => toast('Added to Accountability')) }, 'Track it')) : null
   );
+}
+/* optional transparency layer: never shown unless asked */
+function whyResponse(m) {
+  const ci = arr(m.intelligence).map(id => Store.get('intelligence', id)).filter(Boolean);
+  const ss = liveSessionIds(m.sessions).map(id => Store.get('sessions', id)).sort((a, b) => a.number - b.number);
+  const ps = arr(m.patterns).map(id => Store.get('patterns', id)).filter(Boolean);
+  const sec = (title, ...kids) => h('div', { class: 'col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, title), ...kids);
+  openModal({
+    title: 'Why this response?', sub: m.mode ? `Approach: ${m.mode}` : '',
+    body: h('div', { class: 'col' },
+      m.note ? h('p', null, m.note) : null,
+      sec('Coaching intelligence applied', ci.length ? h('div', { class: 'card list' }, ci.map(i => { const c = ciConf(i); return h('div', { class: 'li' }, h('div', { class: 'grow' }, h('b', null, i.name), h('div', { class: 'small muted' }, i.principle), h('div', { class: 'tiny faint' }, (CI_DIM[i.dimension] || [, ''])[1])), h('span', { class: 'pill ' + c.cls, title: `Shown in ${plural(c.n, 'session')}` }, c.label)); })) : h('p', { class: 'small muted' }, Store.all('intelligence').length ? 'No specific learned principle was named for this reply; the default coaching behaviour applied.' : 'No Coaching Intelligence has been learned yet, so the default coaching behaviour applied.')),
+      sec('Your history', ss.length || ps.length ? h('div', { class: 'row' }, ss.map(s => h('button', { class: 'sref', title: s.title, onclick: () => openSession(s.id) }, sref(s) + ' · ' + trunc(s.title, 30))), ps.map(p => h('button', { class: 'sref', onclick: () => openPattern(p.id) }, trunc(p.name, 34)))) : h('p', { class: 'small muted' }, 'No earlier session was needed for this reply.')),
+      sec('General knowledge & reasoning', h('p', { class: 'small' }, m.general ? 'Used, alongside the coaching approach.' : 'Not relied on.')),
+      arr(m.assumptions).length ? sec('Assumptions noticed', h('div', { class: 'row' }, m.assumptions.map(a => h('span', { class: 'tag' }, a)))) : null,
+      arr(m.invalid).length ? h('div', { class: 'note warn' }, `Removed ${plural(m.invalid.length, 'reference')} that doesn't exist in your knowledge base (${m.invalid.join(', ')}). It was not treated as evidence.`) : null)
+  });
 }
 let ctxT;
 function debounceCtx() { clearTimeout(ctxT); ctxT = setTimeout(() => { const p = $('#ctxpanel'); if (p) fill(p, contextPanel()); }, 350); }
@@ -1378,8 +1620,9 @@ function contextPanel() {
     sec('Commitments', r.commitments.filter(x => x.status !== 'Done').slice(0, 3).map(x => h('div', { class: 'ctx-item', onclick: () => openCommitment(x) }, h('b', null, x.text), h('span', { class: 'faint' }, x.status)))),
     sec('Frameworks', r.frameworks.slice(0, 3).map(f => h('div', { class: 'ctx-item', onclick: () => openFramework(f) }, h('b', null, f.name), h('span', { class: 'faint' }, trunc(arr(f.steps).join(' → '), 90)))))
   ].filter(Boolean);
-  return [h('div', { class: 'card-h' }, h('h3', null, 'Relevant history'), h('span', { class: 'tiny faint' }, 'live')),
-  body.length ? body : h('div', { class: 'pad small muted' }, q.trim() ? 'No matching sessions, patterns or frameworks yet.' : 'Start typing. Matching sessions, patterns, commitments and frameworks show up here.')];
+  const n = body.length;
+  return [h('button', { class: 'card-h', style: 'width:100%;background:none;border:none;cursor:pointer;text-align:left' + (ui.ctxOpen ? '' : ';border-bottom:none'), 'aria-expanded': ui.ctxOpen ? 'true' : 'false', onclick: () => { ui.ctxOpen = !ui.ctxOpen; const p = $('#ctxpanel'); if (p) fill(p, contextPanel()); } }, h('h3', null, 'Relevant history'), h('span', { class: 'tiny faint' }, n ? (ui.ctxOpen ? 'Hide' : 'Show') : 'none')),
+  ui.ctxOpen ? (n ? body : h('div', { class: 'pad small muted' }, q.trim() ? 'Nothing from earlier sessions matches. The coach works from its learned approach and general reasoning.' : 'Earlier sessions, patterns and commitments that match what you are discussing appear here.')) : null];
 }
 function editFocus() {
   const cur = Store.all('context').find(x => x.key === 'focus');
@@ -1400,6 +1643,20 @@ function showEvidence(title, sessionIds, patternIds = []) {
    SESSION DETAIL
    ===================================================================== */
 const SESSION_SECTIONS = [['problems', 'Problems discussed'], ['beliefs', 'Beliefs Sam expressed'], ['assumptions', 'Assumptions'], ['questions', 'Important questions'], ['interventions', 'Coaching interventions'], ['frameworks', 'Frameworks'], ['examples', 'Examples'], ['analogies', 'Analogies'], ['exercises', 'Exercises'], ['corrections', 'Corrections'], ['assignments', 'Assignments'], ['commitments', 'Commitments'], ['decisions', 'Decisions'], ['insights', 'Insights'], ['possiblePatterns', 'Possible patterns (single-session)']];
+const HISTORY_KEYS = ['problems', 'beliefs', 'assumptions', 'commitments', 'decisions', 'assignments', 'insights', 'possiblePatterns'];
+function sessionBehaviour(s) {
+  const ci = s.ci || {}; const cases = Store.all('cases').filter(c => c.sessionId === s.id);
+  const raw = SESSION_SECTIONS.filter(([k]) => !HISTORY_KEYS.includes(k) && arr(s[k]).length);
+  const used = activeIntelligence().filter(i => arr(i.sessionIds).includes(s.id));
+  return h('div', { class: 'col' },
+    h('p', { class: 'small muted' }, 'How the coach worked in this session. This trains the Coaching Intelligence; it is not treated as facts about you.'),
+    ci.situation || ci.interpretation ? h('div', { class: 'kv' }, ci.situation ? [h('dt', null, 'Situation'), h('dd', null, ci.situation)] : null, ci.interpretation ? [h('dt', null, "Coach's reading"), h('dd', null, ci.interpretation)] : null) : null,
+    arr(ci.observations).length ? h('div', { class: 'grid2' }, CI_DIMS.filter(([k]) => ci.observations.some(o => o.dimension === k)).map(([k, l]) => h('div', { class: 'card pad col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, l), ci.observations.filter(o => o.dimension === k).map(o => h('div', { class: 'small' }, h('b', null, o.principle), o.evidence ? h('div', { class: 'faint' }, 'Moment: ' + o.evidence) : null)))))
+      : h('div', { class: 'note warn' }, 'No coaching-behaviour observations for this session yet. Extract them from Knowledge → Coaching Intelligence.'),
+    cases.length ? h('div', { class: 'col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, 'Training cases'), cases.map(c => h('div', { class: 'card pad small col', style: 'gap:4px' }, h('div', null, h('b', null, 'Situation: '), c.situation), h('div', null, h('b', null, 'Noticed: '), c.noticed), h('div', null, h('b', null, 'Did: '), c.did), h('div', null, h('b', null, 'Why: '), c.why), c.result ? h('div', null, h('b', null, 'Result: '), c.result) : null))) : null,
+    used.length ? h('div', { class: 'col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, 'Principles this session supports'), h('div', { class: 'row' }, used.map(i => h('span', { class: 'tag accent' }, i.name)))) : null,
+    raw.length ? h('div', { class: 'grid2' }, raw.map(([k, l]) => h('div', { class: 'card pad col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, l), h('ul', { class: 'md small', style: 'padding-left:18px' }, arr(s[k]).map(x => h('li', null, x)))))) : null);
+}
 function openSession(id, tab = 'summary') {
   const s = Store.get('sessions', id); if (!s) { toast('That session is not in the knowledge base.'); return; }
   let cur = tab, tx = null;
@@ -1413,14 +1670,15 @@ function openSession(id, tab = 'summary') {
     ];
   }
   function draw() {
-    const tabs = h('div', { class: 'tabs' }, [['summary', 'Summary'], ['knowledge', 'Extracted knowledge'], ['evidence', 'Evidence links'], ['related', 'Related sessions'], ['transcript', 'Transcript']].map(([k, l]) => h('button', { class: cur === k ? 'on' : '', onclick: () => { cur = k; m.setBody(draw()); } }, l)));
+    const tabs = h('div', { class: 'tabs' }, [['summary', 'Summary'], ['knowledge', 'What happened (history)'], ['behaviour', 'Coaching behaviour'], ['evidence', 'Evidence links'], ['related', 'Related sessions'], ['transcript', 'Transcript']].map(([k, l]) => h('button', { class: cur === k ? 'on' : '', onclick: () => { cur = k; m.setBody(draw()); } }, l)));
     let body;
     if (cur === 'summary') body = h('div', { class: 'col' },
       s.keyLesson ? h('div', { class: 'note' }, h('div', { class: 'eyebrow' }, 'Key lesson'), h('div', { style: 'font-weight:600;margin-top:4px' }, s.keyLesson)) : null,
       h('p', null, s.summary || 'No summary.'),
       h('div', { class: 'row' }, arr(s.categories).map(c => h('span', { class: 'tag accent' }, c)), arr(s.topics).map(t => h('span', { class: 'tag' }, t))),
       h('div', { class: 'stats' }, [['Commitments', arr(s.commitments).length], ['Decisions', arr(s.decisions).length], ['Insights', arr(s.insights).length], ['Transcript', s.transcriptChars ? Math.round(s.transcriptChars / 1000) + 'k chars' : '—']].map(([l, v]) => h('div', { class: 'card stat' }, h('span', { class: 'tiny faint' }, l), h('b', null, v)))));
-    else if (cur === 'knowledge') body = h('div', { class: 'grid2' }, SESSION_SECTIONS.filter(([k]) => arr(s[k]).length).map(([k, l]) => h('div', { class: 'card pad col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, l), h('ul', { class: 'md', style: 'padding-left:18px' }, arr(s[k]).map(x => h('li', null, x))))));
+    else if (cur === 'behaviour') body = sessionBehaviour(s);
+    else if (cur === 'knowledge') body = h('div', { class: 'grid2' }, SESSION_SECTIONS.filter(([k]) => HISTORY_KEYS.includes(k) && arr(s[k]).length).map(([k, l]) => h('div', { class: 'card pad col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, l), h('ul', { class: 'md', style: 'padding-left:18px' }, arr(s[k]).map(x => h('li', null, x))))));
     else if (cur === 'evidence') {
       const pats = Store.all('patterns').filter(p => arr(p.sessionIds).includes(s.id));
       const com = Store.all('commitments').filter(c => arr(c.sessionIds).includes(s.id));
@@ -1544,7 +1802,7 @@ function importBody() {
     h('p', { class: 'tiny faint' }, 'For uploads, the session number is read from the file name (e.g. "session-17.txt"), otherwise the next free number is used. Long transcripts are split into parts and merged.')
   );
   const jobs = Imports.jobs.slice().reverse().map(j => jobCard(j));
-  return [form, jobs.length ? h('div', { class: 'col' }, h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Pipeline'), Imports.jobs.some(j => j.done || j.error) ? h('button', { class: 'linkbtn', onclick: () => { Imports.jobs = Imports.jobs.filter(j => !j.done && !j.error); refreshImportUI(); } }, 'Clear finished') : null), jobs) : null];
+  return [form, jobs.length ? h('div', { class: 'col' }, h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Pipeline'), Imports.jobs.length && Imports.jobs.every(j => j.done || j.error) && Imports.jobs.some(j => j.done) ? h('button', { class: 'btn sm primary', disabled: !AI.ok(), onclick: () => { modalStack.slice().forEach(m => m.close()); openSynthesis(); } }, icon('spark'), 'Synthesize Coaching Intelligence') : null, Imports.jobs.some(j => j.done || j.error) ? h('button', { class: 'linkbtn', onclick: () => { Imports.jobs = Imports.jobs.filter(j => !j.done && !j.error); refreshImportUI(); } }, 'Clear finished') : null), jobs) : null];
 }
 async function queueFiles(files) {
   let next = Math.max(nextSessionNumber(), ...Imports.jobs.map(j => (+j.number || 0) + 1));
@@ -1649,9 +1907,9 @@ VIEWS.decisions = function () {
         ui.decBusy = true; ui.decOut = ''; render();
         const kb = knowledgeBlock(q, d.sessionIds);
         try {
-          const res = await AI.text(`${ENGINE_RULES}\n\nSAM'S CONTEXT:\n${contextBlock()}\n\n${kb.text}\n\nSam is working through a decision in his Decision Coach. Your job is to improve his decision-making, NOT to make the decision.
+          const res = await AI.text(`${ENGINE_RULES}\n\n${kb.text}\n\nSam is working through a decision in his Decision Coach. Your job is to improve his decision-making, NOT to make the decision.
 Review his thinking below and reply in Markdown with these short sections:
-**What's clear** (1-2 bullets) · **Gaps in the thinking** (which steps are thin or missing, and why they matter) · **Assumptions to test** (each with the evidence that would confirm or break it) · **Questions for you** (2-3 sharp questions) · **Cheapest experiment** (one, with a pass/fail signal and a date) · Cite sessions only with the [Sxx] tags above, and label general reasoning as such. Under 350 words. Do not recommend an option.
+**What's clear** (1-2 bullets) · **Gaps in the thinking** (which steps are thin or missing, and why they matter) · **Assumptions to test** (each with the evidence that would confirm or break it) · **Questions for you** (2-3 sharp questions) · **Cheapest experiment** (one, with a pass/fail signal and a date) · If an earlier event genuinely helps, mention it in plain words; no reference tags or session numbers. Under 350 words. Do not recommend an option.
 
 DECISION:
 ${DEC_FIELDS.map(([k, l]) => `${l}: ${String(d[k] || '').trim() || '(empty)'}`).join('\n')}`, { onText: ({ text }) => { ui.decOut = text; const o = $('#decout'); if (o) o.innerHTML = md(text); } });
@@ -1897,7 +2155,7 @@ ${BELIEF_STEPS.map(([k, l]) => `${l}: ${b.steps[k] || '(empty)'}`).join('\n')}`,
 /* =====================================================================
    KNOWLEDGE CENTER
    ===================================================================== */
-const KTABS = [['overview', 'Overview'], ['bible', 'Coach Bible'], ['frameworks', 'Frameworks'], ['context', 'Personal Context'], ['queue', 'Review Queue'], ['patterns', 'Patterns'], ['commitments', 'Commitments'], ['decisions', 'Decisions'], ['tests', 'Test Lab'], ['system', 'System']];
+const KTABS = [['overview', 'Overview'], ['intel', 'Coaching Intelligence'], ['frameworks', 'Frameworks'], ['context', 'Personal Context'], ['queue', 'Review Queue'], ['patterns', 'Patterns'], ['commitments', 'Commitments'], ['decisions', 'Decisions'], ['tests', 'Test Lab'], ['system', 'System']];
 VIEWS.knowledge = function () {
   const pend = Store.all('insights').filter(i => i.status === 'pending').length;
   const tabs = h('div', { class: 'tabs' }, KTABS.map(([k, l]) => h('button', { class: ui.kTab === k ? 'on' : '', onclick: () => { ui.kTab = k; render(); } }, l, k === 'queue' && pend ? h('span', { class: 'pill accent', style: 'margin-left:6px' }, pend) : null)));
@@ -1907,12 +2165,12 @@ VIEWS.knowledge = function () {
 const K = {};
 K.overview = () => {
   const n = c => Store.all(c).length;
-  const tiles = [['Sessions', n('sessions'), 'sessions'], ['Methodology items', n('methodology'), 'bible'], ['Frameworks', n('frameworks'), 'frameworks'], ['Patterns', n('patterns'), 'patterns'], ['Commitments', n('commitments'), 'commitments'], ['Decisions', n('decisions'), 'decisions'], ['Context facts', n('context'), 'context'], ['Pending review', Store.all('insights').filter(i => i.status === 'pending').length, 'queue'], ['Test cases', n('tests'), 'tests']];
+  const tiles = [['Sessions', n('sessions'), 'sessions'], ['Coaching principles', activeIntelligence().length, 'intel'], ['Training cases', n('cases'), 'intel'], ['Methodology items', n('methodology'), 'intel'], ['Frameworks', n('frameworks'), 'frameworks'], ['Patterns', n('patterns'), 'patterns'], ['Commitments', n('commitments'), 'commitments'], ['Decisions', n('decisions'), 'decisions'], ['Context facts', n('context'), 'context'], ['Pending review', Store.all('insights').filter(i => i.status === 'pending').length, 'queue'], ['Test cases', n('tests'), 'tests']];
   return h('div', { class: 'col' },
     h('div', { class: 'grid3' }, tiles.map(([l, v, t]) => h('button', { class: 'card stat', style: 'text-align:left;cursor:pointer', onclick: () => t === 'sessions' ? go('sessions') : (ui.kTab = t, render()) }, h('span', { class: 'tiny faint' }, l), h('b', null, v)))),
     h('div', { class: 'card pad col' }, h('h3', null, 'Knowledge layers'),
       h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('thead', null, h('tr', null, h('th', null, 'Layer'), h('th', null, 'What it holds'), h('th', null, 'How it changes'))),
-        h('tbody', null, [['Methodology (Coach Bible)', 'How coaching works, from the whole body of sessions', 'Only by you, or by accepting a reviewed insight'], ['Session evidence', 'What happened in a specific session', 'Import pipeline; editable per session'], ['Personal context', 'Facts about Sam and his business', 'Only by you'], ['Commitments', 'What Sam agreed to do', 'Status changes only by you'], ['Patterns', 'Recurring observations with session evidence', 'Proposed by scans, accepted by you; confidence computed from evidence'], ['Insights', 'Lessons extracted from sessions', 'Review Queue → Add / Ignore'], ['Decisions', 'Important decisions and their reasoning', 'Decision Coach']].map(r => h('tr', null, r.map((c, i) => h('td', { style: i === 0 ? 'font-weight:700' : '' }, c)))))))),
+        h('tbody', null, [['Coaching Intelligence', 'HOW the coach thinks, questions, challenges, teaches and responds, learned across sessions', 'Synthesis you review; later sessions add evidence via the Review Queue'], ['Curated methodology', 'Rules and principles you wrote or imported (Coach Bible)', 'Only by you'], ['Session history', 'What happened to Sam in a specific session', 'Import pipeline; editable per session'], ['Personal context', 'Facts about Sam and his business', 'Only by you'], ['Commitments', 'What Sam agreed to do', 'Status changes only by you'], ['Patterns', 'Recurring observations with session evidence', 'Proposed by scans, accepted by you; confidence computed from evidence'], ['Lessons', 'What Sam learned in a session (history, not method)', 'Review Queue → Add / Ignore'], ['Decisions', 'Important decisions and their reasoning', 'Decision Coach']].map(r => h('tr', null, r.map((c, i) => h('td', { style: i === 0 ? 'font-weight:700' : '' }, c)))))))),
     h('div', { class: 'card pad col' }, h('h3', null, 'Confidence rules'), h('div', { class: 'row' }, confPill({ cls: 'good', label: 'Confirmed', level: 'High', n: 3 }), h('span', { class: 'small muted' }, 'you confirmed it and 3+ sessions show it')), h('div', { class: 'row' }, confPill({ cls: 'info', label: 'Supported', level: 'Medium', n: 2 }), h('span', { class: 'small muted' }, 'appears in 2+ sessions')), h('div', { class: 'row' }, confPill({ cls: 'warn', label: 'Possible pattern', level: 'Low', n: 1 }), h('span', { class: 'small muted' }, 'one session only')), h('div', { class: 'row' }, confPill({ cls: 'neutral', label: 'Unknown', level: 'None', n: 0 }), h('span', { class: 'small muted' }, 'no session evidence'))));
 };
 K.bible = () => {
@@ -1977,7 +2235,7 @@ function editContext(c) {
 K.queue = () => {
   const f = ui.qFilter || 'pending';
   const list = Store.all('insights').filter(i => f === 'pending' ? i.status === 'pending' : i.status !== 'pending').sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  const kindLabel = { evidence: 'Pattern evidence', pattern: 'New pattern', framework: 'New framework', insight: 'New insight', conflict: 'Conflict detected' };
+  const kindLabel = { 'ci-evidence': 'Coaching principle evidence', 'ci-principle': 'New coaching principle', evidence: 'Pattern evidence', pattern: 'New pattern', framework: 'New framework', insight: 'New insight', conflict: 'Conflict detected' };
   return h('div', { class: 'col' },
     h('div', { class: 'row' }, h('div', { class: 'seg' }, [['pending', 'Waiting for review'], ['done', 'History']].map(([k, l]) => h('button', { class: f === k ? 'on' : '', onclick: () => { ui.qFilter = k; render(); } }, l))), h('p', { class: 'small muted grow' }, 'New knowledge from sessions never changes your Coach Bible on its own. Add, review or ignore each suggestion.')),
     list.length ? list.map(i => {
@@ -1998,10 +2256,11 @@ K.queue = () => {
       return card;
     }) : emptyState(f === 'pending' ? 'Nothing waiting' : 'No history yet', f === 'pending' ? 'Suggestions appear here after a session import or a pattern scan.' : 'Accepted and ignored suggestions are listed here.'));
 };
-function refLabel(r) { if (!r) return '—'; const o = Store.get(r.type, r.id); if (!o) return r.label || '—'; if (r.type === 'sessions') return h('button', { class: 'sref', onclick: () => openSession(o.id) }, sref(o)); return (r.type === 'methodology' ? 'Methodology: ' : 'Pattern: ') + (o.title || o.name); }
+function refLabel(r) { if (!r) return '—'; const o = Store.get(r.type, r.id); if (!o) return r.label || '—'; if (r.type === 'sessions') return h('button', { class: 'sref', onclick: () => openSession(o.id) }, sref(o)); return ({ methodology: 'Methodology: ', intelligence: 'Coaching principle: ' }[r.type] || 'Pattern: ') + (o.title || o.name); }
 function reviewInsight(i) {
   const p = clone(i.payload || {});
-  const fields = i.kind === 'pattern' ? [{ key: 'name', label: 'Pattern' }, { key: 'description', label: 'Description', type: 'textarea' }, { key: 'category', label: 'Category', type: 'select', options: CATEGORIES }, { key: 'sessionIds', label: 'Evidence sessions', type: 'sessions' }]
+  const fields = i.kind === 'ci-principle' ? [{ key: 'dimension', label: 'Dimension', type: 'select', options: CI_DIMS.map(d => [d[0], d[1]]) }, { key: 'name', label: 'Name' }, { key: 'principle', label: 'Principle', type: 'textarea' }, { key: 'trigger', label: 'When to apply', type: 'textarea', rows: 2 }, { key: 'how', label: 'What to do', type: 'textarea', rows: 2 }, { key: 'avoid', label: 'Avoid', type: 'textarea', rows: 2 }, { key: 'sessionIds', label: 'Sessions', type: 'sessions' }]
+    : i.kind === 'pattern' ? [{ key: 'name', label: 'Pattern' }, { key: 'description', label: 'Description', type: 'textarea' }, { key: 'category', label: 'Category', type: 'select', options: CATEGORIES }, { key: 'sessionIds', label: 'Evidence sessions', type: 'sessions' }]
     : i.kind === 'framework' ? [{ key: 'name', label: 'Name' }, { key: 'steps', label: 'Steps', type: 'lines' }, { key: 'whenToUse', label: 'When to use', type: 'textarea', rows: 2 }, { key: 'sessionIds', label: 'Sessions', type: 'sessions' }]
       : i.kind === 'insight' ? [{ key: 'title', label: 'Insight' }, { key: 'body', label: 'Description', type: 'textarea' }, { key: 'sessionIds', label: 'Sessions', type: 'sessions' }]
         : [{ key: 'note', label: 'Evidence note', type: 'textarea' }];
@@ -2013,51 +2272,137 @@ K.decisions = () => h('div', { class: 'col' }, Store.all('decisions').length ? h
 
 /* ---------- Test Lab ---------- */
 K.tests = () => {
-  const list = Store.all('tests').sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const list = Store.all('tests').sort((a, b) => (a.category || 'zz').localeCompare(b.category || 'zz') || (a.createdAt || '').localeCompare(b.createdAt || ''));
   const t = ui.testId ? Store.get('tests', ui.testId) : null;
   const scored = list.filter(x => x.scores && Object.keys(x.scores).length);
   const avg = scored.length ? (scored.reduce((a, x) => a + Object.values(x.scores).reduce((p, v) => p + v, 0) / Object.values(x.scores).length, 0) / scored.length) : null;
+  const dimAvg = EVAL_DIMS.map(([k, l]) => { const v = scored.map(x => x.scores[k]).filter(n => n != null); return [l, v.length ? v.reduce((a, b) => a + b, 0) / v.length : null]; });
+  const flags = list.filter(x => x.copyFlag || arr(x.actualMeta && x.actualMeta.invalid).length).length;
   return h('div', { class: 'col' },
-    h('div', { class: 'row' }, h('p', { class: 'small muted grow' }, 'Benchmark the coaching engine. Each test runs a fresh single-turn conversation against your current knowledge, then you (or an AI judge) score it 0–2 on each dimension.'),
-      avg != null ? h('span', { class: 'tag accent' }, `Average ${avg.toFixed(2)} / 2 across ${scored.length}`) : null,
+    h('div', { class: 'row' }, h('p', { class: 'small muted grow' }, 'Benchmark the coach on situations it has never seen. Each run is a fresh single-turn conversation using everything the coach currently knows. You or an AI judge score each of the 10 checks 0–2. Deterministic checks flag invented history and copied session wording.'),
       h('button', { class: 'btn', onclick: () => editTest(null) }, icon('plus'), 'New test case')),
+    h('div', { class: 'row' },
+      aiButton(ui.testBatch ? ui.testBatch : 'Run all & evaluate', runAllTests, 'btn primary'),
+      avg != null ? h('span', { class: 'tag accent' }, `Average ${avg.toFixed(2)} / 2 · ${scored.length} of ${list.length} scored`) : null,
+      flags ? h('span', { class: 'pill bad' }, `${flags} flagged`) : null),
+    scored.length ? h('div', { class: 'card pad' }, h('div', { class: 'grid2', style: 'gap:6px 20px' }, dimAvg.map(([l, v]) => h('div', { class: 'row small', style: 'flex-wrap:nowrap' }, h('span', { class: 'grow' }, l), h('div', { style: 'width:90px' }, h('div', { class: 'bar' }, h('i', { style: `width:${v == null ? 0 : v / 2 * 100}%` }))), h('span', { class: 'mono tiny', style: 'width:32px;text-align:right' }, v == null ? '—' : v.toFixed(1)))))) : null,
     h('div', { class: 'two' },
-      h('div', { class: 'card' }, list.length ? h('div', { class: 'pick' }, list.map(x => h('button', { class: ui.testId === x.id ? 'on' : '', onclick: () => { ui.testId = x.id; render(); } }, h('b', null, trunc(x.input, 70)), h('span', { class: 'tiny faint' }, x.actual ? 'Ran ' + fmtDate(x.runAt) : 'Not run yet')))) : h('div', { class: 'pad small muted' }, 'No test cases.')),
+      h('div', { class: 'card' }, list.length ? h('div', { class: 'pick' }, list.map(x => h('button', { class: ui.testId === x.id ? 'on' : '', onclick: () => { ui.testId = x.id; render(); } }, h('b', null, trunc(x.input, 70)), h('span', { class: 'row', style: 'gap:6px' }, x.category ? h('span', { class: 'tag' }, x.category) : null, h('span', { class: 'tiny faint' }, x.scores && Object.keys(x.scores).length ? `${(Object.values(x.scores).reduce((a, b) => a + b, 0) / Object.values(x.scores).length).toFixed(1)} / 2` : x.actual ? 'Not scored' : 'Not run'), x.copyFlag || arr(x.actualMeta && x.actualMeta.invalid).length ? h('span', { class: 'dot bad' }) : null)))) : h('div', { class: 'pad small muted' }, 'No test cases.')),
       t ? testDetail(t) : h('div', { class: 'card pad muted small' }, 'Select a test case.')));
 };
-function editTest(t) { editEntity({ title: t ? 'Edit test case' : 'New test case', obj: t || {}, fields: [{ key: 'input', label: 'User input', type: 'textarea', required: true }, { key: 'expected', label: 'Expected coaching behavior', type: 'textarea', rows: 4 }, { key: 'notes', label: 'Notes', type: 'textarea', rows: 2 }], onSave: o => Store.put('tests', { id: o.id || uid('test'), ...o }).then(x => { ui.testId = x.id; }), onDelete: t ? () => Store.del('tests', t.id) : null }); }
-function testDetail(t) {
-  const run = async () => {
-    ui.testBusy = 'run'; ui.testStream = ''; render();
-    const kb = knowledgeBlock(t.input);
-    try {
-      const r = await AI.text([{ role: 'user', content: buildCoachPrompt(kb, null) }, { role: 'user', content: t.input }], { onText: ({ text }) => { const o = $('#tout'); if (o) o.innerHTML = md(text.split('<<<META')[0]); } });
-      const meta = parseMeta(r.text, kb.refs);
-      await Store.patch('tests', t.id, { actual: normalizeRefs(meta.body, kb.refs), actualMeta: { mode: meta.mode, basis: meta.basis, sessions: meta.sessions, invalid: meta.invalid }, runAt: nowISO(), scores: {}, evaluation: '' });
-    } catch (e) { toast(AI.handle(e)); } finally { ui.testBusy = null; render(); }
-  };
-  const judge = async () => {
-    ui.testBusy = 'judge'; render();
-    try {
-      const r = await AI.json(`You evaluate a coaching engine's reply. Score each dimension 0 (poor), 1 (partial) or 2 (strong), relative to the expected behavior. Dimensions: ${EVAL_DIMS.join(', ')}. "historical accuracy" = 2 only if it cited no history that isn't real (invalid references: ${arr(t.actualMeta && t.actualMeta.invalid).join(', ') || 'none'}). Score a dimension 2 if it was correctly not needed.
+function editTest(t) { editEntity({ title: t ? 'Edit test case' : 'New test case', obj: t || {}, fields: [{ key: 'category', label: 'Category', ph: 'e.g. pricing, unfamiliar scenario' }, { key: 'input', label: 'User input', type: 'textarea', required: true }, { key: 'expected', label: 'Expected coaching behavior', type: 'textarea', rows: 4 }, { key: 'notes', label: 'Notes', type: 'textarea', rows: 2 }], onSave: o => Store.put('tests', { id: o.id || uid('test'), ...o }).then(x => { ui.testId = x.id; }), onDelete: t ? () => Store.del('tests', t.id) : null }); }
+async function runTest(t, onText) {
+  const kb = knowledgeBlock(t.input);
+  const r = await AI.text([{ role: 'user', content: buildCoachPrompt(kb, null) }, { role: 'user', content: t.input }], onText ? { onText } : {});
+  const meta = parseMeta(r.text, kb.refs);
+  const copied = copyCheck(meta.body);
+  await Store.patch('tests', t.id, { actual: meta.body, actualMeta: { mode: meta.mode, general: meta.general, note: meta.note, intelligence: meta.intelligence, sessions: meta.sessions, invalid: meta.invalid, historyOffered: kb.sessions.length }, copyFlag: copied || '', runAt: nowISO(), scores: {}, evaluation: '', judgedBy: '' });
+}
+async function judgeTest(t) {
+  const ci = arr(t.actualMeta && t.actualMeta.intelligence).map(id => Store.get('intelligence', id)).filter(Boolean);
+  const r = await AI.json(`You evaluate one reply from a coaching engine that should coach with learned Coaching Intelligence, Sam's context, optional history and general reasoning, and must never pretend a situation appeared in a past session.
+Score each check 0 (poor), 1 (partial) or 2 (strong). If a check was correctly not needed (e.g. no challenge was warranted, no teaching was asked for), score 2.
+Checks: ${EVAL_DIMS.map(([k, l]) => `${k} = ${l}`).join('; ')}.
+Facts for the checks: history items offered to the engine: ${t.actualMeta && t.actualMeta.historyOffered || 0}; unverifiable references it made: ${arr(t.actualMeta && t.actualMeta.invalid).join(', ') || 'none'}; 8+ words copied verbatim from training material: ${t.copyFlag ? '"' + t.copyFlag + '"' : 'none'}; relied on general reasoning: ${t.actualMeta && t.actualMeta.general ? 'yes' : 'no'}.
+Coaching Intelligence it applied: ${ci.map(i => `${i.name}: ${i.principle}`).join(' | ') || 'none named (default behaviour)'}.
 USER INPUT: ${t.input}
 EXPECTED BEHAVIOR: ${t.expected || '(not specified)'}
-ACTUAL REPLY (mode: ${t.actualMeta && t.actualMeta.mode || '?'}):
+ACTUAL REPLY:
 ${t.actual}
-Reply with only JSON: {"scores":{${EVAL_DIMS.map(d => `"${d}":0`).join(',')}},"evaluation":"2-4 sentences: what it did well, what it missed"}`, { modelTier: 'quick' });
-      const scores = {}; EVAL_DIMS.forEach(d => { const v = +((r.scores || {})[d]); if (v === 0 || v === 1 || v === 2) scores[d] = v; });
-      await Store.patch('tests', t.id, { scores, evaluation: String(r.evaluation || ''), judgedBy: 'AI judge' });
-    } catch (e) { toast(AI.handle(e)); } finally { ui.testBusy = null; render(); }
-  };
-  const sc = t.scores || {};
+Reply with only JSON: {"scores":{${EVAL_DIMS.map(([k]) => `"${k}":0`).join(',')}},"evaluation":"2-4 sentences: what it did well, what it missed"}`, { modelTier: 'quick' });
+  const scores = {}; EVAL_DIMS.forEach(([k]) => { const v = +((r.scores || {})[k]); if (v === 0 || v === 1 || v === 2) scores[k] = v; });
+  if (t.copyFlag) scores.original = 0;
+  if (arr(t.actualMeta && t.actualMeta.invalid).length) scores.honesty = 0;
+  await Store.patch('tests', t.id, { scores, evaluation: String(r.evaluation || ''), judgedBy: 'AI judge' });
+}
+async function runAllTests() {
+  const list = Store.all('tests');
+  try {
+    for (let i = 0; i < list.length; i++) {
+      ui.testBatch = `Running ${i + 1} of ${list.length}…`; render();
+      await runTest(list[i]);
+      ui.testBatch = `Evaluating ${i + 1} of ${list.length}…`; render();
+      await judgeTest(Store.get('tests', list[i].id));
+    }
+    toast('All tests run and evaluated');
+  } catch (e) { toast(AI.handle(e)); } finally { ui.testBatch = null; render(); }
+}
+function testDetail(t) {
+  const run = async () => { ui.testBusy = 'run'; render(); try { await runTest(t, ({ text }) => { const o = $('#tout'); if (o) o.innerHTML = md(text.split('<<<META')[0]); }); } catch (e) { toast(AI.handle(e)); } finally { ui.testBusy = null; render(); } };
+  const judge = async () => { ui.testBusy = 'judge'; render(); try { await judgeTest(t); } catch (e) { toast(AI.handle(e)); } finally { ui.testBusy = null; render(); } };
+  const sc = t.scores || {}; const am = t.actualMeta || {};
   return h('div', { class: 'card pad col' },
-    h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Test case'), h('button', { class: 'btn sm', onclick: () => editTest(t) }, icon('edit'), 'Edit')),
+    h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Test case', t.category ? ' · ' + t.category : ''), h('button', { class: 'btn sm', onclick: () => editTest(t) }, icon('edit'), 'Edit')),
     h('div', { class: 'kv' }, h('dt', null, 'User input'), h('dd', { style: 'font-weight:600' }, t.input), h('dt', null, 'Expected behavior'), h('dd', null, t.expected || '—'), t.notes ? [h('dt', null, 'Notes'), h('dd', { class: 'small' }, t.notes)] : null),
     h('div', { class: 'row' }, aiButton(ui.testBusy === 'run' ? 'Running…' : t.actual ? 'Run again' : 'Run test', run, 'btn primary'), t.actual ? aiButton(ui.testBusy === 'judge' ? 'Evaluating…' : 'AI evaluate', judge, 'btn') : null),
-    ui.testBusy === 'run' ? h('div', { class: 'out' }, h('div', { class: 'md', id: 'tout' }, thinking('Running'))) : t.actual ? h('div', { class: 'col', style: 'gap:6px' }, h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Actual response'), t.actualMeta && t.actualMeta.mode ? h('span', { class: 'pill accent' }, t.actualMeta.mode) : null, t.actualMeta && arr(t.actualMeta.invalid).length ? h('span', { class: 'pill bad' }, 'invalid refs: ' + t.actualMeta.invalid.join(', ')) : null), h('div', { class: 'out' }, mdNode(t.actual))) : null,
+    ui.testBusy === 'run' ? h('div', { class: 'out' }, h('div', { class: 'md', id: 'tout' }, thinking('Running'))) : t.actual ? h('div', { class: 'col', style: 'gap:6px' },
+      h('div', { class: 'row' }, h('div', { class: 'eyebrow grow' }, 'Actual response'), am.mode ? h('span', { class: 'pill accent' }, am.mode) : null, h('button', { class: 'linkbtn', onclick: () => whyResponse(am) }, 'Why this response?')),
+      h('div', { class: 'out' }, mdNode(t.actual)),
+      h('div', { class: 'row small' }, h('span', { class: 'tag' }, `${plural(arr(am.intelligence).length, 'principle')} applied`), h('span', { class: 'tag' }, `${plural(arr(am.sessions).length, 'history item')} used`), h('span', { class: 'tag' }, am.general ? 'General reasoning used' : 'No general reasoning'),
+        arr(am.invalid).length ? h('span', { class: 'pill bad' }, 'Unverifiable history: ' + am.invalid.join(', ')) : h('span', { class: 'pill good' }, 'No invented history'),
+        t.copyFlag ? h('span', { class: 'pill bad', title: t.copyFlag }, 'Copied wording: “' + trunc(t.copyFlag, 40) + '”') : h('span', { class: 'pill good' }, 'No copied wording'))) : null,
     t.actual ? h('div', { class: 'col', style: 'gap:6px' }, h('div', { class: 'eyebrow' }, 'Evaluation', t.judgedBy ? h('span', { class: 'faint' }, ' · last scored by ' + t.judgedBy + ', adjust freely') : null),
-      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('tbody', null, EVAL_DIMS.map(d => h('tr', null, h('td', { style: 'text-transform:capitalize;font-weight:600' }, d), h('td', null, h('div', { class: 'score' }, [0, 1, 2].map(v => h('button', { class: sc[d] === v ? 'on' : '', 'aria-label': `${d} ${v}`, onclick: () => Store.patch('tests', t.id, { scores: { ...sc, [d]: v }, judgedBy: 'Sam' }) }, v))))))))),
+      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('tbody', null, EVAL_DIMS.map(([k, l]) => h('tr', null, h('td', { style: 'font-weight:600' }, l), h('td', null, h('div', { class: 'score' }, [0, 1, 2].map(v => h('button', { class: sc[k] === v ? 'on' : '', 'aria-label': `${l} ${v}`, onclick: () => Store.patch('tests', t.id, { scores: { ...sc, [k]: v }, judgedBy: 'Sam' }) }, v))))))))),
       t.evaluation ? h('p', { class: 'small' }, t.evaluation) : null) : null);
+}
+
+/* ---------- Coaching Intelligence ---------- */
+K.intel = () => {
+  const items = activeIntelligence();
+  const missing = sessionsMissingCI();
+  const nS = Store.all('sessions').length;
+  const counts = { strong: 0, repeated: 0, observed: 0 }; items.forEach(i => { const k = ciConf(i).key; if (k in counts) counts[k]++; });
+  const dimsShown = CI_DIMS.filter(([k]) => items.some(i => i.dimension === k));
+  return h('div', { class: 'col' },
+    h('p', { class: 'small muted' }, 'How the coach thinks, diagnoses, questions, challenges, teaches and responds, learned from your sessions. This shapes every reply. It is kept separate from facts about you (Personal Context) and from what happened in past sessions (Sessions, Patterns).'),
+    h('div', { class: 'row' },
+      aiButton(ui.ciBusy ? ui.ciBusy : `Extract behaviour from ${plural(missing.length, 'session')}`, async () => {
+        if (!missing.length) { toast('Every session already has coaching-behaviour observations.'); return; }
+        try { for (const s of missing) { await extractCIForSession(s, p => { ui.ciBusy = 'Reading ' + p + '…'; render(); }); } toast('Observations extracted'); } catch (e) { toast(e && e.code ? AI.handle(e) : e.message); } finally { ui.ciBusy = null; render(); }
+      }, missing.length ? 'btn' : 'btn'),
+      aiButton('Synthesize Coaching Intelligence', openSynthesis, 'btn primary'),
+      h('button', { class: 'btn', onclick: () => editIntelligence(null) }, icon('plus'), 'Add principle'),
+      h('span', { class: 'spacer' }),
+      h('span', { class: 'pill good' }, counts.strong + ' strong'), h('span', { class: 'pill info' }, counts.repeated + ' repeated'), h('span', { class: 'pill warn' }, counts.observed + ' observed')),
+    !nS ? h('div', { class: 'note' }, 'Add your sessions first (Add session → upload the transcripts, tick "Save after extraction"). Each import extracts the coach\'s behaviour; then synthesize it here.') : missing.length ? h('div', { class: 'note warn' }, `${plural(missing.length, 'session')} ${missing.length === 1 ? 'has' : 'have'} no coaching-behaviour observations yet, so ${missing.length === 1 ? 'it is' : 'they are'} not included in synthesis.`) : null,
+    items.length ? dimsShown.map(([k, l, d]) => h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('div', null, h('h3', null, l), h('div', { class: 'tiny faint' }, d)), h('span', { class: 'tiny faint' }, items.filter(i => i.dimension === k).length)),
+      h('div', { class: 'list' }, items.filter(i => i.dimension === k).sort((a, b) => ciConf(b).rank - ciConf(a).rank).map(i => { const c = ciConf(i); return h('div', { class: 'li click', onclick: () => editIntelligence(i) }, h('div', { class: 'grow' }, h('b', null, i.name), h('div', { class: 'small' }, i.principle), i.trigger ? h('div', { class: 'tiny faint' }, 'When: ' + i.trigger) : null, i.avoid ? h('div', { class: 'tiny faint' }, 'Avoid / not when: ' + i.avoid) : null), h('div', { class: 'col', style: 'gap:4px;align-items:flex-end' }, h('span', { class: 'pill ' + c.cls, title: `Shown in ${plural(c.n, 'session')}` }, c.label), h('div', { class: 'row', style: 'gap:3px' }, sessChips(i.sessionIds, 5)))); }))))
+      : emptyState('Nothing learned yet', nS ? 'Synthesize to turn the coaching-behaviour observations from your sessions into principles. You review them before they are used.' : 'Coaching Intelligence is learned from session transcripts. Until then the coach uses its default behaviour.'),
+    h('div', { class: 'divider' }),
+    h('h3', null, 'Curated methodology'),
+    K.bible()
+  );
+};
+function editIntelligence(i) {
+  editEntity({
+    title: i ? 'Coaching principle' : 'Add coaching principle', obj: i || { dimension: 'thinking', sessionIds: [], source: 'manual', status: 'active' }, fields: [
+      { key: 'dimension', label: 'Dimension', type: 'select', options: CI_DIMS.map(d => [d[0], d[1]]) }, { key: 'name', label: 'Name', required: true }, { key: 'principle', label: 'Principle', type: 'textarea', rows: 3, required: true },
+      { key: 'trigger', label: 'When to apply', type: 'textarea', rows: 2 }, { key: 'how', label: 'What to do', type: 'textarea', rows: 2 }, { key: 'avoid', label: 'Avoid / when not to apply', type: 'textarea', rows: 2 },
+      { key: 'sessionIds', label: 'Supporting sessions', type: 'sessions', hint: 'confidence is calculated from these' }, { key: 'status', label: 'Status', type: 'select', options: [['active', 'Active'], ['archived', 'Archived (not used)']] }
+    ], onSave: o => Store.put('intelligence', { id: o.id || uid('ci'), evidence: [], ...o }), onDelete: i ? () => Store.del('intelligence', i.id) : null
+  });
+}
+function openSynthesis() {
+  let drafts = null, busy = '', err = '';
+  let m;
+  const start = async () => {
+    busy = 'Starting…'; err = ''; m.setBody(draw());
+    try { drafts = await synthesizeIntelligence(p => { busy = 'Synthesizing ' + p + '…'; m.setBody(draw()); }); } catch (e) { err = e && e.code ? AI.handle(e) : e.message; }
+    busy = ''; m.setBody(draw());
+  };
+  m = openModal({ title: 'Synthesize Coaching Intelligence', sub: 'Merges the coaching-behaviour observations from every session into principles. Nothing is used until you save.', wide: true, body: () => draw(), actions: [] });
+  function draw() {
+    const nObs = sessionsSorted().reduce((a, s) => a + arr(s.ci && s.ci.observations).length, 0);
+    if (busy) return h('div', { class: 'col' }, thinking(busy), h('p', { class: 'small muted' }, 'One pass per dimension. This can take a few minutes.'));
+    if (!drafts) return h('div', { class: 'col' }, err ? h('div', { class: 'note warn' }, err) : null,
+      h('p', null, `${plural(nObs, 'observation')} from ${plural(sessionsSorted().filter(s => s.ci && arr(s.ci.observations).length).length, 'session')} will be merged into generalised principles across ${CI_DIMS.length} dimensions.`),
+      h('p', { class: 'small muted' }, 'Confidence is calculated from evidence: Observed = 1 session, Repeated = 2+, Strong pattern = 3+ sessions across different situations. Saving replaces the previous synthesis (it is archived, not deleted). Principles you added by hand are kept.'),
+      h('div', null, h('button', { class: 'btn primary', disabled: !nObs || !AI.ok(), onclick: start }, icon('spark'), 'Start synthesis')));
+    const byDim = CI_DIMS.filter(([k]) => drafts.some(d => d.dimension === k));
+    return h('div', { class: 'col' },
+      h('div', { class: 'row' }, h('span', { class: 'small muted grow' }, `${drafts.length} principles proposed. Untick any you don't want.`), h('button', { class: 'btn primary', onclick: async () => { await saveSynthesis(drafts); m.close(); toast('Coaching Intelligence saved'); ui.kTab = 'intel'; go('knowledge'); } }, `Save ${drafts.filter(d => d.keep).length} principles`)),
+      byDim.map(([k, l]) => h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('h3', null, l)), h('div', { class: 'list' }, drafts.filter(d => d.dimension === k).map(d => { const c = ciConf(d); return h('label', { class: 'li' }, h('input', { type: 'checkbox', checked: d.keep, onchange: e => d.keep = e.target.checked }), h('div', { class: 'grow' }, h('b', null, d.name), h('div', { class: 'small' }, d.principle), d.trigger ? h('div', { class: 'tiny faint' }, 'When: ' + d.trigger) : null, d.avoid ? h('div', { class: 'tiny faint' }, 'Avoid: ' + d.avoid) : null), h('div', { class: 'col', style: 'gap:4px;align-items:flex-end' }, h('span', { class: 'pill ' + c.cls }, c.label), h('div', { class: 'row', style: 'gap:3px' }, sessChips(d.sessionIds, 5)))); })))));
+  }
 }
 
 /* ---------- System ---------- */
@@ -2075,7 +2420,7 @@ K.system = () => h('div', { class: 'col' },
       h('div', null, h('div', { class: 'eyebrow' }, 'Needs future infrastructure'), h('ul', { class: 'md small', style: 'padding-left:18px;margin-top:6px' }, ['Embeddings + vector search for semantic retrieval across 100+ transcripts', 'Server-side ingestion for very large batches and audio files', 'Scheduled accountability reminders', 'Analytics over coaching quality', 'Multi-device sync outside claude.ai and separate authentication'].map(x => h('li', null, x)))))),
   h('div', { class: 'card pad col' }, h('h3', null, 'Data model'), h('p', { class: 'small muted' }, 'Stable IDs on every entity; relations are ID arrays so a backend can map them to join tables.'),
     h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('thead', null, h('tr', null, h('th', null, 'Entity'), h('th', null, 'Collection'), h('th', null, 'Key relations'), h('th', null, 'Count'))),
-      h('tbody', null, [['Session', 'sessions', 'relatedSessionIds → Session; transcript in transcripts/<id>'], ['Pattern', 'patterns', 'sessionIds, evidence[{sessionId,note}]'], ['Framework', 'frameworks', 'sessionIds'], ['Commitment', 'commitments', 'sessionIds, conversationId'], ['Decision', 'decisions', 'sessionIds'], ['KnowledgeItem (methodology)', 'methodology', 'sessionIds'], ['Insight (review queue)', 'insights', 'sessionIds, payload, related'], ['UserContext', 'context', '—'], ['Belief', 'beliefs', '—'], ['Conversation', 'conversations', 'turns[].meta.sessions / patterns'], ['TestCase', 'tests', '—']].map(r => h('tr', null, h('td', { style: 'font-weight:600' }, r[0]), h('td', { class: 'mono small' }, r[1]), h('td', { class: 'small' }, r[2]), h('td', { class: 'mono' }, Store.all(r[1]).length))))))));
+      h('tbody', null, [['Session', 'sessions', 'relatedSessionIds → Session; transcript in transcripts/<id>'], ['Pattern', 'patterns', 'sessionIds, evidence[{sessionId,note}]'], ['Framework', 'frameworks', 'sessionIds'], ['Commitment', 'commitments', 'sessionIds, conversationId'], ['Decision', 'decisions', 'sessionIds'], ['CoachingIntelligence', 'intelligence', 'dimension, sessionIds (confidence computed)'], ['TrainingCase', 'cases', 'sessionId'], ['KnowledgeItem (methodology)', 'methodology', 'sessionIds'], ['Insight (review queue)', 'insights', 'sessionIds, payload, related'], ['UserContext', 'context', '—'], ['Belief', 'beliefs', '—'], ['Conversation', 'conversations', 'turns[].meta.intelligence / sessions / patterns'], ['TestCase', 'tests', '—']].map(r => h('tr', null, h('td', { style: 'font-weight:600' }, r[0]), h('td', { class: 'mono small' }, r[1]), h('td', { class: 'small' }, r[2]), h('td', { class: 'mono' }, Store.all(r[1]).length))))))));
 async function exportBackup() {
   const o = { app: 'ai-business-coach', version: 1, exportedAt: nowISO() }; COLS.forEach(c => o[c] = Store.all(c));
   const json = JSON.stringify(o, null, 2);
@@ -2095,13 +2440,13 @@ async function restoreBackup(file) {
 /* =====================================================================
    GLOBAL SEARCH
    ===================================================================== */
-const SEARCH_TYPES = { sessions: 'Sessions', patterns: 'Patterns', frameworks: 'Frameworks', commitments: 'Commitments', decisions: 'Decisions', methodology: 'Methodology', context: 'Context', beliefs: 'Beliefs' };
+const SEARCH_TYPES = { intelligence: 'Coaching Intelligence', sessions: 'Sessions', patterns: 'Patterns', frameworks: 'Frameworks', commitments: 'Commitments', decisions: 'Decisions', methodology: 'Methodology', context: 'Context', beliefs: 'Beliefs' };
 function openSearchItem(type, id) {
   const o = Store.get(type, id); if (!o) return;
   modalStack.slice().forEach(m => m.close());
   if (type === 'sessions') openSession(id); else if (type === 'patterns') openPattern(id); else if (type === 'frameworks') openFramework(o);
   else if (type === 'commitments') openCommitment(o); else if (type === 'decisions') go('decisions', { decId: id, decDraft: null });
-  else if (type === 'methodology') editMethod(o); else if (type === 'context') editContext(o); else if (type === 'beliefs') go('beliefs', { beliefId: id, beliefDraft: null, beliefStep: 0 });
+  else if (type === 'methodology') editMethod(o); else if (type === 'intelligence') editIntelligence(o); else if (type === 'context') editContext(o); else if (type === 'beliefs') go('beliefs', { beliefId: id, beliefDraft: null, beliefStep: 0 });
 }
 function itemTitle(type, o) { return type === 'sessions' ? `${sref(o)} · ${o.title}` : o.name || o.title || o.text || o.label || o.belief || o.id; }
 function runSearch(q) {
