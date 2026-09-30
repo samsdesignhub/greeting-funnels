@@ -242,6 +242,12 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 1px var(--acc
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
 
 .note{font-size:12.5px;color:var(--ink-3)}
+.mode-row{flex-wrap:wrap;gap:8px;padding:12px 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}
+.mode-row .lbl{font-weight:600;font-size:14px}
+.mode-row .seg button{padding:0 12px;font-size:13px}
+.hint.bad{color:var(--warn);font-weight:600}
+.now-box{border:1px dashed var(--line-strong);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--ink-2)}
+.now-box b{color:var(--ink)}
 .linkbtn{all:unset;cursor:pointer;align-self:flex-start;font-size:13px;font-weight:600;color:var(--accent-ink);border-bottom:1px dashed currentColor}
 .linkbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hero.loss{background:var(--warn-soft)}
@@ -472,6 +478,14 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
         <div class="split"><label for="g-price">Offer price</label>
           <div class="affix pre"><i class="cs">$</i><input class="inp num" id="g-price" type="number" min="1" value="497"></div></div>
       </div>
+      <div class="split mode-row">
+        <span class="lbl">Enter your funnel as</span>
+        <div class="seg" id="g-mode" role="group" aria-label="Input mode">
+          <button type="button" data-m="rates" aria-pressed="true">Rates %</button>
+          <button type="button" data-m="counts" aria-pressed="false">Monthly numbers</button>
+        </div>
+      </div>
+      <div class="stack" id="g-rates">
       <div class="field">
         <div class="split"><label for="g-opt">Opt-in rate</label>
           <div class="affix post"><input class="inp num" id="g-opt" type="number" min="0.1" max="100" step="0.5" value="30"><i>%</i></div></div>
@@ -489,6 +503,33 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
           <div class="affix post"><input class="inp num" id="g-close" type="number" min="0.1" max="100" step="0.5" value="20"><i>%</i></div></div>
         <input type="range" id="g-close-r" min="1" max="80" step="0.5" value="20" aria-label="Close rate slider">
         <span class="hint">Of those, how many buy</span>
+      </div>
+      </div>
+      <div class="stack" id="g-counts" hidden>
+        <div class="field">
+          <div class="split"><label for="g-nvis">Visitors this month</label>
+            <div class="affix"><input class="inp num" id="g-nvis" type="number" min="0" step="10" value="2000" style="padding-right:12px"></div></div>
+          <input type="range" id="g-nvis-r" min="0" max="20000" step="50" value="2000" aria-label="Visitors slider">
+          <span class="hint">People who landed on your first page</span>
+        </div>
+        <div class="field">
+          <div class="split"><label for="g-nlead">Leads this month</label>
+            <div class="affix"><input class="inp num" id="g-nlead" type="number" min="0" step="1" value="600" style="padding-right:12px"></div></div>
+          <input type="range" id="g-nlead-r" min="0" max="5000" step="5" value="600" aria-label="Leads slider">
+          <span class="hint" id="g-nlead-h"></span>
+        </div>
+        <div class="field">
+          <div class="split"><label for="g-nstep">Took the next step</label>
+            <div class="affix"><input class="inp num" id="g-nstep" type="number" min="0" step="1" value="60" style="padding-right:12px"></div></div>
+          <input type="range" id="g-nstep-r" min="0" max="1000" step="1" value="60" aria-label="Next step slider">
+          <span class="hint" id="g-nstep-h"></span>
+        </div>
+        <div class="field">
+          <div class="split"><label for="g-nsale">Sales this month</label>
+            <div class="affix"><input class="inp num" id="g-nsale" type="number" min="0" step="1" value="12" style="padding-right:12px"></div></div>
+          <input type="range" id="g-nsale-r" min="0" max="300" step="1" value="12" aria-label="Sales slider">
+          <span class="hint" id="g-nsale-h"></span>
+        </div>
       </div>
       <div class="field">
         <div class="split"><label for="g-cpc">Cost per visitor (if paid)</label>
@@ -977,11 +1018,55 @@ footer .disclaimer{color:var(--ink-3);font-size:12.5px}
   document.querySelectorAll(".pp").forEach(i=>i.addEventListener("input",renderAll));
 
   /* ================= REVENUE GOAL ================= */
+  let gMode="rates";
+  const COUNT_IDS=["g-nvis","g-nlead","g-nstep","g-nsale"];
+  COUNT_IDS.forEach(id=>{
+    const A=$(id),B=$(id+"-r");
+    A.addEventListener("input",()=>{const v=Math.max(0,n(A.value));if(v>n(B.max))B.max=Math.ceil(v*1.5/100)*100;B.value=v;renderAll()});
+    B.addEventListener("input",()=>{A.value=B.value;renderAll()});
+  });
+  function setCount(id,v){v=Math.max(0,Math.round(v));$(id).value=v;const B=$(id+"-r");if(v>n(B.max))B.max=Math.ceil(v*1.5/100)*100;B.value=v}
+  function setRate(id,v){v=Math.round(v*1000)/10;$(id).value=v;$(id+"-r").value=v}
+  function countRates(){
+    const v=n($("g-nvis").value),l=n($("g-nlead").value),m=n($("g-nstep").value),c=n($("g-nsale").value);
+    return {v,l,m,c,opt:v>0?l/v:0,step:l>0?m/l:0,close:m>0?c/m:0};
+  }
+  $("g-mode").addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b||b.dataset.m===gMode)return;
+    if(b.dataset.m==="counts"){
+      // start from the rates already entered so both views agree
+      const v=Math.max(1,n($("g-nvis").value)), opt=n($("g-opt").value)/100, st=n($("g-call").value)/100, cl=n($("g-close").value)/100;
+      const l=Math.round(v*opt), m=Math.round(l*st);
+      setCount("g-nlead",l);setCount("g-nstep",m);setCount("g-nsale",Math.round(m*cl));
+    }else{
+      const r=countRates();
+      if(r.opt>0)setRate("g-opt",r.opt);if(r.step>0)setRate("g-call",r.step);if(r.close>0)setRate("g-close",r.close);
+    }
+    gMode=b.dataset.m;
+    document.querySelectorAll("#g-mode button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    $("g-rates").hidden=gMode!=="rates";$("g-counts").hidden=gMode!=="counts";
+    renderAll();
+  });
   function renderGoal(){
-    const G=goal(), p=Math.max(1,n($("g-price").value)), opt=n($("g-opt").value)/100, step=n($("g-call").value)/100, close=n($("g-close").value)/100, cpc=n($("g-cpc").value);
-    const cust=Math.ceil(G/p), mid=close>0?Math.ceil(cust/close):0, leads=step>0?Math.ceil(mid/step):0, vis=opt>0?Math.ceil(leads/opt):0;
+    const G=goal(), p=Math.max(1,n($("g-price").value)), cpc=n($("g-cpc").value);
+    let opt=n($("g-opt").value)/100, step=n($("g-call").value)/100, close=n($("g-close").value)/100, R=null;
+    if(gMode==="counts"){
+      R=countRates(); opt=R.opt; step=R.step; close=R.close;
+      const hint=(id,rate,txt,over)=>{const h=$(id);h.classList.toggle("bad",over);
+        h.textContent=over?"This is more than the step above. Check the number.":(rate>0?pct(rate*100)+" "+txt:"Enter a number above 0");};
+      hint("g-nlead-h",R.opt,"of visitors became leads (opt-in rate)",R.l>R.v);
+      hint("g-nstep-h",R.step,"of leads took the next step",R.m>R.l);
+      hint("g-nsale-h",R.close,"of them bought (close rate)",R.c>R.m);
+    }
+    if(!(opt>0&&step>0&&close>0)){
+      $("g-hero").innerHTML='<div class="eyebrow">To make '+money(G,0)+' a month</div><div class="big num">–</div><p>Enter visitors, leads, next steps and sales above 0 to work out what your goal needs.</p>';
+      $("g-funnel").innerHTML="";$("g-tiles").innerHTML="";$("g-rate").innerHTML="";return;
+    }
+    const cust=Math.ceil(G/p), mid=Math.ceil(cust/close), leads=Math.ceil(mid/step), vis=Math.ceil(leads/opt);
     const overall=vis>0?cust/vis*100:0, adSpend=vis*cpc, profit=cust*p-adSpend;
-    $("g-hero").innerHTML='<div class="eyebrow">To make '+money(G,0)+' a month</div><div class="big num">'+int(cust)+' customers</div><p>from <b>'+int(leads)+' leads</b> and <b>'+int(vis)+' visitors</b>. If traffic is paid: <b>'+money(adSpend,0)+'</b> ad spend, <b>'+money(profit,0)+'</b> left after ads.</p>';
+    $("g-hero").innerHTML='<div class="eyebrow">To make '+money(G,0)+' a month</div><div class="big num">'+int(cust)+' customers</div><p>from <b>'+int(leads)+' leads</b> and <b>'+int(vis)+' visitors</b>. If traffic is paid: <b>'+money(adSpend,0)+'</b> ad spend, <b>'+money(profit,0)+'</b> left after ads.</p>'+
+      (R?'<div class="now-box" style="margin-top:12px">Right now: <b>'+int(R.c)+' sales</b> bring in <b>'+money(R.c*p,0)+'</b> a month, '+(G?Math.round(R.c*p/G*100):0)+'% of your goal. '+
+        (R.c*p>=G?'You are already at your goal.':(R.v>0?'At your current rates you need <b>'+(Math.round(vis/R.v*10)/10)+'×</b> your traffic, about <b>'+int(Math.max(0,vis-R.v))+' more visitors</b> a month.':''))+'</div>':'');
     const steps=[["Visitors",vis,null],["Leads",leads,opt],["Take next step",mid,step],["Customers",cust,close]];
     const mx=Math.max(vis,1), lmx=Math.log10(mx+1);
     $("g-funnel").innerHTML=steps.map((s,i)=>{
