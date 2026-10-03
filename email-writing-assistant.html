@@ -250,7 +250,14 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .rfoot{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .stale{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--warn);background:var(--warn-soft);border-radius:10px;padding:8px 12px;margin-bottom:14px}
 .stale svg.i{width:16px;height:16px}
-.email-foot{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:18px}
+.email-foot{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.versions:empty{display:none}
+.foot-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.foot-actions .btn:not(.primary){padding:12px 18px;font-size:15px;background:var(--surface)}
+.foot-actions .btn:not(.primary):hover:not(:disabled){background:var(--surface-2)}
+.foot-actions .btn.on{background:var(--brand-soft);color:var(--brand)}
+.tsep + .tlabel{min-width:0}
+.tsep{width:1px;align-self:stretch;min-height:28px;background:var(--line-2);margin-inline:4px}
 .versions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .vbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2)}
 .vbtn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
@@ -371,6 +378,8 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
   .cats,.rcols{grid-template-columns:minmax(0,1fr)}
   .lib-top{grid-template-columns:minmax(0,1fr)}
   .tlabel{min-width:0;flex-basis:100%}
+  .tsep{display:none}
+  .foot-actions .btn{flex:1 1 auto}
   .setting{grid-template-columns:minmax(0,1fr);gap:8px}
   .setting .s-label{padding-top:0}
   .step-label{display:none}
@@ -1425,6 +1434,7 @@ const ICON = {
   wand: '<svg class="i sm" viewBox="0 0 24 24"><path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/></svg>',
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   device: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  download: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
   dup: '<svg class="i sm" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
   trash: '<svg class="i sm" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
   open: '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>',
@@ -1656,12 +1666,9 @@ const View = {
         </div>
         <div class="meter ${m.cls}" id="meter" aria-live="polite">${m.html}</div>
         <div class="toolbar">
-          <div class="tgroup">
-            <button class="btn sm soft" type="button" data-copy="full" title="Copies the subject line, preview text and email">${ICON.copy}Copy Full Email</button>
-            <button class="btn sm" type="button" data-act="email-regenerate">${ICON.refresh}Regenerate</button>
-            <button class="btn sm ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
-          </div>
           <div class="tgroup" role="group" aria-label="Review">
+            <button class="btn sm" type="button" data-act="email-regenerate">${ICON.refresh}Regenerate</button>
+            <span class="tsep" aria-hidden="true"></span>
             <span class="tlabel">Review:</span>
             <button class="btn sm" type="button" data-review="audit">${ICON.gauge}Score &amp; Audit</button>
             <button class="btn sm" type="button" data-review="claims">${ICON.shield}Check Claims</button>
@@ -1680,7 +1687,12 @@ const View = {
         <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => rt.confirmVersion === i
           ? `<span class="vconfirm" role="group" aria-label="Confirm removal">Remove v${i + 1}?<button class="btn sm danger solid" type="button" data-vdel-yes="${i}">Remove</button><button class="btn sm" type="button" data-vdel-no>Keep</button></span>`
           : `<span class="vpill ${i === s.active ? "on" : ""} ${i === 0 ? "keep" : ""}"><button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button>${i === 0 ? "" : `<button type="button" class="vx" data-vdel="${i}" title="Remove this version" aria-label="Remove version ${i + 1}">${ICON.x}</button>`}</span>`).join("") : ""}</div>
-        <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Generate Another Version</button>
+        <div class="foot-actions">
+          <button class="btn" type="button" data-copy="full" title="Copies the subject line, preview text and email">${ICON.copy}Copy All</button>
+          <button class="btn ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
+          <button class="btn" type="button" data-act="download" ${App.downloads ? "" : "hidden"} title="Save this email as a text file">${ICON.download}Download</button>
+          <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Write Another Version</button>
+        </div>
       </div>`;
     el.innerHTML = html;
     ["subject", "preview"].forEach(id => this.autosize($("#" + id)));
@@ -1827,6 +1839,22 @@ const App = {
     View.s1Error("");
   },
 
+  downloads: null,
+  async download() {
+    const v = Store.currentVersion();
+    if (!v || !this.downloads) return;
+    const slug = (v.subject || "email").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "email";
+    const text = `Subject: ${v.subject}\nPreview: ${v.preview}\n\n${v.body}\n`;
+    try {
+      const r = await this.downloads.save({ filename: slug + ".txt", data: text });
+      if (r && r.status === "saved") View.toast("Email downloaded");
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "declined") return;
+      View.toast(code === "rate_limited" ? "A download prompt is already open" : "Download isn't available here. Use Copy All instead.");
+    }
+  },
+
   removeVersion(i) {
     const s = Store.state;
     Store.runtime.confirmVersion = null;
@@ -1937,6 +1965,7 @@ const App = {
         case "cancel": Generator.cancel(); View.toast("Stopped"); break;
         case "new-email": App.newEmail(); break;
         case "continue": App.continueEditing(); break;
+        case "download": App.download(); break;
         case "ideas": Generator.ideas(); break;
         case "email-new": Generator.email("new"); break;
         case "email-regenerate": Generator.email("regenerate"); break;
@@ -1970,6 +1999,8 @@ const App = {
     this.bind();
     View.render(); View.status();
     Library.init();
+    if (window.claude && typeof window.claude.use === "function")
+      Promise.resolve(window.claude.use("downloads")).then(d => { this.downloads = d; if (d) View.email(); }).catch(() => {});
   }
 };
 
