@@ -201,8 +201,52 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .meter.near .bar i{background:var(--warn)} .meter.near .state{color:var(--warn)}
 .meter.over .bar i{background:var(--bad)} .meter.over .state{color:var(--bad)}
 .meter.ok .state{color:var(--good)}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
-.toolbar .sep{width:1px;background:var(--line-2);margin-inline:4px}
+.toolbar{display:flex;flex-direction:column;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
+.tgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tgroup + .tgroup{padding-top:10px;border-top:1px dashed var(--line-2)}
+.tlabel{font-size:13px;color:var(--muted);font-weight:500;min-width:78px}
+.toolbar .btn.sm{padding-inline:10px;gap:6px}
+
+/* Review panels */
+.review{margin-top:18px;display:flex;flex-direction:column;gap:14px}
+.review:empty{display:none}
+.rcard{border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--surface)}
+.rhead{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.rhead .grow{flex:1;min-width:0}
+.rhead h3{font-size:17px;font-weight:700}
+.rhead p{font-size:14px;color:var(--ink-2);margin-top:2px}
+.score{--p:0;--c:var(--brand);width:84px;height:84px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--p) * 1%),var(--line) 0)}
+.score b{width:66px;height:66px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:23px;font-weight:800;
+  letter-spacing:-.03em;color:var(--c);font-variant-numeric:tabular-nums;line-height:1}
+.score b small{display:block;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:0;margin-top:3px}
+.score.good{--c:var(--good)} .score.warn{--c:var(--warn)} .score.bad{--c:var(--bad)}
+.cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px;margin-bottom:18px}
+.cat-top{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600}
+.cat-top span{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.cat .mini{height:6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-block:5px 4px}
+.cat .mini i{display:block;height:100%;border-radius:999px;background:var(--brand)}
+.cat .mini i.good{background:var(--good)} .cat .mini i.warn{background:var(--warn)} .cat .mini i.bad{background:var(--bad)}
+.cat p{font-size:12.5px;color:var(--muted)}
+.rcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.rlist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.rlist li{display:flex;gap:10px;font-size:14px;color:var(--ink-2)}
+.rlist li b{color:var(--ink);font-weight:600;display:block}
+.rlist .mk{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px}
+.rlist .mk svg.i{width:13px;height:13px;stroke-width:2.6}
+.mk.good{background:var(--good-soft);color:var(--good)} .mk.warn{background:var(--warn-soft);color:var(--warn)}
+.claims{display:flex;flex-direction:column;gap:10px}
+.claim{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.claim q{font-weight:600;font-size:14.5px}
+.claim .why{font-size:13.5px;color:var(--ink-2)}
+.claim .fix{font-size:13.5px;color:var(--ink-2);background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.claim .fix b{color:var(--ink)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.tally{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.rfoot{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.stale{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--warn);background:var(--warn-soft);border-radius:10px;padding:8px 12px;margin-bottom:14px}
+.stale svg.i{width:16px;height:16px}
 .email-foot{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:18px}
 .versions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .vbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2)}
@@ -267,6 +311,8 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
   .idea{grid-template-columns:minmax(0,1fr)}
   .tones{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid3{grid-template-columns:minmax(0,1fr)}
+  .cats,.rcols{grid-template-columns:minmax(0,1fr)}
+  .tlabel{min-width:0;flex-basis:100%}
   .setting{grid-template-columns:minmax(0,1fr);gap:8px}
   .setting .s-label{padding-top:0}
   .step-label{display:none}
@@ -277,7 +323,6 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
 @media (max-width:480px){
   .tones{grid-template-columns:minmax(0,1fr)}
   .ed-row,.ed-body,.meter,.toolbar{padding-inline:14px}
-  .toolbar .sep{display:none}
   .btn.primary{width:100%}
   .gen-group{width:100%}
   .subtitle{font-size:15.5px}
@@ -536,7 +581,7 @@ const Store = {
     versions: [], active: -1
   }),
   state: null,
-  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "" },
+  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "" },
   load() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch (e) { saved = null; }
@@ -749,11 +794,17 @@ Reply with only this JSON:
   refine(s, current, kind) {
     const r = Config.REFINES[kind];
     const target = kind === "shorten" ? Math.min(s.limit, Math.max(25, Math.round(Text.words(current.body) * 0.7))) : s.limit;
+    return this.revise(s, current, r.ins, target);
+  },
+  revise(s, current, instruction, target, withHeaders = false) {
+    const out = withHeaders
+      ? `{"subject":"the subject line (unchanged unless it held a flagged claim)","preview":"the preview text (unchanged unless it held a flagged claim)","body":"the revised email body as plain text with \\n\\n between paragraphs"}`
+      : `{"body":"the revised email body as plain text with \\n\\n between paragraphs"}`;
     return `You are editing a marketing email. Keep its core idea, facts, call to action and placeholders. Don't add new facts, numbers, stories or offers.
 
 ${this.settings(s)}
 
-EDIT: ${r.ins}
+EDIT: ${instruction}
 
 CURRENT EMAIL
 Subject: ${current.subject}
@@ -765,7 +816,53 @@ ${current.body}
 ${this.rules(target)}
 
 Reply with only this JSON:
-{"body":"the revised email body as plain text with \\n\\n between paragraphs"}`;
+${out}`;
+  },
+  audit(s, v) {
+    return `EMAIL AUDIT. You are a demanding senior email copywriter reviewing a marketing email before it is sent. Be honest and specific; don't inflate scores.
+
+${this.brief(s)}
+
+${this.settings(s)}
+Word limit: ${s.limit} words.
+
+EMAIL
+Subject: ${v.subject}
+Preview: ${v.preview}
+Body:
+"""
+${v.body}
+"""
+
+Score each category from 0 to 10 with a one-line note: Subject line, Opening hook, Clarity, Readability, Emotional pull, Call to action, Fit with tone & approach.
+Then give an overall score from 0 to 100, a one-sentence verdict, 2-4 specific strengths, and the 2-5 most important fixes. Each fix names the problem (quote the words when useful) and says exactly how to fix it. Never suggest adding facts, numbers or testimonials the sender didn't provide.
+
+Reply with only this JSON:
+{"score":78,"verdict":"one sentence","categories":[{"name":"Subject line","score":7,"note":"one line"}],"strengths":["..."],"fixes":[{"issue":"short problem","suggestion":"how to fix it"}]}`;
+  },
+  claims(s, v) {
+    return `CLAIMS CHECK. You are a careful editor checking a marketing email for claims that could mislead readers or that the sender can't back up.
+
+What the sender told us is the ONLY evidence available:
+${this.brief(s)}
+
+EMAIL
+Subject: ${v.subject}
+Preview: ${v.preview}
+Body:
+"""
+${v.body}
+"""
+
+Find every claim in the subject, preview and body: statistics or numbers, results or outcomes, promises, guarantees, urgency or scarcity, facts about the sender's business, comparisons, and testimonial-like statements. Ignore opinions clearly framed as opinion, and the placeholders in square brackets.
+Set "status" for each:
+- "supported" if it follows directly from what the sender said,
+- "needs_proof" if it could be true but the sender gave no evidence,
+- "risky" if it is a guarantee, an invented specific, fake urgency, or likely to mislead.
+For needs_proof and risky claims, give a safer rewrite that keeps the meaning honestly. For supported claims leave "fix" empty.
+
+Reply with only this JSON:
+{"summary":"one sentence","claims":[{"text":"exact quote from the email","type":"statistic|result|promise|guarantee|urgency|business fact|comparison|testimonial","status":"supported|needs_proof|risky","reason":"one line","fix":"safer rewrite or empty"}]}`;
   },
   fit(body, limit) {
     return `This email body is ${Text.words(body)} words, but the hard maximum is ${limit} words (greeting and sign-off count). Rewrite it to about ${Math.round(limit * 0.85)} words.
@@ -882,8 +979,85 @@ const Generator = {
       const res = await AI.json(Prompts.refine(s, cur, kind), signal);
       if (!res || typeof res.body !== "string" || !res.body.trim()) throw { code: "bad_shape" };
       const body = await this.enforceLimit(Text.clean(res.body), signal);
-      this.addVersion(Object.assign({}, cur, { label: r.label, body }));
+      this.addVersion(Object.assign({}, cur, { label: r.label, body, audit: null, claims: null }));
       View.toast(r.toast);
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.emailError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  },
+
+  /* Reviews read the active version and attach their result to it. */
+  async review(kind) {
+    const s = Store.state, rt = Store.runtime, v = Store.currentVersion();
+    if (!v) return;
+    const notes = { audit: "Scoring your email and looking for weak spots…", claims: "Checking every claim against what you told us…" };
+    const signal = this.begin("review", notes[kind]);
+    rt.reviewKind = kind; rt.reviewError = ""; rt.editing = false;
+    View.render();
+    try {
+      const res = await AI.json(kind === "audit" ? Prompts.audit(s, v) : Prompts.claims(s, v), signal);
+      const stamp = { forBody: v.body, forSubject: v.subject, forPreview: v.preview };
+      if (kind === "audit") {
+        if (!res || !Number.isFinite(Number(res.score))) throw { code: "bad_shape" };
+        v.audit = Object.assign({
+          score: Math.max(0, Math.min(100, Math.round(Number(res.score)))),
+          verdict: String(res.verdict || ""),
+          categories: (Array.isArray(res.categories) ? res.categories : []).filter(Boolean).slice(0, 8)
+            .map(c => ({ name: String(c.name || ""), score: Math.max(0, Math.min(10, Math.round(Number(c.score) || 0))), note: String(c.note || "") })),
+          strengths: (Array.isArray(res.strengths) ? res.strengths : []).slice(0, 5).map(String),
+          fixes: (Array.isArray(res.fixes) ? res.fixes : []).filter(Boolean).slice(0, 6)
+            .map(f => ({ issue: String(f.issue || ""), suggestion: String(f.suggestion || "") }))
+        }, stamp);
+        View.toast(`Scored ${v.audit.score} / 100`);
+      } else {
+        if (!res || !Array.isArray(res.claims)) throw { code: "bad_shape" };
+        const ok = ["supported", "needs_proof", "risky"];
+        v.claims = Object.assign({
+          summary: String(res.summary || ""),
+          items: res.claims.filter(c => c && c.text).slice(0, 15)
+            .map(c => ({ text: String(c.text), type: String(c.type || ""), status: ok.includes(c.status) ? c.status : "needs_proof", reason: String(c.reason || ""), fix: String(c.fix || "") }))
+        }, stamp);
+        const flagged = v.claims.items.filter(c => c.status !== "supported").length;
+        View.toast(flagged ? `${flagged} claim${flagged === 1 ? "" : "s"} to look at` : "No problem claims found");
+      }
+      Store.save();
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.reviewError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  },
+
+  async applyReview(kind) {
+    const s = Store.state, rt = Store.runtime, cur = Store.currentVersion();
+    if (!cur) return;
+    let ins = "", label = "";
+    if (kind === "audit" && cur.audit && cur.audit.fixes.length) {
+      ins = "Apply these review fixes and keep everything else that already works:\n" + cur.audit.fixes.map((f, i) => `${i + 1}. ${f.issue} — ${f.suggestion}`).join("\n");
+      label = "Audit fixes";
+    } else if (kind === "claims" && cur.claims) {
+      const bad = cur.claims.items.filter(c => c.status !== "supported");
+      if (!bad.length) return;
+      ins = "Fix these claims. Use the safer wording, or remove the claim if it can't be made honest. Don't add new claims. If a claim is in the subject or preview, fix it there too:\n"
+        + bad.map((c, i) => `${i + 1}. "${c.text}" (${c.status === "risky" ? "risky" : "needs proof"}: ${c.reason})${c.fix ? ` → ${c.fix}` : ""}`).join("\n");
+      label = "Claims fixed";
+    } else return;
+    const signal = this.begin("email", kind === "audit" ? "Applying the review fixes…" : "Rewriting the flagged claims…");
+    rt.emailError = ""; rt.editing = false;
+    View.render();
+    try {
+      const res = await AI.json(Prompts.revise(s, cur, ins, s.limit, kind === "claims"), signal);
+      if (!res || typeof res.body !== "string" || !res.body.trim()) throw { code: "bad_shape" };
+      const body = await this.enforceLimit(Text.clean(res.body), signal);
+      const next = Object.assign({}, cur, { label, body, audit: null, claims: null });
+      if (kind === "claims") {
+        if (res.subject) next.subject = String(res.subject).trim();
+        if (res.preview) next.preview = String(res.preview).trim();
+      }
+      this.addVersion(next);
+      View.toast(kind === "audit" ? "Fixes applied" : "Claims fixed");
     } catch (e) {
       if (e && e.code !== "cancelled") rt.emailError = AI.errorCopy(e);
     } finally {
@@ -907,6 +1081,10 @@ const ICON = {
   chat: '<svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   target: '<svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
   pen: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  gauge: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></svg>',
+  shield: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  x: '<svg class="i sm" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  wand: '<svg class="i sm" viewBox="0 0 24 24"><path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/></svg>',
   layers: '<svg class="i" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>',
   bulb: '<svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
   mail: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>',
@@ -1057,17 +1235,26 @@ const View = {
         </div>
         <div class="meter ${m.cls}" id="meter" aria-live="polite">${m.html}</div>
         <div class="toolbar">
-          <button class="btn sm soft" type="button" data-copy="body">${ICON.copy}Copy Email</button>
-          <button class="btn sm" type="button" data-act="email-regenerate">${ICON.refresh}Regenerate</button>
-          <span class="sep" aria-hidden="true"></span>
-          <button class="btn sm" type="button" data-refine="shorten">${ICON.cut}Shorten</button>
-          <button class="btn sm" type="button" data-refine="emotional">${ICON.heart}Make More Emotional</button>
-          <button class="btn sm" type="button" data-refine="conversational">${ICON.chat}Make More Conversational</button>
-          <button class="btn sm" type="button" data-refine="direct">${ICON.target}Make More Direct</button>
-          <span class="sep" aria-hidden="true"></span>
-          <button class="btn sm ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
+          <div class="tgroup">
+            <button class="btn sm soft" type="button" data-copy="full" title="Copies the subject line, preview text and email">${ICON.copy}Copy Full Email</button>
+            <button class="btn sm" type="button" data-act="email-regenerate">${ICON.refresh}Regenerate</button>
+            <button class="btn sm ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
+          </div>
+          <div class="tgroup" role="group" aria-label="Review">
+            <span class="tlabel">Review:</span>
+            <button class="btn sm" type="button" data-review="audit">${ICON.gauge}Score &amp; Audit</button>
+            <button class="btn sm" type="button" data-review="claims">${ICON.shield}Check Claims</button>
+          </div>
+          <div class="tgroup" role="group" aria-label="Rewrite the whole email">
+            <span class="tlabel">Whole email:</span>
+            <button class="btn sm" type="button" data-refine="shorten">${ICON.cut}Shorter</button>
+            <button class="btn sm" type="button" data-refine="emotional">${ICON.heart}More Emotional</button>
+            <button class="btn sm" type="button" data-refine="conversational">${ICON.chat}More Conversational</button>
+            <button class="btn sm" type="button" data-refine="direct">${ICON.target}More Direct</button>
+          </div>
         </div>
       </div>
+      <div class="review" id="review">${this.review(v)}</div>
       <div class="email-foot">
         <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => `<button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button>`).join("") : ""}</div>
         <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Generate Another Version</button>
@@ -1075,6 +1262,64 @@ const View = {
     el.innerHTML = html;
     ["subject", "preview"].forEach(id => this.autosize($("#" + id)));
     this.autosize($("#body"), 360);
+  },
+
+  review(v) {
+    const rt = Store.runtime;
+    const tone = (n, max) => { const p = n / max; return p >= 0.8 ? "good" : p >= 0.6 ? "warn" : "bad"; };
+    const stale = (r) => (r.forBody !== v.body || r.forSubject !== v.subject || r.forPreview !== v.preview)
+      ? `<div class="stale">${ICON.alert}The email changed after this check. Run it again to review the latest text.</div>` : "";
+    const running = (k) => rt.busy === "review" && rt.reviewKind === k;
+    let html = "";
+    if (rt.busy === "review") {
+      html += `<div class="rcard">${this.loading(rt.note)}<div style="display:flex;flex-direction:column;gap:10px" aria-hidden="true">
+        ${[70, 90, 55, 80].map(w => `<div class="skel" style="height:12px;width:${w}%"></div>`).join("")}</div></div>`;
+    }
+    if (rt.reviewError) html += `<div class="alert" style="margin:0">${ICON.alert}<div><b>Couldn't finish the review.</b> ${esc(rt.reviewError)}</div></div>`;
+    const a = v.audit;
+    if (a && !running("audit")) {
+      const t = tone(a.score, 100);
+      html += `<section class="rcard" aria-label="Score and audit">
+        <div class="rhead">
+          <div class="score ${t}" style="--p:${a.score}"><b>${a.score}<small>/ 100</small></b></div>
+          <div class="grow"><div class="eyebrow">Score &amp; Audit</div><h3>${esc(a.verdict || "Review complete")}</h3><p>Scored against your idea, voice and approach.</p></div>
+          <button class="btn ghost sm" type="button" data-dismiss="audit" aria-label="Close the audit">${ICON.x}</button>
+        </div>
+        ${stale(a)}
+        ${a.categories.length ? `<div class="cats">${a.categories.map(c => `<div class="cat"><div class="cat-top">${esc(c.name)}<span>${c.score}/10</span></div>
+          <div class="mini"><i class="${tone(c.score, 10)}" style="width:${c.score * 10}%"></i></div><p>${esc(c.note)}</p></div>`).join("")}</div>` : ""}
+        <div class="rcols">
+          <div><div class="eyebrow">What works</div><ul class="rlist">${a.strengths.map(x => `<li><span class="mk good">${ICON.check}</span><span>${esc(x)}</span></li>`).join("") || "<li>No standout strengths noted.</li>"}</ul></div>
+          <div><div class="eyebrow">What to fix</div><ul class="rlist">${a.fixes.map(f => `<li><span class="mk warn">${ICON.alert}</span><span><b>${esc(f.issue)}</b>${esc(f.suggestion)}</span></li>`).join("") || "<li>Nothing important. This one is ready to send.</li>"}</ul></div>
+        </div>
+        ${a.fixes.length ? `<div class="rfoot"><span class="hint">Creates a new version. The current one stays in your version list.</span>
+          <button class="btn soft sm" type="button" data-apply="audit">${ICON.wand}Apply these fixes</button></div>` : ""}
+      </section>`;
+    }
+    const c = v.claims;
+    if (c && !running("claims")) {
+      const n = { supported: 0, needs_proof: 0, risky: 0 };
+      c.items.forEach(x => n[x.status]++);
+      const meta = { supported: ["good", "Supported"], needs_proof: ["warn", "Needs proof"], risky: ["bad", "Risky"] };
+      html += `<section class="rcard" aria-label="Claims check">
+        <div class="rhead">
+          <div class="ico">${ICON.shield.replace('class="i sm"', 'class="i"')}</div>
+          <div class="grow"><div class="eyebrow">Check Claims</div><h3>${esc(c.summary || (c.items.length ? "Claims found in this email" : "No factual claims found"))}</h3>
+            <div class="tally">${Object.keys(n).map(k => `<span class="pill ${meta[k][0]}">${n[k]} ${meta[k][1]}</span>`).join("")}</div></div>
+          <button class="btn ghost sm" type="button" data-dismiss="claims" aria-label="Close the claims check">${ICON.x}</button>
+        </div>
+        ${stale(c)}
+        ${c.items.length ? `<div class="claims">${c.items.map(x => `<div class="claim">
+          <div class="row"><span class="pill ${meta[x.status][0]}">${meta[x.status][1]}</span>${x.type ? `<span class="chip">${esc(x.type)}</span>` : ""}</div>
+          <q>${esc(x.text)}</q>
+          ${x.reason ? `<p class="why">${esc(x.reason)}</p>` : ""}
+          ${x.status !== "supported" && x.fix ? `<p class="fix"><b>Safer:</b> ${esc(x.fix)}</p>` : ""}
+        </div>`).join("")}</div>` : `<p class="hint">Nothing here makes a factual claim, promise or guarantee that needs backing up.</p>`}
+        ${n.needs_proof + n.risky ? `<div class="rfoot"><span class="hint">Rewrites only the flagged claims, in a new version.</span>
+          <button class="btn soft sm" type="button" data-apply="claims">${ICON.wand}Fix flagged claims</button></div>` : ""}
+      </section>`;
+    }
+    return html;
   },
 
   autosize(el, min = 0) {
@@ -1112,7 +1357,7 @@ const View = {
     const busy = !!Store.runtime.busy;
     ["#genIdeas", "#regenIdeas", "#genEmail"].forEach(sel => { $(sel).disabled = busy; });
     $("#regenIdeas").hidden = !Store.state.ideas.length;
-    document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another]").forEach(b => b.disabled = busy);
+    document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another], [data-apply]").forEach(b => b.disabled = busy);
     const n = Validate.ideaCount(Store.state.ideaCount), plural = n === 1 ? "Idea" : "Ideas";
     $("#genIdeasLabel").textContent = `Generate ${n} ${plural}`;
     $("#regenIdeas").lastChild.textContent = `Regenerate ${plural}`;
@@ -1207,11 +1452,15 @@ const App = {
       if (t.dataset.tone) { Store.set({ tone: t.dataset.tone }); View.tones(); View.settings(); View.brief(); return; }
       if (t.dataset.preset) { Store.set({ limit: Number(t.dataset.preset) }); View.settings(); View.brief(); View.updateMeter(); return; }
       if (t.dataset.refine) { Generator.refine(t.dataset.refine); return; }
+      if (t.dataset.review) { Generator.review(t.dataset.review); return; }
+      if (t.dataset.apply) { Generator.applyReview(t.dataset.apply); return; }
+      if (t.dataset.dismiss) { const v = Store.currentVersion(); if (v) { v[t.dataset.dismiss] = null; Store.save(); View.email(); View.buttons(); } return; }
       if (t.dataset.version != null) { Store.runtime.editing = false; Store.set({ active: Number(t.dataset.version) }); View.render(); return; }
       if (t.dataset.copy) {
         const v = Store.currentVersion(); if (!v) return;
-        const labels = { subject: "Subject line", preview: "Preview text", body: "Email" };
-        App.copy(v[t.dataset.copy] || "", labels[t.dataset.copy]); return;
+        const labels = { subject: "Subject line", preview: "Preview text", full: "Full email" };
+        const text = t.dataset.copy === "full" ? `Subject: ${v.subject}\nPreview: ${v.preview}\n\n${v.body}` : (v[t.dataset.copy] || "");
+        App.copy(text, labels[t.dataset.copy]); return;
       }
       switch (t.dataset.act) {
         case "cancel": Generator.cancel(); View.toast("Stopped"); break;
