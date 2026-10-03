@@ -287,15 +287,34 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .privacy{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;background:var(--good-soft);color:var(--good)}
 .privacy.local{background:var(--warn-soft);color:var(--warn)}
 .privacy svg.i{width:15px;height:15px}
-.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.lib-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;margin-bottom:22px}
+.current-panel{border:1px solid var(--line);border-radius:16px;background:var(--surface-2);padding:18px 20px;display:flex;flex-direction:column;gap:6px;justify-content:center;min-width:0}
+.current-panel h3{font-size:19px;font-weight:700;overflow-wrap:anywhere}
+.current-panel .state{font-size:13.5px;display:flex;align-items:center;gap:6px;color:var(--muted)}
+.current-panel .state.saved{color:var(--good)}
+.current-panel .state svg.i{width:15px;height:15px;stroke-width:2.4}
+.lib-ctas{display:flex;flex-direction:column;gap:10px}
+.lib-ctas .btn{width:100%;padding-block:14px}
+.lib-ctas .btn.primary{font-size:16px}
+.lib-ctas .btn.outline{background:var(--surface);font-size:15px}
+.lib-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.lib-head .eyebrow{font-size:12.5px}
+.mail .muted-line{font-size:13.5px;color:var(--muted)}
+.icon-btn{width:34px;height:34px;border-radius:10px;border:0;background:none;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+.icon-btn.danger:hover{background:var(--bad-soft);color:var(--bad)}
+.mail.current .icon-btn:hover{background:var(--surface)}
 .mail{border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
 .mail:hover{border-color:var(--brand-line);box-shadow:var(--shadow)}
 .mail.current{border-color:var(--brand);background:var(--brand-soft)}
 .mail-top{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.mail h3{font-size:16.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.mail h3{font-size:17px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.mail .open-now{font-size:13px;font-weight:600;color:var(--brand)}
 .mail .snip{font-size:14px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .mail .chips{display:flex;gap:6px;flex-wrap:wrap}
-.mail-actions{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.mail-actions{display:flex;gap:4px;align-items:center;margin-top:auto;padding-top:14px}
+.mail-actions .btn{padding:9px 16px;font-size:14px}
 .mail-actions .confirm{font-size:13px;font-weight:600;color:var(--bad)}
 .btn.danger{color:var(--bad)}
 .btn.danger.solid{background:var(--bad);color:#fff;border-color:transparent}
@@ -339,6 +358,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
   .tones{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid3{grid-template-columns:minmax(0,1fr)}
   .cats,.rcols{grid-template-columns:minmax(0,1fr)}
+  .lib-top{grid-template-columns:minmax(0,1fr)}
   .tlabel{min-width:0;flex-basis:100%}
   .setting{grid-template-columns:minmax(0,1fr);gap:8px}
   .setting .s-label{padding-top:0}
@@ -378,14 +398,23 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg></div>
           <div class="grow">
             <h2 id="h-s0">My Emails</h2>
-            <p class="sub">Every email you've written here. Open one to keep working on it, or start a new one.</p>
+            <p class="sub">Pick up where you left off, or start a new email. Only you can see your emails, and they save automatically.</p>
           </div>
-          <button class="btn primary" type="button" data-act="new-email"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Email</button>
+        </div>
+        <div class="lib-top">
+          <div class="current-panel" id="currentPanel"></div>
+          <div class="lib-ctas">
+            <button class="btn primary" type="button" data-act="new-email"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Email</button>
+            <button class="btn outline" type="button" data-act="continue" id="continueBtn">Continue editing<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+        <div class="lib-head">
+          <div class="eyebrow" id="libCount">Saved emails</div>
+          <span id="privacy"></span>
         </div>
         <div class="lib-bar">
           <div class="search"><svg class="i sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <input id="libSearch" class="field" type="search" placeholder="Search your emails" aria-label="Search your emails"></div>
-          <span id="privacy"></span>
         </div>
         <div id="libArea"></div>
       </section>
@@ -1267,7 +1296,7 @@ const Library = {
     if (!v) return null;
     const project = {};
     ["thoughts", "audience", "promoting", "action", "ideaCount", "ideas", "ideasFor", "pastIdeas", "selectedIdea",
-      "tone", "approach", "emailType", "filler", "limit", "limitUnit", "versions", "active", "step", "maxStep"].forEach(k => { project[k] = s[k]; });
+      "tone", "approach", "emailType", "filler", "limit", "limitUnit", "versions", "active", "step", "maxStep", "lastStep"].forEach(k => { project[k] = s[k]; });
     // Stay well under the 256 KiB document cap: drop the oldest versions first.
     while (JSON.stringify(project).length > 200000 && project.versions.length > 1) {
       project.versions = project.versions.slice(1);
@@ -1300,10 +1329,12 @@ const Library = {
     const sig = JSON.stringify([rec.project, rec.subject, rec.preview]);
     if (this._lastSig === id + sig) return this._chain;
     this._lastSig = id + sig;
+    this.saving = true; View.currentPanel();
     this._chain = this._chain.then(async () => {
       if (this.mode === "account") {
-        try { await this.col().doc(id).set(rec); }
+        try { await this.col().doc(id).set(rec); this.saving = false; View.currentPanel(); }
         catch (e) {
+          this.saving = false;
           this._lastSig = null;
           this.error = e && e.code === "quota_exceeded" ? "Your email library is full. Delete some old emails to save new ones."
             : "This email couldn't be saved to your account. Your work is still here; it will retry on the next change.";
@@ -1313,6 +1344,7 @@ const Library = {
         const i = this.items.findIndex(x => x.id === id);
         const row = Object.assign({ id }, rec);
         if (i >= 0) this.items[i] = row; else this.items.push(row);
+        this.saving = false;
         this.writeLocal();
         View.library();
       }
@@ -1324,11 +1356,28 @@ const Library = {
     const item = this.items.find(x => x.id === id);
     if (!item || !item.project) return;
     await this.saveNow();
-    Store.replace(Object.assign({}, item.project, { projectId: id, step: 6, maxStep: 6 }));
+    Store.replace(Object.assign({}, item.project, { projectId: id, step: 6, maxStep: 6, lastStep: 6 }));
     this._lastSig = id + JSON.stringify([this.record().project, item.subject, item.preview]);
     App.fillFields();
     App.goTo(6);
     View.toast("Email opened");
+  },
+
+  async duplicate(id) {
+    const item = this.items.find(x => x.id === id);
+    if (!item || !item.project) return;
+    const project = JSON.parse(JSON.stringify(item.project));
+    const v = project.versions && project.versions[project.active];
+    if (v && v.subject) v.subject = v.subject + " (copy)";
+    const now = Date.now(), newId = this.newId();
+    const rec = Object.assign({}, item, { subject: (item.subject || "Untitled email") + " (copy)", createdAt: now, updatedAt: now, project });
+    delete rec.id;
+    if (this.mode === "account") {
+      try { await this.col().doc(newId).set(rec); View.toast("Copy saved"); }
+      catch (e) { this.error = e && e.code === "quota_exceeded" ? "Your email library is full. Delete some old emails first." : "That email couldn't be copied. Try again."; View.library(); }
+    } else {
+      this.items.push(Object.assign({ id: newId }, rec)); this.writeLocal(); View.library(); View.toast("Copy saved");
+    }
   },
 
   async remove(id) {
@@ -1365,6 +1414,7 @@ const ICON = {
   wand: '<svg class="i sm" viewBox="0 0 24 24"><path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/></svg>',
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   device: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  dup: '<svg class="i sm" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
   trash: '<svg class="i sm" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
   open: '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>',
   inbox: '<svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>',
@@ -1386,42 +1436,66 @@ const View = {
     return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   },
 
+  currentPanel() {
+    const el = $("#currentPanel"); if (!el || !Store.state) return;
+    const s = Store.state, v = Store.currentVersion(), L = Library;
+    const saved = s.projectId && L.items.find(x => x.id === s.projectId);
+    const hasWork = !!(v || s.thoughts.trim());
+    const title = v ? (v.subject || "Untitled email") : (s.selectedIdea ? s.selectedIdea.title : (s.thoughts.trim() ? s.thoughts.trim().slice(0, 70) + (s.thoughts.trim().length > 70 ? "…" : "") : ""));
+    let state;
+    if (!hasWork) state = `<span class="state">Nothing in progress. Start a new email to begin.</span>`;
+    else if (L.mode === "loading") state = `<span class="state">Loading…</span>`;
+    else if (v && L.saving) state = `<span class="state"><span class="spinner" style="width:13px;height:13px;border-width:2px" aria-hidden="true"></span>Saving…</span>`;
+    else if (v && saved) state = `<span class="state saved">${ICON.check}Saved · ${esc(View.ago(saved.updatedAt))}</span>`;
+    else state = `<span class="state">Draft · saves once the email is written</span>`;
+    el.innerHTML = `<div class="eyebrow">Current email</div><h3>${hasWork ? esc(title) : "No email open"}</h3>${state}`;
+    const c = $("#continueBtn");
+    c.disabled = !hasWork || s.maxStep < 2;
+  },
+
   library() {
     const el = $("#libArea"); if (!el) return;
     const L = Library;
+    this.currentPanel();
     $("#privacy").innerHTML = L.mode === "account"
       ? `<span class="privacy" title="Saved to your Claude account. Nobody else can see these emails, including the page owner.">${ICON.lock}Private to your account</span>`
       : L.mode === "local" ? `<span class="privacy local" title="Open this page in Claude while signed in to keep emails in your account.">${ICON.device}Saved in this browser only</span>` : "";
+    const all = L.items.filter(x => x && x.project);
+    $("#libCount").textContent = L.mode === "loading" ? "Saved emails" : `${all.length} saved email${all.length === 1 ? "" : "s"}`;
+    $(".lib-bar").hidden = L.mode !== "loading" && !all.length;
     if (L.mode === "loading") {
-      el.innerHTML = `<div class="lib-grid" aria-hidden="true">${Array.from({ length: 4 }, () => `<div class="skel-card"><div class="skel" style="height:11px;width:80px"></div>
-        <div class="skel" style="height:18px;width:75%"></div><div class="skel" style="height:12px;width:95%"></div><div class="skel" style="height:12px;width:60%"></div></div>`).join("")}</div>`;
+      el.innerHTML = `<div class="lib-grid" aria-hidden="true">${Array.from({ length: 3 }, () => `<div class="skel-card"><div class="skel" style="height:18px;width:75%"></div>
+        <div class="skel" style="height:12px;width:50%"></div><div class="skel" style="height:12px;width:40%"></div><div class="skel" style="height:34px;width:90px;margin-top:20px"></div></div>`).join("")}</div>`;
       return;
     }
     let html = L.error ? `<div class="alert">${ICON.alert}<div>${esc(L.error)}</div></div>` : "";
     const q = L.query.trim().toLowerCase();
-    const items = L.items.filter(x => x && x.project && (!q || [x.subject, x.preview, x.snippet, x.emailType, x.angle].join(" ").toLowerCase().includes(q)));
-    if (!L.items.length) {
-      html += `<div class="empty"><div class="ico">${ICON.inbox}</div><h3>No emails yet</h3>
-        <p>Emails you write are saved here automatically${L.mode === "account" ? ", privately to your account" : ""}. Start with whatever is on your mind.</p>
-        <button class="btn primary" type="button" data-act="new-email">${ICON.mail}Write your first email</button></div>`;
+    const items = all.filter(x => !q || [x.subject, x.preview, x.snippet, x.emailType, x.angle].join(" ").toLowerCase().includes(q));
+    if (!all.length) {
+      html += `<div class="empty"><div class="ico">${ICON.inbox}</div><h3>No saved emails yet</h3>
+        <p>Emails you write are saved here automatically${L.mode === "account" ? ", privately to your account" : ""}.</p></div>`;
       el.innerHTML = html; return;
     }
     if (!items.length) {
       html += `<div class="empty"><h3>No emails match “${esc(L.query)}”</h3><p>Try a different word, or clear the search.</p></div>`;
       el.innerHTML = html; return;
     }
-    const tones = Object.fromEntries(Config.TONES.map(t => [t.id, t.name]));
-    html += `<p class="lib-count" style="margin-bottom:10px">${items.length} email${items.length === 1 ? "" : "s"}${q ? " found" : ""}</p><div class="lib-grid">${items.map(x => {
+    html += `<div class="lib-grid">${items.map(x => {
       const cur = x.id === Store.state.projectId;
       const confirming = L.pendingDelete === x.id;
+      const actions = confirming
+        ? `<span class="confirm">Delete for good?</span><span class="spacer"></span><button class="btn sm" type="button" data-cancel-del>Keep</button><button class="btn sm danger solid" type="button" data-del-yes="${esc(x.id)}">Delete</button>`
+        : `${cur ? `<button class="btn primary" type="button" data-act="continue">Continue${ICON.open}</button>` : `<button class="btn soft" type="button" data-open="${esc(x.id)}">Open${ICON.open}</button>`}
+           <span class="spacer"></span>
+           <button class="icon-btn" type="button" data-dup="${esc(x.id)}" title="Duplicate" aria-label="Duplicate ${esc(x.subject || "email")}">${ICON.dup}</button>
+           <button class="icon-btn danger" type="button" data-del="${esc(x.id)}" title="Delete" aria-label="Delete ${esc(x.subject || "email")}">${ICON.trash}</button>`;
       return `<article class="mail ${cur ? "current" : ""}">
-        <div class="mail-top"><span>${esc(View.ago(x.updatedAt))}</span>${cur ? '<span class="chip brand">Open now</span>' : `<span>${x.versionCount || 1} version${x.versionCount === 1 ? "" : "s"}</span>`}</div>
+        ${cur ? '<span class="open-now">Open now</span>' : ""}
         <h3>${esc(x.subject || "Untitled email")}</h3>
-        <p class="snip">${esc(x.preview || x.snippet || "")}</p>
-        <div class="chips">${x.emailType ? `<span class="chip brand">${esc(x.emailType)}</span>` : ""}${tones[x.tone] ? `<span class="chip">${esc(tones[x.tone])}</span>` : ""}<span class="chip">${Text.fmt(x.words || 0)} words</span></div>
-        <div class="mail-actions">${confirming
-          ? `<span class="confirm">Delete this email for good?</span><span class="spacer"></span><button class="btn sm" type="button" data-cancel-del>Keep</button><button class="btn sm danger solid" type="button" data-del-yes="${esc(x.id)}">Delete</button>`
-          : `<button class="btn sm soft" type="button" data-open="${esc(x.id)}">${ICON.open}Open</button><span class="spacer"></span><button class="btn sm ghost danger" type="button" data-del="${esc(x.id)}" aria-label="Delete ${esc(x.subject || "email")}">${ICON.trash}Delete</button>`}</div>
+        ${x.preview ? `<p class="snip">${esc(x.preview)}</p>` : ""}
+        <div class="chips">${x.emailType ? `<span class="chip">${esc(x.emailType)}</span>` : ""}<span class="chip">${Text.fmt(x.words || 0)} words</span>${x.versionCount > 1 ? `<span class="chip">${x.versionCount} versions</span>` : ""}</div>
+        <p class="muted-line">Updated ${esc(View.ago(x.updatedAt))}</p>
+        <div class="mail-actions">${actions}</div>
       </article>`;
     }).join("")}</div>`;
     el.innerHTML = html;
@@ -1727,7 +1801,9 @@ const View = {
 const App = {
   goTo(step) {
     if (!Validate.canAdvance(step) && step !== Store.state.step) return;
-    Store.set({ step, maxStep: Math.max(Store.state.maxStep, step) });
+    const patch = { step, maxStep: Math.max(Store.state.maxStep, step) };
+    if (step > 1) patch.lastStep = step;
+    Store.set(patch);
     View.render();
     const main = $("#main");
     if (main.getBoundingClientRect().top < 0) main.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1736,6 +1812,12 @@ const App = {
   fillFields() {
     ["thoughts", "audience", "promoting", "action"].forEach(id => { const el = $("#" + id); if (el) el.value = Store.state[id] || ""; });
     View.s1Error("");
+  },
+
+  continueEditing() {
+    const s = Store.state;
+    const target = Math.min(s.lastStep || s.maxStep, s.maxStep);
+    this.goTo(target > 1 ? target : 2);
   },
 
   async newEmail() {
@@ -1799,6 +1881,7 @@ const App = {
       if (t.dataset.open) { Library.open(t.dataset.open); return; }
       if (t.dataset.del) { Library.pendingDelete = t.dataset.del; View.library(); return; }
       if (t.dataset.delYes) { Library.remove(t.dataset.delYes); return; }
+      if (t.dataset.dup) { Library.duplicate(t.dataset.dup); return; }
       if (t.hasAttribute("data-cancel-del")) { Library.pendingDelete = null; View.library(); return; }
       if (t.dataset.count) { const n = Validate.ideaCount(s().ideaCount + Number(t.dataset.count)); Store.set({ ideaCount: n }); $("#ideaCount").value = n; View.buttons(); return; }
       if (t.dataset.idea != null) {
@@ -1822,6 +1905,7 @@ const App = {
       switch (t.dataset.act) {
         case "cancel": Generator.cancel(); View.toast("Stopped"); break;
         case "new-email": App.newEmail(); break;
+        case "continue": App.continueEditing(); break;
         case "ideas": Generator.ideas(); break;
         case "email-new": Generator.email("new"); break;
         case "email-regenerate": Generator.email("regenerate"); break;
