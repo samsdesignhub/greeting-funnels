@@ -359,7 +359,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
             <textarea id="thoughts" class="field big" placeholder="I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend."></textarea>
             <div class="meta-row">
               <span id="thoughtsCount">0 words</span>
-              <button class="link" id="useExample" type="button">Use the example above</button>
+              <button class="link" id="useExample" type="button">Load an example</button>
             </div>
           </div>
           <div class="grid3">
@@ -513,12 +513,29 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
    ========================================================= */
 const Config = {
   STEPS: ["Thoughts", "Idea", "Voice", "Settings", "Email"],
-  EXAMPLE: {
-    thoughts: "I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend.",
-    audience: "Coaches and course creators running paid ads",
-    promoting: "A free funnel audit call",
-    action: "Reply to this email with the word AUDIT"
-  },
+  // "Load an example" cycles through these in order, so every click shows a new one.
+  EXAMPLES: [
+    { thoughts: "I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend.",
+      audience: "Coaches and course creators running paid ads", promoting: "A free funnel audit call", action: "Reply to this email with the word AUDIT" },
+    { thoughts: "So many of my clients say they're 'too busy' to work on their business. But when we look at their week, most of it goes to tasks they could hand off or drop. I want to show them that busy isn't the same as productive, and that one hour a week of planning changes everything.",
+      audience: "Solo consultants and freelancers", promoting: "My 6-week Focused Founder coaching program", action: "Book a 20-minute intro call" },
+    { thoughts: "I just opened enrollment for my course. I don't want to sound salesy. I want to tell people why I built it: I spent two years figuring out video editing by trial and error and wasted a lot of time. The course is the shortcut I wish I'd had.",
+      audience: "Beginner YouTubers and content creators", promoting: "Edit Faster, my online video editing course", action: "Check out the course page and enroll" },
+    { thoughts: "People think they need a big audience to sell a digital product. I sold my first template pack to an email list of 300 people. A small list that trusts you beats a big one that doesn't. I want to encourage people to start before they feel ready.",
+      audience: "Aspiring digital product creators", promoting: "Nothing, this is a value email", action: "Hit reply and tell me what product they'd create" },
+    { thoughts: "Most people quit their fitness routine in week three, not week one. The excitement wears off and life gets in the way. I want to talk about building a routine that's boring on purpose, so it survives busy weeks.",
+      audience: "Busy professionals over 35 who want to get fit", promoting: "My 30-day home workout challenge", action: "Join the challenge before it starts on Monday" },
+    { thoughts: "I'm running a free live workshop on pricing. Most service providers undercharge because they price by the hour instead of by the result. I want to invite people, explain what they'll learn and make it clear it's free and there's a replay.",
+      audience: "Service-based business owners", promoting: "Free live workshop: Price for Value", action: "Register for the workshop" },
+    { thoughts: "Someone asked me what I'd do if I had to rebuild my business from zero. Honestly I'd skip the fancy website and the logo, and I'd spend the first 90 days talking to potential customers and selling one simple offer. I want to share that list.",
+      audience: "First-time online business owners", promoting: "", action: "Reply with the one thing they're overthinking right now" },
+    { thoughts: "Welcome email for new subscribers who downloaded my free meal-planning guide. I want to thank them, tell them a bit about why I started (I was a stressed parent cooking at 8pm every night), and tell them what to expect from my emails.",
+      audience: "Busy parents who downloaded my meal-planning guide", promoting: "", action: "Open the guide and plan this week's dinners" },
+    { thoughts: "Last chance email. The doors to my group coaching program close tomorrow at midnight. I don't want fake urgency. I want to remind people who it's for, who it's not for, and answer the most common question I get: 'what if I don't have time?'",
+      audience: "Coaches who've been on my list for a while", promoting: "Client Engine group coaching program", action: "Join before enrollment closes tomorrow at midnight" },
+    { thoughts: "I want to share a mistake I made: I launched a course nobody asked for. I spent three months building it and only a handful of people bought it. Now I always pre-sell before I build. I want readers to learn from my mistake instead of repeating it.",
+      audience: "Course creators planning their first launch", promoting: "My free pre-sell checklist", action: "Download the checklist" }
+  ],
   TONES: [
     { id: "conversational", name: "Conversational", desc: "Sounds like you're talking directly to one person.", sample: "“Can I be honest with you for a sec?”" },
     { id: "friendly", name: "Friendly", desc: "Warm, upbeat and easy to read.", sample: "“Hope your week's off to a good start!”" },
@@ -577,7 +594,7 @@ const Store = {
     step: 1, maxStep: 1,
     thoughts: "", audience: "", promoting: "", action: "",
     ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
-    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, limit: 200, limitUnit: "words", ideaCount: 5,
+    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, exampleIdx: -1, limit: 200, limitUnit: "words", ideaCount: 5,
     versions: [], active: -1
   }),
   state: null,
@@ -1365,6 +1382,7 @@ const View = {
     const ic = $("#ideaCount");
     if (document.activeElement !== ic) ic.value = n;
     document.querySelectorAll("[data-count]").forEach(b => { b.disabled = Number(b.dataset.count) < 0 ? n <= Config.IDEAS_MIN : n >= Config.IDEAS_MAX; });
+    $("#useExample").textContent = Store.state.exampleIdx >= 0 ? "Load another example" : "Load an example";
     $("#thoughtsCount").textContent = `${Text.fmt(Text.words(Store.state.thoughts))} words · ${Text.fmt(Text.count(Store.state.thoughts))} characters`;
   },
 
@@ -1407,8 +1425,12 @@ const App = {
       el.addEventListener("input", () => { Store.set({ [id]: el.value }); if (id === "thoughts") View.s1Error(""); View.buttons(); View.brief(); });
     });
     $("#useExample").addEventListener("click", () => {
-      Object.entries(Config.EXAMPLE).forEach(([k, v]) => { $("#" + k).value = v; });
-      Store.set(Object.assign({}, Config.EXAMPLE)); View.s1Error(""); View.render();
+      const list = Config.EXAMPLES, i = ((Number(s().exampleIdx) || 0) + 1 + list.length) % list.length;
+      const ex = list[(s().exampleIdx == null || s().exampleIdx < 0) ? 0 : i];
+      const idx = list.indexOf(ex);
+      Object.entries(ex).forEach(([k, v]) => { $("#" + k).value = v; });
+      Store.set(Object.assign({ exampleIdx: idx }, ex)); View.s1Error(""); View.render();
+      View.toast(`Example ${idx + 1} of ${list.length} loaded`);
     });
     $("#genIdeas").addEventListener("click", () => {
       const st = s();
