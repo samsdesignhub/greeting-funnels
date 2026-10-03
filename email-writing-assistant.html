@@ -104,6 +104,8 @@ select.field{appearance:none;padding-right:40px;cursor:pointer;
 .btn.on{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand)}
 .link{background:none;border:0;padding:0;color:var(--brand);font-weight:600;cursor:pointer;font-size:13px}
 .link:hover{text-decoration:underline}
+.link:disabled{color:var(--muted);cursor:wait;text-decoration:none}
+.link .spinner{width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-1px;margin-right:6px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:6px}
 
 /* Ideas */
@@ -513,7 +515,24 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
    ========================================================= */
 const Config = {
   STEPS: ["Thoughts", "Idea", "Voice", "Settings", "Email"],
-  // "Load an example" cycles through these in order, so every click shows a new one.
+  // Seeds that push each AI-written example somewhere new.
+  NICHES: ["life coach", "business coach", "career coach", "fitness coach", "nutrition coach", "yoga teacher", "meditation teacher",
+    "money and budgeting educator", "leadership consultant", "marketing consultant", "freelance copywriter", "web designer",
+    "wedding photographer who teaches photography", "Excel and spreadsheets course creator", "language tutor", "online piano teacher",
+    "parenting coach", "productivity coach", "digital planner seller on Etsy", "Notion template creator", "self-published ebook author",
+    "podcast host with a paid community", "dog trainer with an online course", "mindset coach", "relationship coach", "public speaking coach",
+    "sales trainer", "LinkedIn ghostwriter", "bookkeeping consultant for small businesses", "interior design course creator",
+    "home gardening course creator", "sourdough baking class teacher", "ADHD productivity coach", "resume and job-search coach",
+    "Shopify store consultant", "AI tools educator for small businesses", "watercolor painting teacher", "running coach",
+    "skincare educator with a digital guide", "freelance video editor who teaches editing", "real estate investing educator",
+    "small-business legal templates seller", "Pinterest marketing coach", "chess coach", "guitar course creator", "travel planning guide creator",
+    "SEO consultant", "grief and life-transition coach", "sleep coach", "cooking course creator for students"],
+  EMAIL_INTENTS: ["value email teaching one idea", "personal story with a lesson", "welcome email for new subscribers", "launch announcement",
+    "free webinar or workshop invite", "honest last-chance reminder", "follow-up to people who didn't open the last email",
+    "belief-shifting email that challenges a common myth", "mistake I made and what I learned", "behind-the-scenes look at my work",
+    "new product announcement", "nurture email answering a common question", "re-engagement email for quiet subscribers",
+    "case for changing an old habit", "client question I got this week"],
+  // Built-in examples, used only when AI isn't available in this view.
   EXAMPLES: [
     { thoughts: "I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend.",
       audience: "Coaches and course creators running paid ads", promoting: "A free funnel audit call", action: "Reply to this email with the word AUDIT" },
@@ -594,11 +613,11 @@ const Store = {
     step: 1, maxStep: 1,
     thoughts: "", audience: "", promoting: "", action: "",
     ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
-    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, exampleIdx: -1, limit: 200, limitUnit: "words", ideaCount: 5,
+    tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, exampleIdx: -1, pastExamples: [], limit: 200, limitUnit: "words", ideaCount: 5,
     versions: [], active: -1
   }),
   state: null,
-  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "" },
+  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null },
   load() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch (e) { saved = null; }
@@ -705,10 +724,10 @@ const AI = {
     this.ready = Promise.resolve(use).then(c => { this.client = c; this.status = c ? "ready" : "unavailable"; View.status(); return c; })
       .catch(() => { this.status = "unavailable"; View.status(); return null; });
   },
-  async json(prompt, signal) {
+  async json(prompt, signal, modelTier = "default") {
     const c = await this.ready;
     if (!c) throw { code: "unavailable" };
-    return c.json(prompt, { signal, cache: false, modelTier: "default" });
+    return c.json(prompt, { signal, cache: false, modelTier });
   },
   errorCopy(e) {
     switch (e && e.code) {
@@ -736,6 +755,21 @@ const Prompts = {
       `What they're promoting: ${s.promoting.trim() || "nothing specific — don't invent an offer"}`,
       `Action they want readers to take: ${s.action.trim() || "not specified — use a soft, natural CTA such as replying, and don't invent links or offers"}`
     ].join("\n");
+  },
+  example(niche, intent, avoid) {
+    return `Write a realistic example of what an online business owner might type into an email-writing tool before writing a marketing email.
+
+The sender is a ${niche}. The email they want to write: ${intent}.
+${avoid.length ? `Make it clearly different in topic and wording from these recent examples:\n${avoid.map(a => `- ${a}`).join("\n")}\n` : ""}
+Rules:
+- "thoughts": 2-4 sentences in the sender's own voice, first person, a bit messy and unpolished, like a quick brain dump of what they want to say and why. Include a specific point of view, not a generic topic.
+- "audience": who the email is for, under 10 words.
+- "promoting": a plausible offer under 10 words, or an empty string if it's a pure value email.
+- "action": the one thing readers should do, under 12 words.
+- No statistics, income claims or guarantees. No brand names.
+
+Reply with only this JSON:
+{"thoughts":"...","audience":"...","promoting":"...","action":"..."}`;
   },
   ideas(s, avoid, n) {
     const avoidBlock = avoid.length
@@ -934,6 +968,37 @@ const Generator = {
     } finally {
       this.end(); View.render();
     }
+  },
+
+  /* A fresh AI-written example on every click; built-in examples only as a fallback. */
+  async example() {
+    const s = Store.state, rt = Store.runtime;
+    if (rt.exampleCtl) return;
+    rt.exampleCtl = new AbortController();
+    View.exampleLink();
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+    const recent = Array.isArray(s.pastExamples) ? s.pastExamples.slice(-12) : [];
+    let ex = null, fallback = false;
+    try {
+      const usedNiches = Array.isArray(s.recentNiches) ? s.recentNiches : [];
+      const niche = pick(Config.NICHES.filter(n => !usedNiches.includes(n)));
+      Store.set({ recentNiches: usedNiches.concat([niche]).slice(-10) });
+      const res = await AI.json(Prompts.example(niche, pick(Config.EMAIL_INTENTS), recent), rt.exampleCtl.signal, "quick");
+      if (!res || typeof res.thoughts !== "string" || Text.words(res.thoughts) < 6) throw { code: "bad_shape" };
+      ex = { thoughts: res.thoughts.trim(), audience: String(res.audience || "").trim(), promoting: String(res.promoting || "").trim(), action: String(res.action || "").trim() };
+    } catch (e) {
+      if (e && e.code === "cancelled") { rt.exampleCtl = null; View.exampleLink(); return; }
+      fallback = true;
+      const list = Config.EXAMPLES, idx = ((Number(s.exampleIdx) || 0) + 1) % list.length;
+      ex = Object.assign({}, list[s.exampleIdx < 0 ? 0 : idx]);
+      Store.set({ exampleIdx: list.indexOf(list[s.exampleIdx < 0 ? 0 : idx]) });
+    }
+    rt.exampleCtl = null;
+    Object.entries(ex).forEach(([k, v]) => { document.getElementById(k).value = v; });
+    const past = recent.concat([ex.thoughts.slice(0, 90)]).slice(-12);
+    Store.set(Object.assign({ pastExamples: past, exampleUsed: true }, ex));
+    View.s1Error(""); View.render();
+    View.toast(fallback ? "Loaded a built-in example (AI isn't available here)" : "New example loaded");
   },
 
   async enforceLimit(body, signal) {
@@ -1382,8 +1447,15 @@ const View = {
     const ic = $("#ideaCount");
     if (document.activeElement !== ic) ic.value = n;
     document.querySelectorAll("[data-count]").forEach(b => { b.disabled = Number(b.dataset.count) < 0 ? n <= Config.IDEAS_MIN : n >= Config.IDEAS_MAX; });
-    $("#useExample").textContent = Store.state.exampleIdx >= 0 ? "Load another example" : "Load an example";
+    this.exampleLink();
     $("#thoughtsCount").textContent = `${Text.fmt(Text.words(Store.state.thoughts))} words · ${Text.fmt(Text.count(Store.state.thoughts))} characters`;
+  },
+
+  exampleLink() {
+    const b = $("#useExample"), busy = !!Store.runtime.exampleCtl;
+    b.disabled = busy;
+    b.innerHTML = busy ? '<span class="spinner" aria-hidden="true"></span>Writing a new example…'
+      : (Store.state.exampleUsed || Store.state.exampleIdx >= 0 ? "Load another example" : "Load an example");
   },
 
   s1Error(msg) { $("#s1Error").innerHTML = msg ? `<div class="alert" style="margin:0">${ICON.alert}<div>${esc(msg)}</div></div>` : ""; },
@@ -1424,14 +1496,7 @@ const App = {
       el.value = s()[id] || "";
       el.addEventListener("input", () => { Store.set({ [id]: el.value }); if (id === "thoughts") View.s1Error(""); View.buttons(); View.brief(); });
     });
-    $("#useExample").addEventListener("click", () => {
-      const list = Config.EXAMPLES, i = ((Number(s().exampleIdx) || 0) + 1 + list.length) % list.length;
-      const ex = list[(s().exampleIdx == null || s().exampleIdx < 0) ? 0 : i];
-      const idx = list.indexOf(ex);
-      Object.entries(ex).forEach(([k, v]) => { $("#" + k).value = v; });
-      Store.set(Object.assign({ exampleIdx: idx }, ex)); View.s1Error(""); View.render();
-      View.toast(`Example ${idx + 1} of ${list.length} loaded`);
-    });
+    $("#useExample").addEventListener("click", () => Generator.example());
     $("#genIdeas").addEventListener("click", () => {
       const st = s();
       if (st.ideas.length === st.ideaCount && st.ideasFor === st.thoughts.trim()) { App.goTo(2); return; }
