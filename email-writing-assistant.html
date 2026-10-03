@@ -1678,7 +1678,7 @@ const View = {
       <div class="review" id="review">${this.review(v)}</div>
       <div class="email-foot">
         <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => rt.confirmVersion === i
-          ? `<span class="vconfirm" role="group" aria-label="Confirm removal">Remove v${i + 1} · ${esc(x.label)}?<button class="btn sm danger solid" type="button" data-vdel-yes="${i}">Remove</button><button class="btn sm" type="button" data-vdel-no>Keep</button></span>`
+          ? `<span class="vconfirm" role="group" aria-label="Confirm removal">Remove v${i + 1}?<button class="btn sm danger solid" type="button" data-vdel-yes="${i}">Remove</button><button class="btn sm" type="button" data-vdel-no>Keep</button></span>`
           : `<span class="vpill ${i === s.active ? "on" : ""} ${i === 0 ? "keep" : ""}"><button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button>${i === 0 ? "" : `<button type="button" class="vx" data-vdel="${i}" title="Remove this version" aria-label="Remove version ${i + 1}">${ICON.x}</button>`}</span>`).join("") : ""}</div>
         <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Generate Another Version</button>
       </div>`;
