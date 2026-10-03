@@ -15,6 +15,7 @@
   --font:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{
   font-family:var(--font); color:var(--ink); font-size:15px; line-height:1.55;
   background:linear-gradient(180deg,var(--band) 0,var(--bg) 360px) no-repeat,var(--bg);
@@ -43,7 +44,7 @@ h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.035em;text-tr
 .subtitle{color:var(--ink-2);font-size:17px;margin-top:6px}
 
 /* Stepper */
-.stepper{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:24px;padding:8px;
+.stepper{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:24px;padding:8px;
   background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);list-style:none}
 .step-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;
   background:none;cursor:pointer;text-align:left;color:var(--muted)}
@@ -277,6 +278,30 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .alert.warn{background:var(--warn-soft)}
 .alert b{font-weight:700}
 
+/* My Emails */
+.app.solo{grid-template-columns:minmax(0,1fr)}
+.lib-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.lib-bar .search{flex:1;min-width:200px;position:relative}
+.lib-bar .search svg.i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.lib-bar .search input{padding-left:40px}
+.privacy{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;background:var(--good-soft);color:var(--good)}
+.privacy.local{background:var(--warn-soft);color:var(--warn)}
+.privacy svg.i{width:15px;height:15px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.mail{border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+.mail:hover{border-color:var(--brand-line);box-shadow:var(--shadow)}
+.mail.current{border-color:var(--brand);background:var(--brand-soft)}
+.mail-top{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mail h3{font-size:16.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.mail .snip{font-size:14px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mail .chips{display:flex;gap:6px;flex-wrap:wrap}
+.mail-actions{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.mail-actions .confirm{font-size:13px;font-weight:600;color:var(--bad)}
+.btn.danger{color:var(--bad)}
+.btn.danger.solid{background:var(--bad);color:#fff;border-color:transparent}
+.btn.danger.solid:hover:not(:disabled){background:var(--bad);filter:brightness(1.05)}
+.lib-count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+
 /* Brief sidebar */
 .brief{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:16px}
 .hero-mini{border-radius:16px;padding:18px;background:var(--good-soft);margin-bottom:18px}
@@ -347,8 +372,26 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
 
   <div class="app">
     <main id="main">
-      <!-- STEP 1 -->
-      <section class="card" data-step="1" aria-labelledby="h-s1">
+      <!-- STEP 1: MY EMAILS -->
+      <section class="card" data-step="1" aria-labelledby="h-s0">
+        <div class="card-head">
+          <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg></div>
+          <div class="grow">
+            <h2 id="h-s0">My Emails</h2>
+            <p class="sub">Every email you've written here. Open one to keep working on it, or start a new one.</p>
+          </div>
+          <button class="btn primary" type="button" data-act="new-email"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Email</button>
+        </div>
+        <div class="lib-bar">
+          <div class="search"><svg class="i sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="libSearch" class="field" type="search" placeholder="Search your emails" aria-label="Search your emails"></div>
+          <span id="privacy"></span>
+        </div>
+        <div id="libArea"></div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="card" data-step="2" aria-labelledby="h-s1">
         <div class="card-head">
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
           <div class="grow">
@@ -391,7 +434,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
       </section>
 
       <!-- STEP 2 -->
-      <section class="card" data-step="2" aria-labelledby="h-s2" hidden>
+      <section class="card" data-step="3" aria-labelledby="h-s2" hidden>
         <div class="card-head">
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
           <div class="grow">
@@ -401,13 +444,13 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
         </div>
         <div id="ideasArea"></div>
         <div class="actions" style="margin-top:18px">
-          <button class="btn ghost" type="button" data-go="1"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Edit thoughts</button>
+          <button class="btn ghost" type="button" data-go="2"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Edit thoughts</button>
           <button class="btn" id="regenIdeas" type="button"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Regenerate Ideas</button>
         </div>
       </section>
 
       <!-- STEP 3 -->
-      <section class="card" data-step="3" aria-labelledby="h-s3" hidden>
+      <section class="card" data-step="4" aria-labelledby="h-s3" hidden>
         <div class="card-head">
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg></div>
           <div class="grow">
@@ -417,13 +460,13 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
         </div>
         <div class="tones" id="tones" role="radiogroup" aria-labelledby="h-s3"></div>
         <div class="actions" style="margin-top:22px">
-          <button class="btn ghost" type="button" data-go="2"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back to ideas</button>
-          <button class="btn primary" type="button" data-go="4">Continue<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+          <button class="btn ghost" type="button" data-go="3"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back to ideas</button>
+          <button class="btn primary" type="button" data-go="5">Continue<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
         </div>
       </section>
 
       <!-- STEP 4 -->
-      <section class="card" data-step="4" aria-labelledby="h-s4" hidden>
+      <section class="card" data-step="5" aria-labelledby="h-s4" hidden>
         <div class="card-head">
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
           <div class="grow">
@@ -434,7 +477,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
         <div>
           <div class="setting">
             <div class="s-label">Voice / Tone</div>
-            <div class="pill-val"><span class="chip brand" id="toneChip"></span><button class="link" type="button" data-go="3">Change</button></div>
+            <div class="pill-val"><span class="chip brand" id="toneChip"></span><button class="link" type="button" data-go="4">Change</button></div>
           </div>
           <div class="setting">
             <label class="s-label" for="approach">Copywriting Approach<small>Optional</small></label>
@@ -468,20 +511,20 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           </div>
         </div>
         <div class="actions" style="margin-top:22px">
-          <button class="btn ghost" type="button" data-go="3"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back</button>
+          <button class="btn ghost" type="button" data-go="4"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back</button>
           <button class="btn primary" id="genEmail" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>Generate Email</button>
         </div>
       </section>
 
       <!-- STEP 5 -->
-      <section class="card" data-step="5" aria-labelledby="h-s5" hidden>
+      <section class="card" data-step="6" aria-labelledby="h-s5" hidden>
         <div class="card-head">
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg></div>
           <div class="grow">
             <h2 id="h-s5">Your email</h2>
             <p class="sub">Review it, polish it with one click, or edit it yourself.</p>
           </div>
-          <button class="btn ghost sm" type="button" data-go="4"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
+          <button class="btn ghost sm" type="button" data-go="5"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
         </div>
         <div id="emailArea"></div>
       </section>
@@ -514,7 +557,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
    CONFIG — options shown in the UI and fed to the prompts
    ========================================================= */
 const Config = {
-  STEPS: ["Thoughts", "Idea", "Voice", "Settings", "Email"],
+  STEPS: ["My Emails", "Thoughts", "Idea", "Voice", "Settings", "Email"],
   // Seeds that push each AI-written example somewhere new.
   NICHES: ["life coach", "business coach", "career coach", "fitness coach", "nutrition coach", "yoga teacher", "meditation teacher",
     "money and budgeting educator", "leadership consultant", "marketing consultant", "freelance copywriter", "web designer",
@@ -608,19 +651,23 @@ const Config = {
    STORE — application state + persistence
    ========================================================= */
 const Store = {
-  KEY: "ewa-state-v1",
+  LEGACY_KEY: "ewa-state-v1",
+  KEY: null,          // set once we know who is viewing; nothing is written before that
+  PREFS: ["tone", "approach", "emailType", "filler", "limit", "limitUnit", "ideaCount"],
   defaults: () => ({
     step: 1, maxStep: 1,
     thoughts: "", audience: "", promoting: "", action: "",
     ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
     tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, exampleIdx: -1, pastExamples: [], limit: 200, limitUnit: "words", ideaCount: 5,
-    versions: [], active: -1
+    versions: [], active: -1, projectId: null
   }),
   state: null,
   runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null },
-  load() {
+  load(key, legacy) {
+    this.KEY = key;
     let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch (e) { saved = null; }
+    try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { saved = null; }
+    if (!saved && legacy) saved = legacy;
     if (saved && typeof saved === "object" && saved.limitUnit !== "words") {
       // Older saves stored a character limit; convert it to words.
       saved.limit = Math.min(1500, Math.max(30, Math.round((Number(saved.limit) || 1160) / 5.8 / 10) * 10));
@@ -630,10 +677,25 @@ const Store = {
     if (!Array.isArray(this.state.versions)) this.state.versions = [];
     if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
   },
+  /* Replace the working email (open from library, or start fresh). */
+  replace(project) {
+    this.state = Object.assign(this.defaults(), project);
+    if (!Array.isArray(this.state.versions)) this.state.versions = [];
+    if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
+    this.runtime.editing = false; this.runtime.ideasError = ""; this.runtime.emailError = ""; this.runtime.reviewError = "";
+    this.save();
+  },
+  fresh() {
+    const keep = {};
+    this.PREFS.forEach(k => { keep[k] = this.state[k]; });
+    this.replace(Object.assign(keep, { step: 2, maxStep: 2, pastExamples: this.state.pastExamples, recentNiches: this.state.recentNiches }));
+  },
   set(patch) { Object.assign(this.state, patch); this.save(); },
   save() {
+    if (!this.KEY) return;
     clearTimeout(this._t);
     this._t = setTimeout(() => { try { localStorage.setItem(this.KEY, JSON.stringify(this.state)); } catch (e) {} }, 250);
+    Library.queueSave();
   },
   currentVersion() { const s = this.state; return s.versions[s.active] || null; }
 };
@@ -705,8 +767,8 @@ const Validate = {
   },
   prereq(step) {
     const s = Store.state;
-    if (step === 2) return s.ideas.length > 0 || Store.runtime.busy === "ideas";
-    if (step >= 3) return !!s.selectedIdea;
+    if (step === 3) return s.ideas.length > 0 || Store.runtime.busy === "ideas";
+    if (step >= 4) return !!s.selectedIdea;
     return true;
   },
   canVisit(step) { return step <= Store.state.maxStep && this.prereq(step); },
@@ -951,8 +1013,8 @@ const Generator = {
     const noun = n === 1 ? "angle" : "angles";
     const signal = this.begin("ideas", regenerating ? `Finding ${n} fresh ${noun}…` : `Reading your thoughts and finding ${n} ${noun}…`);
     rt.ideasError = "";
-    Store.set({ maxStep: Math.max(s.maxStep, 2) });
-    App.goTo(2);
+    Store.set({ maxStep: Math.max(s.maxStep, 3) });
+    App.goTo(3);
     try {
       const res = await AI.json(Prompts.ideas(s, avoid, n), signal);
       const ideas = (res && Array.isArray(res.ideas) ? res.ideas : [])
@@ -1017,18 +1079,18 @@ const Generator = {
   addVersion(v) {
     const s = Store.state;
     const versions = s.versions.concat([v]).slice(-12);
-    Store.set({ versions, active: versions.length - 1, maxStep: 5 });
+    Store.set({ versions, active: versions.length - 1, maxStep: 6 });
   },
 
   async email(mode) {
     const s = Store.state, rt = Store.runtime;
-    if (!s.selectedIdea) { App.goTo(2); return; }
+    if (!s.selectedIdea) { App.goTo(3); return; }
     const prev = Store.currentVersion();
     const notes = { new: "Writing your email…", regenerate: "Writing a fresh draft with the same settings…", another: "Writing a substantially different version…" };
     const signal = this.begin("email", notes[mode] || notes.new);
     rt.emailError = ""; rt.editing = false;
-    Store.set({ maxStep: 5 });
-    App.goTo(5);
+    Store.set({ maxStep: 6 });
+    App.goTo(6);
     try {
       const res = await AI.json(Prompts.email(s, mode, prev), signal);
       if (!res || typeof res.body !== "string" || !res.body.trim()) throw { code: "bad_shape" };
@@ -1149,6 +1211,140 @@ const Generator = {
 };
 
 /* =========================================================
+   LIBRARY — "My Emails". Each signed-in person's emails live in their own
+   private db subtree (data/users/<id>/...), which the platform hides from
+   every other account, the artifact owner included. Without an account
+   (or outside Claude) it falls back to this browser's storage.
+   ========================================================= */
+const Library = {
+  mode: "loading",            // "loading" | "account" | "local"
+  uid: null, db: null, items: [], error: "", unsub: null,
+  pendingDelete: null, query: "",
+  _t: null, _chain: Promise.resolve(),
+
+  async init() {
+    const use = (n) => (window.claude && typeof window.claude.use === "function") ? Promise.resolve(window.claude.use(n)).catch(() => null) : Promise.resolve(null);
+    const [user, db] = await Promise.all([use("user"), use("db")]);
+    const uid = user ? await user.id() : null;
+    const owner = user ? await user.isOwner() : false;
+    this.uid = uid;
+    // Drafts are kept per account too, so two people on one browser never see each other's work.
+    let legacy = null;
+    try {
+      legacy = JSON.parse(localStorage.getItem(Store.LEGACY_KEY) || "null");
+      localStorage.removeItem(Store.LEGACY_KEY);
+    } catch (e) {}
+    Store.load("ewa-state-v2:" + (uid || "anon"), owner || !user ? legacy : null);
+    if (!Validate.canVisit(Store.state.step)) Store.state.step = 1;
+    App.fillFields();
+    if (db && uid) {
+      this.db = db; this.mode = "account";
+      try {
+        this.unsub = this.col().orderBy("updatedAt", "desc").limit(300).onSnapshot(
+          snap => { this.items = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); this.error = ""; View.library(); },
+          () => { this.error = "Your saved emails couldn't be loaded right now. Reload the page to try again."; View.library(); });
+      } catch (e) { this.mode = "local"; }
+    } else this.mode = "local";
+    if (this.mode === "local") this.items = this.readLocal();
+    View.render();
+    this.queueSave();
+  },
+
+  col() { return this.db.collection("data/users/" + this.uid); },
+  localKey() { return "ewa-library-v1:" + (this.uid || "anon"); },
+  readLocal() {
+    try { const a = JSON.parse(localStorage.getItem(this.localKey()) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  },
+  writeLocal() {
+    this.items.sort((a, b) => b.updatedAt - a.updatedAt);
+    try { localStorage.setItem(this.localKey(), JSON.stringify(this.items)); } catch (e) { this.error = "This browser's storage is full. Delete a few old emails."; }
+  },
+  newId() { return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); },
+
+  /* A record is written once the working email has at least one generated version. */
+  record() {
+    const s = Store.state, v = Store.currentVersion();
+    if (!v) return null;
+    const project = {};
+    ["thoughts", "audience", "promoting", "action", "ideaCount", "ideas", "ideasFor", "pastIdeas", "selectedIdea",
+      "tone", "approach", "emailType", "filler", "limit", "limitUnit", "versions", "active", "step", "maxStep"].forEach(k => { project[k] = s[k]; });
+    // Stay well under the 256 KiB document cap: drop the oldest versions first.
+    while (JSON.stringify(project).length > 200000 && project.versions.length > 1) {
+      project.versions = project.versions.slice(1);
+      project.active = Math.max(0, Math.min(project.active - 1, project.versions.length - 1));
+    }
+    const existing = this.items.find(x => x.id === s.projectId);
+    const now = Date.now();
+    return {
+      kind: "email",
+      subject: v.subject || "", preview: v.preview || "", snippet: v.body.slice(0, 240),
+      angle: s.selectedIdea ? s.selectedIdea.angle || "" : "", emailType: s.emailType, tone: s.tone,
+      words: Text.words(v.body), versionCount: s.versions.length,
+      createdAt: existing && existing.createdAt ? existing.createdAt : now, updatedAt: now, project
+    };
+  },
+
+  queueSave() {
+    if (this.mode === "loading" || !Store.state || !Store.currentVersion()) return;
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.saveNow(), 1200);
+  },
+
+  saveNow() {
+    clearTimeout(this._t);
+    const rec = this.record();
+    if (!rec) return this._chain;
+    if (!Store.state.projectId) { Store.state.projectId = this.newId(); Store.save(); }
+    const id = Store.state.projectId;
+    // Same body as last write: skip (no clock-only rewrites).
+    const sig = JSON.stringify([rec.project, rec.subject, rec.preview]);
+    if (this._lastSig === id + sig) return this._chain;
+    this._lastSig = id + sig;
+    this._chain = this._chain.then(async () => {
+      if (this.mode === "account") {
+        try { await this.col().doc(id).set(rec); }
+        catch (e) {
+          this._lastSig = null;
+          this.error = e && e.code === "quota_exceeded" ? "Your email library is full. Delete some old emails to save new ones."
+            : "This email couldn't be saved to your account. Your work is still here; it will retry on the next change.";
+          View.library();
+        }
+      } else {
+        const i = this.items.findIndex(x => x.id === id);
+        const row = Object.assign({ id }, rec);
+        if (i >= 0) this.items[i] = row; else this.items.push(row);
+        this.writeLocal();
+        View.library();
+      }
+    });
+    return this._chain;
+  },
+
+  async open(id) {
+    const item = this.items.find(x => x.id === id);
+    if (!item || !item.project) return;
+    await this.saveNow();
+    Store.replace(Object.assign({}, item.project, { projectId: id, step: 6, maxStep: 6 }));
+    this._lastSig = id + JSON.stringify([this.record().project, item.subject, item.preview]);
+    App.fillFields();
+    App.goTo(6);
+    View.toast("Email opened");
+  },
+
+  async remove(id) {
+    this.pendingDelete = null;
+    if (Store.state.projectId === id) { clearTimeout(this._t); Store.replace({}); App.fillFields(); }
+    if (this.mode === "account") {
+      try { await this.col().doc(id).delete(); View.toast("Email deleted"); }
+      catch (e) { this.error = "That email couldn't be deleted. Try again."; View.library(); }
+    } else {
+      this.items = this.items.filter(x => x.id !== id);
+      this.writeLocal(); View.library(); View.toast("Email deleted");
+    }
+  }
+};
+
+/* =========================================================
    VIEW — rendering
    ========================================================= */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -1167,6 +1363,11 @@ const ICON = {
   shield: '<svg class="i sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
   x: '<svg class="i sm" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
   wand: '<svg class="i sm" viewBox="0 0 24 24"><path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/></svg>',
+  lock: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  device: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  trash: '<svg class="i sm" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
+  open: '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>',
+  inbox: '<svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>',
   layers: '<svg class="i" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>',
   bulb: '<svg class="i" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
   mail: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>',
@@ -1174,13 +1375,63 @@ const ICON = {
 };
 
 const View = {
-  render() { this.stepper(); this.panels(); this.ideas(); this.tones(); this.settings(); this.email(); this.brief(); this.buttons(); },
+  render() { if (!Store.state) return; this.stepper(); this.panels(); this.library(); this.ideas(); this.tones(); this.settings(); this.email(); this.brief(); this.buttons(); },
+
+  ago(ms) {
+    const d = (Date.now() - ms) / 1000;
+    if (d < 60) return "just now";
+    if (d < 3600) return `${Math.floor(d / 60)} min ago`;
+    if (d < 86400) return `${Math.floor(d / 3600)} hr ago`;
+    if (d < 86400 * 7) { const n = Math.floor(d / 86400); return n === 1 ? "yesterday" : `${n} days ago`; }
+    return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  },
+
+  library() {
+    const el = $("#libArea"); if (!el) return;
+    const L = Library;
+    $("#privacy").innerHTML = L.mode === "account"
+      ? `<span class="privacy" title="Saved to your Claude account. Nobody else can see these emails, including the page owner.">${ICON.lock}Private to your account</span>`
+      : L.mode === "local" ? `<span class="privacy local" title="Open this page in Claude while signed in to keep emails in your account.">${ICON.device}Saved in this browser only</span>` : "";
+    if (L.mode === "loading") {
+      el.innerHTML = `<div class="lib-grid" aria-hidden="true">${Array.from({ length: 4 }, () => `<div class="skel-card"><div class="skel" style="height:11px;width:80px"></div>
+        <div class="skel" style="height:18px;width:75%"></div><div class="skel" style="height:12px;width:95%"></div><div class="skel" style="height:12px;width:60%"></div></div>`).join("")}</div>`;
+      return;
+    }
+    let html = L.error ? `<div class="alert">${ICON.alert}<div>${esc(L.error)}</div></div>` : "";
+    const q = L.query.trim().toLowerCase();
+    const items = L.items.filter(x => x && x.project && (!q || [x.subject, x.preview, x.snippet, x.emailType, x.angle].join(" ").toLowerCase().includes(q)));
+    if (!L.items.length) {
+      html += `<div class="empty"><div class="ico">${ICON.inbox}</div><h3>No emails yet</h3>
+        <p>Emails you write are saved here automatically${L.mode === "account" ? ", privately to your account" : ""}. Start with whatever is on your mind.</p>
+        <button class="btn primary" type="button" data-act="new-email">${ICON.mail}Write your first email</button></div>`;
+      el.innerHTML = html; return;
+    }
+    if (!items.length) {
+      html += `<div class="empty"><h3>No emails match “${esc(L.query)}”</h3><p>Try a different word, or clear the search.</p></div>`;
+      el.innerHTML = html; return;
+    }
+    const tones = Object.fromEntries(Config.TONES.map(t => [t.id, t.name]));
+    html += `<p class="lib-count" style="margin-bottom:10px">${items.length} email${items.length === 1 ? "" : "s"}${q ? " found" : ""}</p><div class="lib-grid">${items.map(x => {
+      const cur = x.id === Store.state.projectId;
+      const confirming = L.pendingDelete === x.id;
+      return `<article class="mail ${cur ? "current" : ""}">
+        <div class="mail-top"><span>${esc(View.ago(x.updatedAt))}</span>${cur ? '<span class="chip brand">Open now</span>' : `<span>${x.versionCount || 1} version${x.versionCount === 1 ? "" : "s"}</span>`}</div>
+        <h3>${esc(x.subject || "Untitled email")}</h3>
+        <p class="snip">${esc(x.preview || x.snippet || "")}</p>
+        <div class="chips">${x.emailType ? `<span class="chip brand">${esc(x.emailType)}</span>` : ""}${tones[x.tone] ? `<span class="chip">${esc(tones[x.tone])}</span>` : ""}<span class="chip">${Text.fmt(x.words || 0)} words</span></div>
+        <div class="mail-actions">${confirming
+          ? `<span class="confirm">Delete this email for good?</span><span class="spacer"></span><button class="btn sm" type="button" data-cancel-del>Keep</button><button class="btn sm danger solid" type="button" data-del-yes="${esc(x.id)}">Delete</button>`
+          : `<button class="btn sm soft" type="button" data-open="${esc(x.id)}">${ICON.open}Open</button><span class="spacer"></span><button class="btn sm ghost danger" type="button" data-del="${esc(x.id)}" aria-label="Delete ${esc(x.subject || "email")}">${ICON.trash}Delete</button>`}</div>
+      </article>`;
+    }).join("")}</div>`;
+    el.innerHTML = html;
+  },
 
   stepper() {
     const s = Store.state;
     $("#stepper").innerHTML = Config.STEPS.map((name, i) => {
       const n = i + 1, can = Validate.canVisit(n);
-      const cls = n === s.step ? "current" : (can ? "done" : "");
+      const cls = n === s.step ? "current" : (can && n > 1 ? "done" : "");
       return `<li><button type="button" class="step-btn ${cls}" data-go="${n}" ${can ? "" : "disabled"} ${n === s.step ? 'aria-current="step"' : ""} aria-label="Step ${n}: ${name}">
         <span class="step-num">${cls === "done" ? '<svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:3"><path d="M20 6 9 17l-5-5"/></svg>' : String(n).padStart(2, "0")}</span>
         <span class="step-label">${name}</span></button></li>`;
@@ -1189,6 +1440,9 @@ const View = {
 
   panels() {
     document.querySelectorAll("[data-step]").forEach(el => { el.hidden = Number(el.dataset.step) !== Store.state.step; });
+    const solo = Store.state.step === 1;
+    $(".app").classList.toggle("solo", solo);
+    $(".brief").hidden = solo;
   },
 
   loading(note) {
@@ -1209,7 +1463,7 @@ const View = {
       html += `<div class="alert warn">${ICON.alert}<div>You've edited your thoughts since these ideas were made. <button class="link" type="button" data-act="ideas">Generate ideas for the new version</button></div></div>`;
     if (!s.ideas.length) {
       html += `<div class="empty"><div class="ico">${ICON.bulb}</div><h3>No ideas yet</h3><p>Write your thoughts in step 1, then generate email angles to choose from.</p>
-        <button class="btn soft" type="button" data-go="1">Go to your thoughts</button></div>`;
+        <button class="btn soft" type="button" data-go="2">Go to your thoughts</button></div>`;
       el.innerHTML = html; return;
     }
     const sel = s.selectedIdea;
@@ -1419,11 +1673,11 @@ const View = {
       : "";
     const item = (k, val, go, cls = "") => `<div class="b-item"><div class="grow"><div class="k">${k}</div><div class="v ${val ? cls : "muted"}">${val ? esc(val) : "Not set yet"}</div></div>${Validate.canVisit(go) && s.step !== go ? `<button class="link" type="button" data-go="${go}">Edit</button>` : ""}</div>`;
     $("#briefList").innerHTML = [
-      item("Your thoughts", s.thoughts.trim(), 1, "clamp"),
-      item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 2),
-      item("Voice", s.maxStep >= 3 ? tone.name : "", 3),
-      item("Approach · Type", s.maxStep >= 4 ? `${ap.name.split(" — ")[0]} · ${s.emailType}` : "", 4),
-      item("Emotion · Length", s.maxStep >= 4 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} words` : "", 4)
+      item("Your thoughts", s.thoughts.trim(), 2, "clamp"),
+      item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 3),
+      item("Voice", s.maxStep >= 4 ? tone.name : "", 4),
+      item("Approach · Type", s.maxStep >= 5 ? `${ap.name.split(" — ")[0]} · ${s.emailType}` : "", 5),
+      item("Emotion · Length", s.maxStep >= 5 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} words` : "", 5)
     ].join("");
   },
 
@@ -1479,6 +1733,19 @@ const App = {
     if (main.getBoundingClientRect().top < 0) main.scrollIntoView({ behavior: "smooth", block: "start" });
   },
 
+  fillFields() {
+    ["thoughts", "audience", "promoting", "action"].forEach(id => { const el = $("#" + id); if (el) el.value = Store.state[id] || ""; });
+    View.s1Error("");
+  },
+
+  async newEmail() {
+    await Library.saveNow();
+    Store.fresh();
+    this.fillFields();
+    this.goTo(2);
+    setTimeout(() => $("#thoughts").focus(), 50);
+  },
+
   async copy(text, label) {
     try { await navigator.clipboard.writeText(text); View.toast(`${label} copied`); return; } catch (e) {}
     const ta = document.createElement("textarea");
@@ -1493,13 +1760,12 @@ const App = {
     const s = () => Store.state;
     ["thoughts", "audience", "promoting", "action"].forEach(id => {
       const el = $("#" + id);
-      el.value = s()[id] || "";
       el.addEventListener("input", () => { Store.set({ [id]: el.value }); if (id === "thoughts") View.s1Error(""); View.buttons(); View.brief(); });
     });
     $("#useExample").addEventListener("click", () => Generator.example());
     $("#genIdeas").addEventListener("click", () => {
       const st = s();
-      if (st.ideas.length === st.ideaCount && st.ideasFor === st.thoughts.trim()) { App.goTo(2); return; }
+      if (st.ideas.length === st.ideaCount && st.ideasFor === st.thoughts.trim()) { App.goTo(3); return; }
       Generator.ideas();
     });
     $("#regenIdeas").addEventListener("click", () => Generator.ideas());
@@ -1530,11 +1796,15 @@ const App = {
       const t = e.target.closest("button");
       if (!t || t.disabled) return;
       if (t.dataset.go) { App.goTo(Number(t.dataset.go)); return; }
+      if (t.dataset.open) { Library.open(t.dataset.open); return; }
+      if (t.dataset.del) { Library.pendingDelete = t.dataset.del; View.library(); return; }
+      if (t.dataset.delYes) { Library.remove(t.dataset.delYes); return; }
+      if (t.hasAttribute("data-cancel-del")) { Library.pendingDelete = null; View.library(); return; }
       if (t.dataset.count) { const n = Validate.ideaCount(s().ideaCount + Number(t.dataset.count)); Store.set({ ideaCount: n }); $("#ideaCount").value = n; View.buttons(); return; }
       if (t.dataset.idea != null) {
         const idea = s().ideas[Number(t.dataset.idea)];
-        Store.set({ selectedIdea: Object.assign({}, idea), maxStep: Math.max(s().maxStep, 3) });
-        App.goTo(3); return;
+        Store.set({ selectedIdea: Object.assign({}, idea), maxStep: Math.max(s().maxStep, 4) });
+        App.goTo(4); return;
       }
       if (t.dataset.tone) { Store.set({ tone: t.dataset.tone }); View.tones(); View.settings(); View.brief(); return; }
       if (t.dataset.preset) { Store.set({ limit: Number(t.dataset.preset) }); View.settings(); View.brief(); View.updateMeter(); return; }
@@ -1551,6 +1821,7 @@ const App = {
       }
       switch (t.dataset.act) {
         case "cancel": Generator.cancel(); View.toast("Stopped"); break;
+        case "new-email": App.newEmail(); break;
         case "ideas": Generator.ideas(); break;
         case "email-new": Generator.email("new"); break;
         case "email-regenerate": Generator.email("regenerate"); break;
@@ -1573,15 +1844,17 @@ const App = {
       if (id === "body") { View.updateMeter(); View.brief(); View.autosize(e.target, 360); }
       else { View.autosize(e.target); if (id === "subject") $("#subjCount").textContent = `${Text.count(v.subject)} chars`; }
     });
+    $("#libSearch").addEventListener("input", e => { Library.query = e.target.value; View.library(); });
     window.addEventListener("resize", () => { ["subject", "preview"].forEach(id => View.autosize($("#" + id))); });
   },
 
   start() {
-    Store.load();
-    if (!Validate.canVisit(Store.state.step)) Store.state.step = 1;
+    // Render the library screen at once; the account-scoped draft loads when we know who's viewing.
+    Store.state = Store.defaults();
     AI.init();
     this.bind();
     View.render(); View.status();
+    Library.init();
   }
 };
 
