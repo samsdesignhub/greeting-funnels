@@ -254,6 +254,16 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .versions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .vbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2)}
 .vbtn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.vpill{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:999px;overflow:hidden}
+.vpill .vbtn{border:0;border-radius:0;padding-right:6px}
+.vpill.on{background:var(--ink);border-color:var(--ink)}
+.vx{border:0;background:none;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--muted);border-radius:999px}
+.vx svg.i{width:13px;height:13px;stroke-width:2.4}
+.vx:hover{color:var(--bad);background:var(--bad-soft)}
+.vpill.on .vx{color:rgba(255,255,255,.7)}
+.vpill.on .vx:hover{color:#fff;background:rgba(255,255,255,.15)}
+.vconfirm{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 12px;border-radius:999px;background:var(--bad-soft);font-size:12.5px;font-weight:600;color:var(--bad)}
+.vconfirm .btn{padding:4px 10px;font-size:12px;border-radius:999px}
 .cta-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;font-size:13.5px;color:var(--ink-2)}
 .flow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .flow .chip{font-size:11.5px;padding:2px 8px}
@@ -691,7 +701,7 @@ const Store = {
     versions: [], active: -1, projectId: null
   }),
   state: null,
-  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null },
+  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null, confirmVersion: null },
   load(key, legacy) {
     this.KEY = key;
     let saved = null;
@@ -1666,7 +1676,9 @@ const View = {
       </div>
       <div class="review" id="review">${this.review(v)}</div>
       <div class="email-foot">
-        <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => `<button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button>`).join("") : ""}</div>
+        <div class="versions" role="group" aria-label="Versions">${s.versions.length > 1 ? `<span class="hint">Versions:</span>` + s.versions.map((x, i) => rt.confirmVersion === i
+          ? `<span class="vconfirm" role="group" aria-label="Confirm removal">Remove v${i + 1} · ${esc(x.label)}?<button class="btn sm danger solid" type="button" data-vdel-yes="${i}">Remove</button><button class="btn sm" type="button" data-vdel-no>Keep</button></span>`
+          : `<span class="vpill ${i === s.active ? "on" : ""}"><button type="button" class="vbtn" data-version="${i}" aria-pressed="${i === s.active}" title="${esc(x.label)}">v${i + 1} · ${esc(x.label)}</button><button type="button" class="vx" data-vdel="${i}" title="Remove this version" aria-label="Remove version ${i + 1}">${ICON.x}</button></span>`).join("") : ""}</div>
         <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Generate Another Version</button>
       </div>`;
     el.innerHTML = html;
@@ -1767,7 +1779,7 @@ const View = {
     const busy = !!Store.runtime.busy;
     ["#genIdeas", "#regenIdeas", "#genEmail"].forEach(sel => { $(sel).disabled = busy; });
     $("#regenIdeas").hidden = !Store.state.ideas.length;
-    document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another], [data-apply]").forEach(b => b.disabled = busy);
+    document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another], [data-apply], [data-vdel], [data-vdel-yes]").forEach(b => b.disabled = busy);
     const n = Validate.ideaCount(Store.state.ideaCount), plural = n === 1 ? "Idea" : "Ideas";
     $("#genIdeasLabel").textContent = `Generate ${n} ${plural}`;
     $("#regenIdeas").lastChild.textContent = `Regenerate ${plural}`;
@@ -1812,6 +1824,20 @@ const App = {
   fillFields() {
     ["thoughts", "audience", "promoting", "action"].forEach(id => { const el = $("#" + id); if (el) el.value = Store.state[id] || ""; });
     View.s1Error("");
+  },
+
+  removeVersion(i) {
+    const s = Store.state;
+    Store.runtime.confirmVersion = null;
+    if (s.versions.length < 2 || !s.versions[i]) return;
+    const versions = s.versions.filter((_, k) => k !== i);
+    let active = s.active;
+    if (i < active) active--;
+    else if (i === active) active = Math.min(i, versions.length - 1);
+    Store.runtime.editing = false;
+    Store.set({ versions, active });
+    View.render();
+    View.toast(`Version ${i + 1} removed`);
   },
 
   continueEditing() {
@@ -1895,7 +1921,10 @@ const App = {
       if (t.dataset.review) { Generator.review(t.dataset.review); return; }
       if (t.dataset.apply) { Generator.applyReview(t.dataset.apply); return; }
       if (t.dataset.dismiss) { const v = Store.currentVersion(); if (v) { v[t.dataset.dismiss] = null; Store.save(); View.email(); View.buttons(); } return; }
-      if (t.dataset.version != null) { Store.runtime.editing = false; Store.set({ active: Number(t.dataset.version) }); View.render(); return; }
+      if (t.dataset.version != null) { Store.runtime.editing = false; Store.runtime.confirmVersion = null; Store.set({ active: Number(t.dataset.version) }); View.render(); return; }
+      if (t.dataset.vdel != null) { Store.runtime.confirmVersion = Number(t.dataset.vdel); View.email(); View.buttons(); return; }
+      if (t.hasAttribute("data-vdel-no")) { Store.runtime.confirmVersion = null; View.email(); View.buttons(); return; }
+      if (t.dataset.vdelYes != null) { App.removeVersion(Number(t.dataset.vdelYes)); return; }
       if (t.dataset.copy) {
         const v = Store.currentVersion(); if (!v) return;
         const labels = { subject: "Subject line", preview: "Preview text", full: "Full email" };
