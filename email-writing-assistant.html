@@ -296,6 +296,32 @@ textarea.email{width:100%;min-height:360px;border:1px solid transparent;border-r
 .alert.warn{background:var(--warn-soft)}
 .alert b{font-weight:700}
 
+/* Sequence */
+.mode-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mode-row .seg button{padding:9px 16px;font-size:14px}
+.mode-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;background:var(--warn-soft);color:var(--ink);border-radius:12px;padding:8px 10px 8px 14px}
+.seq-opts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.plan-strategy{background:var(--brand-soft);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:4px}
+.plan-strategy b{font-size:17px}
+.plan-strategy p{font-size:14px;color:var(--ink-2)}
+.day-field{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
+.day-field input{width:62px;padding:5px 8px;border-radius:9px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.seqnav{border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:16px;background:var(--surface-2)}
+.seq-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.seq-head b{font-size:16px}
+.seq-track{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.seq-chip{flex:none;min-width:128px;max-width:200px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.seq-chip:hover:not(:disabled){border-color:var(--brand-line)}
+.seq-chip:disabled{cursor:not-allowed;opacity:.6}
+.seq-chip b{font-size:13.5px;display:flex;align-items:center;gap:6px}
+.seq-chip span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seq-chip.on{border-color:var(--brand);background:var(--brand-soft)}
+.seq-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);flex:none}
+.seq-chip .dot.done{background:var(--good)}
+.seq-empty{border:1.5px dashed var(--line-2);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.seq-empty h3{font-size:19px}
+.seq-empty p{color:var(--ink-2);max-width:62ch}
+
 /* My Emails */
 .app.solo{grid-template-columns:minmax(0,1fr)}
 .lib-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
@@ -449,6 +475,13 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           </div>
         </div>
         <div class="stack">
+          <div class="mode-row">
+            <div class="seg" id="modeSeg" role="group" aria-label="What are you writing?">
+              <button type="button" data-mode="single">Single email</button>
+              <button type="button" data-mode="sequence">Email sequence</button>
+            </div>
+            <span id="modeConfirm"></span>
+          </div>
           <div>
             <textarea id="thoughts" class="field big" placeholder="I want to tell my audience that they don't need more leads. Their real problem is that their funnel is leaking sales. I want to explain how fixing their existing funnel can create more revenue without increasing ad spend."></textarea>
             <div class="meta-row">
@@ -468,7 +501,26 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           <div class="actions">
             <span class="hint" id="ideasHint">We'll turn this into 5 different angles to choose from.</span>
             <div class="gen-group">
-              <div class="idea-count">
+              <div class="seq-opts" id="seqOpts" hidden>
+                <div class="idea-count">
+                  <label class="lbl" for="seqCount">Emails</label>
+                  <div class="counter">
+                    <button type="button" data-seqcount="-1" aria-label="Fewer emails">−</button>
+                    <input id="seqCount" type="number" min="2" max="14" step="1" inputmode="numeric">
+                    <button type="button" data-seqcount="1" aria-label="More emails">+</button>
+                  </div>
+                </div>
+                <div class="idea-count">
+                  <label class="lbl" for="seqDays">Over</label>
+                  <div class="counter">
+                    <button type="button" data-seqdays="-1" aria-label="Fewer days">−</button>
+                    <input id="seqDays" type="number" min="1" max="90" step="1" inputmode="numeric">
+                    <button type="button" data-seqdays="1" aria-label="More days">+</button>
+                  </div>
+                  <span class="lbl" style="margin:0">days</span>
+                </div>
+              </div>
+              <div class="idea-count" id="ideaOpts">
                 <label class="lbl" for="ideaCount">Number of ideas</label>
                 <div class="counter">
                   <button type="button" data-count="-1" aria-label="Fewer ideas">−</button>
@@ -494,7 +546,10 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
         <div id="ideasArea"></div>
         <div class="actions" style="margin-top:18px">
           <button class="btn ghost" type="button" data-go="2"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Edit thoughts</button>
-          <button class="btn" id="regenIdeas" type="button"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Regenerate Ideas</button>
+          <div class="row">
+            <button class="btn" id="regenIdeas" type="button"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Regenerate Ideas</button>
+            <button class="btn primary" id="usePlan" type="button" hidden>Use This Plan<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+          </div>
         </div>
       </section>
 
@@ -504,12 +559,12 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg></div>
           <div class="grow">
             <h2 id="h-s3">Choose your voice</h2>
-            <p class="sub">How should this email sound? Pick one.</p>
+            <p class="sub" id="toneSub">How should this email sound? Pick one.</p>
           </div>
         </div>
         <div class="tones" id="tones" role="radiogroup" aria-labelledby="h-s3"></div>
         <div class="actions" style="margin-top:22px">
-          <button class="btn ghost" type="button" data-go="3"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back to ideas</button>
+          <button class="btn ghost" type="button" data-go="3"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg><span id="backToIdeas">Back to ideas</span></button>
           <button class="btn primary" type="button" data-go="5">Continue<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
         </div>
       </section>
@@ -535,7 +590,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
               <p class="approach-note" id="approachNote"></p>
             </div>
           </div>
-          <div class="setting">
+          <div class="setting" id="typeRow">
             <label class="s-label" for="emailType">Email Type</label>
             <div><select id="emailType" class="field"></select></div>
           </div>
@@ -561,7 +616,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
         </div>
         <div class="actions" style="margin-top:22px">
           <button class="btn ghost" type="button" data-go="4"><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Back</button>
-          <button class="btn primary" id="genEmail" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>Generate Email</button>
+          <button class="btn primary" id="genEmail" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg><span id="genEmailLabel">Generate Email</span></button>
         </div>
       </section>
 
@@ -571,7 +626,7 @@ footer{padding-block:36px 40px;display:flex;justify-content:center}
           <div class="ico"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg></div>
           <div class="grow">
             <h2 id="h-s5">Your email</h2>
-            <p class="sub">Review it, polish it with one click, or edit it yourself.</p>
+            <p class="sub" id="emailSub">Review it, polish it with one click, or edit it yourself.</p>
           </div>
           <button class="btn ghost sm" type="button" data-go="5"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
         </div>
@@ -682,6 +737,7 @@ const Config = {
   PRESETS: [ { id: "short", name: "Short", value: 100 }, { id: "medium", name: "Medium", value: 200 }, { id: "long", name: "Long", value: 400 } ],
   LIMIT_MIN: 30, LIMIT_MAX: 1500,
   IDEAS_MIN: 1, IDEAS_MAX: 10, IDEAS_DEFAULT: 5,
+  SEQ_MIN: 2, SEQ_MAX: 14, DAYS_MIN: 1, DAYS_MAX: 90,
   STRUCTURES: [
     "Hook → Story → Problem → New perspective → Solution → Offer → CTA",
     "Curiosity → Problem → Insight → Example → CTA",
@@ -702,16 +758,17 @@ const Config = {
 const Store = {
   LEGACY_KEY: "ewa-state-v1",
   KEY: null,          // set once we know who is viewing; nothing is written before that
-  PREFS: ["tone", "approach", "emailType", "filler", "limit", "limitUnit", "ideaCount"],
+  PREFS: ["tone", "approach", "emailType", "filler", "limit", "limitUnit", "ideaCount", "mode", "seqCount", "seqDays"],
   defaults: () => ({
     step: 1, maxStep: 1,
     thoughts: "", audience: "", promoting: "", action: "",
     ideas: [], ideasFor: "", pastIdeas: [], selectedIdea: null,
     tone: "conversational", approach: "normal", emailType: "Value Email", filler: true, exampleIdx: -1, pastExamples: [], limit: 200, limitUnit: "words", ideaCount: 5,
-    versions: [], active: -1, projectId: null
+    versions: [], active: -1, projectId: null,
+    mode: "single", seqCount: 5, seqDays: 7, sequence: null, pastPlans: []
   }),
   state: null,
-  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null, confirmVersion: null },
+  runtime: { busy: null, ctl: null, editing: false, note: "", ideasError: "", emailError: "", reviewKind: "", reviewError: "", exampleCtl: null, confirmVersion: null, confirmMode: null, confirmPlan: false },
   load(key, legacy) {
     this.KEY = key;
     let saved = null;
@@ -725,12 +782,15 @@ const Store = {
     this.state = Object.assign(this.defaults(), saved && typeof saved === "object" ? saved : {});
     if (!Array.isArray(this.state.versions)) this.state.versions = [];
     if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
+    Seq.relink();
   },
   /* Replace the working email (open from library, or start fresh). */
   replace(project) {
     this.state = Object.assign(this.defaults(), project);
     if (!Array.isArray(this.state.versions)) this.state.versions = [];
     if (!Array.isArray(this.state.ideas)) this.state.ideas = [];
+    Seq.relink();
+    this.runtime.confirmMode = null; this.runtime.confirmPlan = false; this.runtime.confirmVersion = null;
     this.runtime.editing = false; this.runtime.ideasError = ""; this.runtime.emailError = ""; this.runtime.reviewError = "";
     this.save();
   },
@@ -741,12 +801,73 @@ const Store = {
   },
   set(patch) { Object.assign(this.state, patch); this.save(); },
   save() {
+    Seq.stash();
     if (!this.KEY) return;
     clearTimeout(this._t);
-    this._t = setTimeout(() => { try { localStorage.setItem(this.KEY, JSON.stringify(this.state)); } catch (e) {} }, 250);
+    this._t = setTimeout(() => this.flush(), 250);
     Library.queueSave();
   },
+  flush() {
+    clearTimeout(this._t);
+    if (!this.KEY || !this.state) return;
+    Seq.stash();
+    try { localStorage.setItem(this.KEY, JSON.stringify(this.state)); } catch (e) {}
+  },
   currentVersion() { const s = this.state; return s.versions[s.active] || null; }
+};
+
+/* =========================================================
+   SEQ — email sequences. The plan lives in state.sequence; each email's
+   versions live in sequence.items[i]. The email being worked on is
+   swapped into state.versions / state.active / state.selectedIdea, so
+   the single-email editor, reviews and rewrites all work unchanged.
+   ========================================================= */
+const Seq = {
+  on() { return Store.state && Store.state.mode === "sequence"; },
+  q() { return Store.state && Store.state.sequence; },
+  has() { const q = this.q(); return !!(q && Array.isArray(q.plan) && q.plan.length); },
+  active() { return this.on() && this.has(); },
+  n() { return this.has() ? this.q().plan.length : 0; },
+  stash() {
+    const s = Store.state, q = this.q();
+    if (!s || !q || !Array.isArray(q.items) || q.current == null || !q.items[q.current]) return;
+    q.items[q.current] = { versions: s.versions, active: s.active };
+  },
+  relink() {
+    const s = Store.state, q = this.q();
+    if (!q || !Array.isArray(q.plan)) return;
+    if (!Array.isArray(q.items) || q.items.length !== q.plan.length) q.items = q.plan.map((_, i) => (q.items && q.items[i]) || { versions: [], active: -1 });
+    const i = Math.max(0, Math.min(Number(q.current) || 0, q.plan.length - 1));
+    q.current = i;
+    const it = q.items[i];
+    s.versions = Array.isArray(it.versions) ? it.versions : [];
+    s.active = Number.isFinite(it.active) ? it.active : (s.versions.length - 1);
+    if (q.accepted) s.selectedIdea = Object.assign({}, q.plan[i]);
+  },
+  select(i) {
+    const q = this.q();
+    if (!q || !q.plan[i]) return;
+    this.stash();
+    q.current = i;
+    this.relink();
+    const rt = Store.runtime;
+    rt.editing = false; rt.confirmVersion = null; rt.emailError = ""; rt.reviewError = "";
+    Store.save();
+  },
+  itemVersions(i) {
+    const q = this.q();
+    if (i === q.current) return Store.state.versions;
+    return (q.items[i] && q.items[i].versions) || [];
+  },
+  itemCurrent(i) {
+    const q = this.q();
+    if (i === q.current) return Store.currentVersion();
+    const it = q.items[i];
+    return it && it.versions ? it.versions[it.active] || it.versions[it.versions.length - 1] || null : null;
+  },
+  written(i) { return this.itemVersions(i).length > 0; },
+  writtenCount() { let c = 0; for (let i = 0; i < this.n(); i++) if (this.written(i)) c++; return c; },
+  effectiveType(s) { return this.active() && s.selectedIdea && s.selectedIdea.emailType ? s.selectedIdea.emailType : s.emailType; }
 };
 
 /* =========================================================
@@ -809,6 +930,8 @@ const Validate = {
     if (!Number.isFinite(n)) return Store.state.ideaCount;
     return Math.min(Config.IDEAS_MAX, Math.max(Config.IDEAS_MIN, n));
   },
+  seqCount(v) { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(Config.SEQ_MAX, Math.max(Config.SEQ_MIN, n)) : Store.state.seqCount; },
+  seqDays(v) { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(Config.DAYS_MAX, Math.max(Config.DAYS_MIN, n)) : Store.state.seqDays; },
   limit(v) {
     const n = Math.round(Number(v));
     if (!Number.isFinite(n)) return Store.state.limit;
@@ -816,7 +939,7 @@ const Validate = {
   },
   prereq(step) {
     const s = Store.state;
-    if (step === 3) return s.ideas.length > 0 || Store.runtime.busy === "ideas";
+    if (step === 3) return (Seq.on() ? Seq.has() : s.ideas.length > 0) || Store.runtime.busy === "ideas";
     if (step >= 4) return !!s.selectedIdea;
     return true;
   },
@@ -913,10 +1036,45 @@ Reply with only this JSON:
 VOICE / TONE: ${tone.name} — ${tone.desc}
 COPYWRITING APPROACH: ${ap.name}
 Apply these high-level principles: ${ap.p}
-${ap.id === "normal" ? "" : "Use only the general principles. Do NOT imitate any person's exact voice, and never reuse their signature phrases, catchphrases or recognizable passages. Let the approach shape structure, pacing, directness, persuasion strategy, storytelling, subject-line style, CTA style, sentence length and emotional intensity.\n"}EMAIL TYPE: ${s.emailType}
+${ap.id === "normal" ? "" : "Use only the general principles. Do NOT imitate any person's exact voice, and never reuse their signature phrases, catchphrases or recognizable passages. Let the approach shape structure, pacing, directness, persuasion strategy, storytelling, subject-line style, CTA style, sentence length and emotional intensity.\n"}EMAIL TYPE: ${Seq.effectiveType(s)}
 FILLER WORDS & EMOTIONS: ${s.filler
   ? "ON — allow natural conversational fillers (like \"honestly\", \"look\", \"here's the thing\"), emotional language, personality, rhetorical questions, emphasis and expressive transitions. Keep it natural, not overdone."
   : "OFF — keep the writing tight, clean and direct. No filler words, minimal rhetorical flourishes."}`;
+  },
+  plan(s, n, days, avoid) {
+    return `You are a senior email marketing strategist for coaches, consultants, course creators and online business owners.
+
+${this.brief(s)}
+
+TASK: Plan an email SEQUENCE of exactly ${n} emails sent over ${days} day${days === 1 ? "" : "s"}. Day 1 is the first send; no email goes out after Day ${days}.
+- Give the sequence a clear arc that moves the reader toward the sender's goal${s.action.trim() ? ` (${s.action.trim()})` : ""}. Each email has ONE job (its "role"), and the roles progress logically, for example: welcome or hook → value → story → belief shift → offer → objections → last call. Adapt the arc to what the sender actually said; if nothing is being sold, make it a value/nurture sequence with no hard pitch.
+- Space the days sensibly: closer together near a deadline the sender gave, wider for nurture. Days must be whole numbers in order.
+- Every email gets a different angle, so the sequence never repeats itself.
+- Only use deadlines, prices or urgency the sender gave. Never invent facts, results, statistics or testimonials.
+- Subject lines under 60 characters, specific, no clickbait, no emoji.
+- Pick each "emailType" from: ${Config.EMAIL_TYPES.join(", ")}.
+${avoid.length ? `\nA previous plan used these; make this one meaningfully different in arc and angles:\n${avoid.map(a => `- ${a}`).join("\n")}\n` : ""}
+Reply with only this JSON:
+{"name":"short name for the sequence","strategy":"1-2 sentences describing the arc","emails":[{"day":1,"role":"Welcome","emailType":"Welcome Email","title":"short idea title","angle":"angle family","concept":"2-3 sentences on what this email says and how it moves the reader","subject":"suggested subject line","why":"1 sentence on why this email belongs at this point"}]}`;
+  },
+  seqContext(s) {
+    if (!Seq.active()) return "";
+    const q = s.sequence, k = q.current, it = q.plan[k], n = q.plan.length;
+    const plan = q.plan.map((p, i) => `${i === k ? "→" : "-"} Email ${i + 1} · Day ${p.day} · ${p.role}: ${p.title} (subject idea: ${p.subject})`).join("\n");
+    const written = [];
+    q.plan.forEach((p, i) => {
+      if (i === k) return;
+      const v = Seq.itemCurrent(i);
+      if (v) written.push(`- Email ${i + 1} (Day ${p.day}, ${p.role}): subject "${v.subject}"; CTA: ${v.cta || "n/a"}; opens with: "${v.body.replace(/\s+/g, " ").slice(0, 200)}"`);
+    });
+    return `
+SEQUENCE CONTEXT: This email is part of "${q.name}", a ${n}-email sequence sent over ${s.seqDays} days. The arc: ${q.strategy}
+You are writing EMAIL ${k + 1} OF ${n}, sent on DAY ${it.day}. Its job in the sequence: ${it.role}.
+Full plan:
+${plan}
+${written.length ? `Already written in this sequence. Stay consistent with them (same voice, same offer, same facts) and don't repeat their hooks, stories, examples or phrases. A brief reference back ("In my last email…") is fine when it reads naturally:\n${written.join("\n")}` : "No other emails in this sequence are written yet."}
+Each email must still make sense to someone who missed the earlier ones.
+`;
   },
   rules(limit) {
     return `LENGTH: The email body has a HARD MAXIMUM of ${limit} words, counting every word including the greeting, call to action and sign-off. Aim for about ${Math.round(limit * 0.85)} words. Write a complete email that fits; never stop mid-thought.
@@ -943,7 +1101,7 @@ QUALITY RULES:
 ${this.brief(s)}
 
 ${this.settings(s)}
-
+${this.seqContext(s)}
 STRUCTURE: Don't force a formula. Choose the structure that best fits the chosen idea, for example:
 ${Config.STRUCTURES.map(x => `- ${x}`).join("\n")}
 The email should read naturally, not like a template.
@@ -1052,6 +1210,7 @@ const Generator = {
   cancel() { const rt = Store.runtime; if (rt.ctl) rt.ctl.abort(); },
 
   async ideas() {
+    if (Seq.on()) return this.plan();
     const s = Store.state, rt = Store.runtime;
     const err = Validate.thoughts(s);
     if (err) { View.s1Error(err); document.getElementById("thoughts").focus(); return; }
@@ -1112,6 +1271,42 @@ const Generator = {
     View.toast(fallback ? "Loaded a built-in example (AI isn't available here)" : "New example loaded");
   },
 
+  async plan() {
+    const s = Store.state, rt = Store.runtime;
+    const err = Validate.thoughts(s);
+    if (err) { View.s1Error(err); document.getElementById("thoughts").focus(); return; }
+    View.s1Error("");
+    const n = Validate.seqCount(s.seqCount), days = Validate.seqDays(s.seqDays);
+    const old = s.sequence;
+    const regenerating = !!(old && old.plan && old.for === s.thoughts.trim());
+    const avoid = regenerating ? old.plan.map(p => `Day ${p.day} ${p.role}: ${p.title}`) : [];
+    const signal = this.begin("ideas", regenerating ? `Planning a different ${n}-email sequence…` : `Planning your ${n}-email sequence over ${days} days…`);
+    rt.ideasError = ""; rt.confirmPlan = false;
+    Store.set({ maxStep: Math.max(s.maxStep, 3) });
+    App.goTo(3);
+    try {
+      const res = await AI.json(Prompts.plan(s, n, days, avoid), signal);
+      const raw = res && Array.isArray(res.emails) ? res.emails : [];
+      const plan = raw.filter(x => x && x.title).slice(0, n).map(x => ({
+        day: Math.max(1, Math.min(days, Math.round(Number(x.day)) || 1)),
+        role: String(x.role || "").trim(), emailType: Config.EMAIL_TYPES.includes(x.emailType) ? x.emailType : "Nurture Email",
+        title: String(x.title).trim(), angle: String(x.angle || "").trim(), concept: String(x.concept || "").trim(),
+        subject: String(x.subject || "").trim(), why: String(x.why || "").trim()
+      })).sort((a, b) => a.day - b.day);
+      if (plan.length < Math.min(n, 2)) throw { code: "bad_shape" };
+      Store.set({
+        sequence: { name: String(res.name || "Email sequence").trim(), strategy: String(res.strategy || "").trim(), plan,
+          items: plan.map(() => ({ versions: [], active: -1 })), current: 0, accepted: false, for: s.thoughts.trim() },
+        versions: [], active: -1, selectedIdea: null, maxStep: 3
+      });
+      View.toast(regenerating ? "New plan ready" : "Your sequence plan is ready");
+    } catch (e) {
+      if (e && e.code !== "cancelled") rt.ideasError = AI.errorCopy(e);
+    } finally {
+      this.end(); View.render();
+    }
+  },
+
   async enforceLimit(body, signal) {
     const limit = Store.state.limit;
     for (let i = 0; i < 2 && Text.words(body) > limit; i++) {
@@ -1153,7 +1348,7 @@ const Generator = {
         cta: String(res.cta || "").trim(),
         structure: Array.isArray(res.structure) ? res.structure.map(String).slice(0, 8) : []
       });
-      View.toast(mode === "new" ? "Email ready" : "New version ready");
+      View.toast(mode === "new" ? (Seq.active() ? `Email ${Seq.q().current + 1} ready` : "Email ready") : "New version ready");
     } catch (e) {
       if (e && e.code !== "cancelled") rt.emailError = AI.errorCopy(e);
     } finally {
@@ -1311,7 +1506,10 @@ const Library = {
   newId() { return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); },
 
   /* A record is written once the working email has at least one generated version. */
+  hasContent() { return Seq.active() ? Seq.writtenCount() > 0 : !!Store.currentVersion(); },
+
   record() {
+    if (Seq.active()) return this.recordSequence();
     const s = Store.state, v = Store.currentVersion();
     if (!v) return null;
     const project = {};
@@ -1333,8 +1531,39 @@ const Library = {
     };
   },
 
+  recordSequence() {
+    const s = Store.state, q = s.sequence;
+    Seq.stash();
+    if (!Seq.writtenCount()) return null;
+    const project = {};
+    ["thoughts", "audience", "promoting", "action", "ideaCount", "tone", "approach", "emailType", "filler", "limit", "limitUnit",
+      "step", "maxStep", "lastStep", "mode", "seqCount", "seqDays"].forEach(k => { project[k] = s[k]; });
+    project.sequence = JSON.parse(JSON.stringify(q));
+    // Stay under the 256 KiB document cap: trim the longest version histories first.
+    while (JSON.stringify(project).length > 200000) {
+      const items = project.sequence.items;
+      let best = -1;
+      items.forEach((it, i) => { if (it.versions.length > 1 && (best < 0 || it.versions.length > items[best].versions.length)) best = i; });
+      if (best < 0) break;
+      const it = items[best];
+      it.versions = it.versions.slice(1); it.active = Math.max(0, Math.min(it.active - 1, it.versions.length - 1));
+    }
+    const first = q.plan.map((_, i) => Seq.itemCurrent(i)).find(Boolean);
+    let words = 0;
+    q.plan.forEach((_, i) => { const v = Seq.itemCurrent(i); if (v) words += Text.words(v.body); });
+    const existing = this.items.find(x => x.id === s.projectId);
+    const now = Date.now(), done = Seq.writtenCount();
+    return {
+      kind: "sequence",
+      subject: q.name || "Email sequence", preview: `${done} of ${q.plan.length} emails written · ${s.seqDays} days`,
+      snippet: first ? first.body.slice(0, 240) : "", angle: "", emailType: "Sequence", tone: s.tone,
+      words, versionCount: q.plan.length, emails: q.plan.length, written: done,
+      createdAt: existing && existing.createdAt ? existing.createdAt : now, updatedAt: now, project
+    };
+  },
+
   queueSave() {
-    if (this.mode === "loading" || !Store.state || !Store.currentVersion()) return;
+    if (this.mode === "loading" || !Store.state || !this.hasContent()) return;
     clearTimeout(this._t);
     this._t = setTimeout(() => this.saveNow(), 1200);
   },
@@ -1377,7 +1606,8 @@ const Library = {
     if (!item || !item.project) return;
     await this.saveNow();
     Store.replace(Object.assign({}, item.project, { projectId: id, step: 6, maxStep: 6, lastStep: 6 }));
-    this._lastSig = id + JSON.stringify([this.record().project, item.subject, item.preview]);
+    const r0 = this.record();
+    this._lastSig = r0 ? id + JSON.stringify([r0.project, item.subject, item.preview]) : null;
     App.fillFields();
     App.goTo(6);
     View.toast("Email opened");
@@ -1459,10 +1689,10 @@ const View = {
 
   currentPanel() {
     const el = $("#currentPanel"); if (!el || !Store.state) return;
-    const s = Store.state, v = Store.currentVersion(), L = Library;
+    const s = Store.state, L = Library, v = L.hasContent();
     const saved = s.projectId && L.items.find(x => x.id === s.projectId);
     const hasWork = !!(v || s.thoughts.trim());
-    const title = v ? (v.subject || "Untitled email") : (s.selectedIdea ? s.selectedIdea.title : (s.thoughts.trim() ? s.thoughts.trim().slice(0, 70) + (s.thoughts.trim().length > 70 ? "…" : "") : ""));
+    const title = Seq.active() ? `${Seq.q().name} (sequence)` : v ? (Store.currentVersion().subject || "Untitled email") : (s.selectedIdea ? s.selectedIdea.title : (s.thoughts.trim() ? s.thoughts.trim().slice(0, 70) + (s.thoughts.trim().length > 70 ? "…" : "") : ""));
     let state;
     if (!hasWork) state = `<span class="state">Nothing in progress. Start a new email to begin.</span>`;
     else if (L.mode === "loading") state = `<span class="state">Loading…</span>`;
@@ -1513,8 +1743,10 @@ const View = {
       return `<article class="mail ${cur ? "current" : ""}">
         ${cur ? '<span class="open-now">Open now</span>' : ""}
         <h3>${esc(x.subject || "Untitled email")}</h3>
-        ${x.preview ? `<p class="snip">${esc(x.preview)}</p>` : ""}
-        <div class="chips">${x.emailType ? `<span class="chip">${esc(x.emailType)}</span>` : ""}<span class="chip">${Text.fmt(x.words || 0)} words</span>${x.versionCount > 1 ? `<span class="chip">${x.versionCount} versions</span>` : ""}</div>
+        ${x.preview && x.kind !== "sequence" ? `<p class="snip">${esc(x.preview)}</p>` : ""}
+        <div class="chips">${x.kind === "sequence"
+          ? `<span class="chip brand">Sequence</span><span class="chip">${x.written || 0}/${x.emails || 0} written</span><span class="chip">${Text.fmt(x.words || 0)} words</span>`
+          : `${x.emailType ? `<span class="chip">${esc(x.emailType)}</span>` : ""}<span class="chip">${Text.fmt(x.words || 0)} words</span>${x.versionCount > 1 ? `<span class="chip">${x.versionCount} versions</span>` : ""}`}</div>
         <p class="muted-line">Updated ${esc(View.ago(x.updatedAt))}</p>
         <div class="mail-actions">${actions}</div>
       </article>`;
@@ -1524,7 +1756,8 @@ const View = {
 
   stepper() {
     const s = Store.state;
-    $("#stepper").innerHTML = Config.STEPS.map((name, i) => {
+    $("#stepper").innerHTML = Config.STEPS.map((name0, i) => {
+      const name = i === 2 && Seq.on() ? "Plan" : name0;
       const n = i + 1, can = Validate.canVisit(n);
       const cls = n === s.step ? "current" : (can && n > 1 ? "done" : "");
       return `<li><button type="button" class="step-btn ${cls}" data-go="${n}" ${can ? "" : "disabled"} ${n === s.step ? 'aria-current="step"' : ""} aria-label="Step ${n}: ${name}">
@@ -1544,7 +1777,68 @@ const View = {
     return `<div class="loading-note"><span class="spinner" aria-hidden="true"></span><span class="grow">${esc(note)}<br><span class="hint">This usually takes 10–40 seconds.</span></span><button class="btn sm" type="button" data-act="cancel">Cancel</button></div>`;
   },
 
+  plan() {
+    const s = Store.state, rt = Store.runtime, el = $("#ideasArea"), q = s.sequence;
+    let html = "";
+    if (rt.busy === "ideas") {
+      html = this.loading(rt.note) + `<div class="ideas" aria-hidden="true">${Array.from({ length: Math.min(Validate.seqCount(s.seqCount), 5) }, () => `
+        <div class="skel-card"><div class="skel" style="height:12px;width:70px"></div><div class="skel" style="height:20px;width:55%"></div>
+        <div class="skel" style="height:12px;width:92%"></div></div>`).join("")}</div>`;
+      el.innerHTML = html; return;
+    }
+    if (rt.ideasError) html += `<div class="alert">${ICON.alert}<div><b>Couldn't plan the sequence.</b> ${esc(rt.ideasError)}</div></div>`;
+    if (!Seq.has()) {
+      html += `<div class="empty"><div class="ico">${ICON.bulb}</div><h3>No plan yet</h3><p>Write your thoughts, choose how many emails and days, then plan the sequence.</p>
+        <button class="btn soft" type="button" data-go="2">Go to your thoughts</button></div>`;
+      el.innerHTML = html; return;
+    }
+    if (q.for && q.for !== s.thoughts.trim())
+      html += `<div class="alert warn">${ICON.alert}<div>You've edited your thoughts since this plan was made. <button class="link" type="button" data-act="ideas">Plan again with the new version</button></div></div>`;
+    if (rt.confirmPlan) {
+      const w = Seq.writtenCount();
+      html += `<div class="alert warn">${ICON.alert}<div style="flex:1"><b>Replace this plan?</b> The ${w} email${w === 1 ? "" : "s"} you've written for it will be removed. <div class="row" style="margin-top:8px"><button class="btn sm danger solid" type="button" data-act="plan-replace">Replace plan</button><button class="btn sm" type="button" data-act="plan-keep">Keep it</button></div></div></div>`;
+    }
+    html += `<div class="plan-strategy"><span class="eyebrow">${q.plan.length} emails · ${s.seqDays} days</span><b>${esc(q.name)}</b>${q.strategy ? `<p>${esc(q.strategy)}</p>` : ""}</div>`;
+    html += `<div class="ideas">${q.plan.map((p, i) => `<article class="idea">
+        <div>
+          <div class="idea-top">
+            <label class="day-field">Day <input class="field" type="number" min="1" max="${Config.DAYS_MAX}" value="${p.day}" data-plan-day="${i}" aria-label="Send day for email ${i + 1}"></label>
+            <span class="idea-n">Email ${i + 1}</span>${p.role ? `<span class="chip brand">${esc(p.role)}</span>` : ""}${Seq.written(i) ? '<span class="chip">Written</span>' : ""}
+          </div>
+          <h3>${esc(p.title)}</h3>
+          <p class="concept">${esc(p.concept)}</p>
+        </div>
+        <div class="idea-side">
+          ${p.subject ? `<div class="subj"><div class="eyebrow">Subject line</div><p>${esc(p.subject)}</p></div>` : ""}
+          ${p.why ? `<p class="why"><b>Why here:</b> ${esc(p.why)}</p>` : ""}
+          <p class="hint">${esc(p.emailType)}</p>
+        </div>
+      </article>`).join("")}</div>`;
+    el.innerHTML = html;
+  },
+
+  seqNav() {
+    if (!Seq.active()) return "";
+    const s = Store.state, q = s.sequence, k = q.current, n = q.plan.length, busy = !!Store.runtime.busy;
+    const nextI = k + 1 < n ? k + 1 : -1;
+    let nextBtn = "";
+    if (nextI >= 0 && Seq.written(k)) {
+      nextBtn = Seq.written(nextI)
+        ? `<button class="btn sm soft" type="button" data-seq="${nextI}" ${busy ? "disabled" : ""}>Next email${ICON.open}</button>`
+        : `<button class="btn sm primary" type="button" data-act="seq-write-next" ${busy ? "disabled" : ""}>Write Email ${nextI + 1} · Day ${q.plan[nextI].day}${ICON.open}</button>`;
+    }
+    return `<div class="seqnav">
+      <div class="seq-head">
+        <div><div class="eyebrow">Sequence · ${Seq.writtenCount()} of ${n} written</div><b>${esc(q.name)}</b></div>
+        <div class="row">${k > 0 ? `<button class="btn sm ghost" type="button" data-seq="${k - 1}" ${busy ? "disabled" : ""}><svg class="i sm" viewBox="0 0 24 24"><path d="M19 12H5M11 19l-7-7 7-7"/></svg>Previous</button>` : ""}${nextBtn}</div>
+      </div>
+      <div class="seq-track" role="tablist" aria-label="Emails in this sequence">${q.plan.map((p, i) => `<button type="button" role="tab" class="seq-chip ${i === k ? "on" : ""}" data-seq="${i}" aria-selected="${i === k}" ${busy && i !== k ? "disabled" : ""}>
+        <b><span class="dot ${Seq.written(i) ? "done" : ""}" aria-hidden="true"></span>Day ${p.day}</b><span>Email ${i + 1} · ${esc(p.role || p.title)}</span></button>`).join("")}</div>
+    </div>`;
+  },
+
   ideas() {
+    if (Seq.on()) return this.plan();
     const s = Store.state, rt = Store.runtime, el = $("#ideasArea");
     let html = "";
     if (rt.busy === "ideas") {
@@ -1633,14 +1927,31 @@ const View = {
     const s = Store.state, rt = Store.runtime, el = $("#emailArea");
     const v = Store.currentVersion();
     let html = "";
+    const nav = this.seqNav();
+    $("#h-s5").textContent = Seq.active() ? "Your sequence" : "Your email";
+    $("#emailSub").textContent = Seq.active() ? "Write the emails one by one. Each one knows what the others say." : "Review it, polish it with one click, or edit it yourself.";
     if (rt.busy === "email") {
-      el.innerHTML = this.loading(rt.note) + `<div class="editor" aria-hidden="true">
+      el.innerHTML = nav + this.loading(rt.note) + `<div class="editor" aria-hidden="true">
         <div class="ed-row"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><div class="skel" style="height:10px;width:90px"></div><div class="skel" style="height:20px;width:55%"></div></div></div>
         <div class="ed-row"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><div class="skel" style="height:10px;width:90px"></div><div class="skel" style="height:14px;width:75%"></div></div></div>
         <div class="ed-body" style="display:flex;flex-direction:column;gap:12px">${[40, 95, 88, 70, 0, 92, 84, 60, 0, 50, 30].map(w => w ? `<div class="skel" style="height:13px;width:${w}%"></div>` : `<div style="height:6px"></div>`).join("")}</div></div>`;
       return;
     }
+    html += nav;
     if (rt.emailError) html += `<div class="alert">${ICON.alert}<div><b>Couldn't finish writing.</b> ${esc(rt.emailError)}${v ? " Your previous version is still below." : ""}</div></div>`;
+    if (!v && Seq.active()) {
+      const q = s.sequence, k = q.current, p = q.plan[k];
+      const earlier = q.plan.slice(0, k).some((_, i) => !Seq.written(i));
+      html += `<div class="seq-empty">
+        <div class="row"><span class="eyebrow">Email ${k + 1} of ${q.plan.length} · Day ${p.day}</span>${p.role ? `<span class="chip brand">${esc(p.role)}</span>` : ""}<span class="chip">${esc(p.emailType)}</span></div>
+        <h3>${esc(p.title)}</h3>
+        <p>${esc(p.concept)}</p>
+        ${p.subject ? `<p class="hint">Subject idea: ${esc(p.subject)}</p>` : ""}
+        ${earlier ? `<p class="hint">Some earlier emails aren't written yet. Writing in order helps each email build on the last.</p>` : ""}
+        <button class="btn primary" type="button" data-act="email-new">${ICON.mail}Write Email ${k + 1}</button>
+      </div>`;
+      el.innerHTML = html; return;
+    }
     if (!v) {
       html += `<div class="empty"><div class="ico">${ICON.mail}</div><h3>Your email will appear here</h3><p>Pick an idea and a voice, check your settings, then generate.</p>
         <button class="btn primary" type="button" data-act="email-new" ${s.selectedIdea ? "" : "disabled"}>${ICON.mail}Generate Email</button></div>`;
@@ -1690,7 +2001,7 @@ const View = {
         <div class="foot-actions">
           <button class="btn" type="button" data-copy="full" title="Copies the subject line, preview text and email">${ICON.copy}Copy All</button>
           <button class="btn ${rt.editing ? "on" : ""}" type="button" data-act="edit">${rt.editing ? ICON.check.replace('class="i"', 'class="i sm"') + "Done editing" : ICON.pen + "Edit"}</button>
-          <button class="btn" type="button" data-act="download" ${App.downloads ? "" : "hidden"} title="Save this email as a text file">${ICON.download}Download</button>
+          <button class="btn" type="button" data-act="download" ${App.downloads ? "" : "hidden"} title="${Seq.active() ? "Save every written email in this sequence as one text file" : "Save this email as a text file"}">${ICON.download}${Seq.active() ? "Download All" : "Download"}</button>
           <button class="btn primary" type="button" data-act="email-another">${ICON.layers}Write Another Version</button>
         </div>
       </div>`;
@@ -1767,15 +2078,19 @@ const View = {
     const s = Store.state, v = Store.currentVersion();
     const tone = Config.TONES.find(t => t.id === s.tone) || Config.TONES[0];
     const ap = Config.APPROACHES.find(a => a.id === s.approach) || Config.APPROACHES[0];
-    $("#briefHero").innerHTML = v
+    $("#briefHero").innerHTML = Seq.active() && Seq.writtenCount()
+      ? `<div class="hero-mini"><div class="eyebrow">Sequence progress</div><div class="big">${Seq.writtenCount()}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> / ${Seq.n()} emails written</span></div><p>${v ? `This email: ${Text.fmt(Text.words(v.body))} / ${Text.fmt(s.limit)} words` : "This email isn't written yet"}</p></div>`
+      : v
       ? `<div class="hero-mini"><div class="eyebrow">Email ready</div><div class="big">${Text.fmt(Text.words(v.body))}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> / ${Text.fmt(s.limit)} words</span></div><p>${Text.fmt(Text.count(v.body))} characters · ${s.versions.length} version${s.versions.length === 1 ? "" : "s"}</p></div>`
       : "";
     const item = (k, val, go, cls = "") => `<div class="b-item"><div class="grow"><div class="k">${k}</div><div class="v ${val ? cls : "muted"}">${val ? esc(val) : "Not set yet"}</div></div>${Validate.canVisit(go) && s.step !== go ? `<button class="link" type="button" data-go="${go}">Edit</button>` : ""}</div>`;
     $("#briefList").innerHTML = [
       item("Your thoughts", s.thoughts.trim(), 2, "clamp"),
-      item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 3),
+      Seq.active()
+        ? item("Sequence", `${s.sequence.name} · ${s.sequence.plan.length} emails over ${s.seqDays} days${s.sequence.accepted ? ` · now on email ${s.sequence.current + 1}` : ""}`, 3)
+        : item("Idea", s.selectedIdea ? s.selectedIdea.title : "", 3),
       item("Voice", s.maxStep >= 4 ? tone.name : "", 4),
-      item("Approach · Type", s.maxStep >= 5 ? `${ap.name.split(" — ")[0]} · ${s.emailType}` : "", 5),
+      item("Approach · Type", s.maxStep >= 5 ? `${ap.name.split(" — ")[0]} · ${Seq.on() ? "set per email by the plan" : s.emailType}` : "", 5),
       item("Emotion · Length", s.maxStep >= 5 ? `${s.filler ? "Expressive" : "Tight"} · max ${Text.fmt(s.limit)} words` : "", 5)
     ].join("");
   },
@@ -1791,12 +2106,34 @@ const View = {
   buttons() {
     const busy = !!Store.runtime.busy;
     ["#genIdeas", "#regenIdeas", "#genEmail"].forEach(sel => { $(sel).disabled = busy; });
-    $("#regenIdeas").hidden = !Store.state.ideas.length;
     document.querySelectorAll("#emailArea .toolbar button:not([data-copy]):not([data-act=edit]), [data-act=email-another], [data-apply], [data-vdel], [data-vdel-yes]").forEach(b => b.disabled = busy);
-    const n = Validate.ideaCount(Store.state.ideaCount), plural = n === 1 ? "Idea" : "Ideas";
-    $("#genIdeasLabel").textContent = `Generate ${n} ${plural}`;
-    $("#regenIdeas").lastChild.textContent = `Regenerate ${plural}`;
-    $("#ideasHint").textContent = n === 1 ? "We'll find the single strongest angle for your email." : `We'll turn this into ${n} different angles to choose from.`;
+    const st = Store.state, seq = Seq.on();
+    const n = Validate.ideaCount(st.ideaCount), plural = n === 1 ? "Idea" : "Ideas";
+    const sc = Validate.seqCount(st.seqCount), sd = Validate.seqDays(st.seqDays);
+    document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === st.mode)));
+    const rt = Store.runtime;
+    $("#modeConfirm").innerHTML = rt.confirmMode
+      ? `<span class="mode-confirm">Switching starts a new ${rt.confirmMode === "sequence" ? "sequence" : "email"}. Your thoughts carry over, and written work stays in My Emails.<button class="btn sm primary" type="button" data-act="mode-yes" style="padding:6px 12px;font-size:13px">Switch</button><button class="btn sm" type="button" data-act="mode-no">Cancel</button></span>` : "";
+    $("#seqOpts").hidden = !seq; $("#ideaOpts").hidden = seq;
+    const sci = $("#seqCount"), sdi = $("#seqDays");
+    if (document.activeElement !== sci) sci.value = sc;
+    if (document.activeElement !== sdi) sdi.value = sd;
+    document.querySelectorAll("[data-seqcount]").forEach(b => { b.disabled = Number(b.dataset.seqcount) < 0 ? sc <= Config.SEQ_MIN : sc >= Config.SEQ_MAX; });
+    document.querySelectorAll("[data-seqdays]").forEach(b => { b.disabled = Number(b.dataset.seqdays) < 0 ? sd <= Config.DAYS_MIN : sd >= Config.DAYS_MAX; });
+    $("#genIdeasLabel").textContent = seq ? `Plan ${sc}-Email Sequence` : `Generate ${n} ${plural}`;
+    $("#regenIdeas").lastChild.textContent = seq ? "Regenerate Plan" : `Regenerate ${plural}`;
+    $("#regenIdeas").hidden = seq ? !Seq.has() : !st.ideas.length;
+    $("#usePlan").hidden = !(seq && Seq.has());
+    $("#usePlan").disabled = !!rt.busy;
+    $("#ideasHint").textContent = seq ? `We'll plan ${sc} emails over ${sd} day${sd === 1 ? "" : "s"}. Then you write them one by one.`
+      : n === 1 ? "We'll find the single strongest angle for your email." : `We'll turn this into ${n} different angles to choose from.`;
+    $("#h-s2").textContent = seq ? "Your sequence plan" : "Pick an angle";
+    $("#ideasSub").textContent = seq ? "Each email has one job. Change the send days if you like, then use the plan." : "Different ways to tell the same story. Choose the one that feels most like you.";
+    $("#toneSub").textContent = seq ? "How should these emails sound? Pick one for the whole sequence." : "How should this email sound? Pick one.";
+    $("#backToIdeas").textContent = seq ? "Back to plan" : "Back to ideas";
+    $("#typeRow").hidden = seq;
+    $("#genEmailLabel").textContent = seq ? (Seq.has() && Seq.writtenCount() ? "Continue Writing" : "Write Email 1") : "Generate Email";
+    document.querySelectorAll("[data-seq], [data-act=seq-write-next]").forEach(b => { if (rt.busy) b.disabled = true; });
     const ic = $("#ideaCount");
     if (document.activeElement !== ic) ic.value = n;
     document.querySelectorAll("[data-count]").forEach(b => { b.disabled = Number(b.dataset.count) < 0 ? n <= Config.IDEAS_MIN : n >= Config.IDEAS_MAX; });
@@ -1843,6 +2180,7 @@ const App = {
   async download() {
     const v = Store.currentVersion();
     if (!v || !this.downloads) return;
+    if (Seq.active()) return this.downloadSequence();
     const slug = (v.subject || "email").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "email";
     const text = `Subject: ${v.subject}\nPreview: ${v.preview}\n\n${v.body}\n`;
     try {
@@ -1852,6 +2190,24 @@ const App = {
       const code = e && e.code;
       if (code === "declined") return;
       View.toast(code === "rate_limited" ? "A download prompt is already open" : "Download isn't available here. Use Copy All instead.");
+    }
+  },
+
+  async downloadSequence() {
+    const q = Seq.q();
+    const parts = [];
+    q.plan.forEach((p, i) => {
+      const v = Seq.itemCurrent(i);
+      if (!v) return;
+      parts.push(`==============================\nEMAIL ${i + 1} OF ${q.plan.length} · DAY ${p.day}${p.role ? " · " + p.role : ""}\n==============================\nSubject: ${v.subject}\nPreview: ${v.preview}\n\n${v.body}\n`);
+    });
+    const slug = (q.name || "sequence").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "sequence";
+    try {
+      const r = await this.downloads.save({ filename: slug + "-sequence.txt", data: `${q.name}\n${q.strategy}\n\n` + parts.join("\n") });
+      if (r && r.status === "saved") View.toast("Sequence downloaded");
+    } catch (e) {
+      if (e && e.code === "declined") return;
+      View.toast("Download isn't available here. Use Copy All instead.");
     }
   },
 
@@ -1868,6 +2224,70 @@ const App = {
     Store.set({ versions, active });
     View.render();
     View.toast(`Version ${i + 1} removed`);
+  },
+
+  setMode(m) {
+    const s = Store.state;
+    if (m === s.mode) { Store.runtime.confirmMode = null; View.buttons(); return; }
+    const hasWork = s.ideas.length || Seq.has() || s.versions.length;
+    if (!hasWork) { Store.set({ mode: m }); View.render(); return; }
+    Store.runtime.confirmMode = m; View.buttons();
+  },
+  async confirmMode() {
+    const m = Store.runtime.confirmMode;
+    if (!m) return;
+    const carry = {};
+    ["thoughts", "audience", "promoting", "action"].forEach(k => { carry[k] = Store.state[k]; });
+    await Library.saveNow();
+    Store.fresh();
+    Store.set(Object.assign(carry, { mode: m }));
+    this.fillFields();
+    View.render();
+  },
+
+  // Sort the plan by send day, carrying each email's written versions along.
+  sortPlan() {
+    const q = Seq.q();
+    Seq.stash();
+    const cur = q.items[q.current];
+    const order = q.plan.map((p, i) => i).sort((a, b) => q.plan[a].day - q.plan[b].day || a - b);
+    q.plan = order.map(i => q.plan[i]);
+    q.items = order.map(i => q.items[i]);
+    q.current = Math.max(0, q.items.indexOf(cur));
+  },
+
+  usePlan() {
+    const s = Store.state, q = s.sequence;
+    if (!Seq.has()) return;
+    this.sortPlan();
+    q.accepted = true;
+    Seq.relink();
+    Store.set({ maxStep: Math.max(s.maxStep, 4) });
+    this.goTo(4);
+  },
+
+  startSequence() {
+    const q = Seq.q();
+    if (!Seq.has()) { this.goTo(3); return; }
+    if (!q.accepted) this.usePlan();
+    if (Seq.writtenCount()) {
+      if (!Seq.written(q.current)) { this.goTo(6); return; }
+      const next = q.plan.findIndex((_, i) => !Seq.written(i));
+      if (next >= 0) Seq.select(next);
+      this.goTo(6);
+      return;
+    }
+    Seq.select(0);
+    Generator.email("new");
+  },
+
+  writeNext() {
+    const q = Seq.q();
+    const next = q.current + 1;
+    if (!q.plan[next]) return;
+    Seq.select(next);
+    if (Seq.written(next)) { View.render(); return; }
+    Generator.email("new");
   },
 
   continueEditing() {
@@ -1903,15 +2323,40 @@ const App = {
     $("#useExample").addEventListener("click", () => Generator.example());
     $("#genIdeas").addEventListener("click", () => {
       const st = s();
+      if (Seq.on()) {
+        const q = st.sequence;
+        if (q && q.plan && q.for === st.thoughts.trim() && q.plan.length === st.seqCount) { App.goTo(3); return; }
+        if (Seq.writtenCount()) { Store.runtime.confirmPlan = true; App.goTo(3); return; }
+        Generator.plan(); return;
+      }
       if (st.ideas.length === st.ideaCount && st.ideasFor === st.thoughts.trim()) { App.goTo(3); return; }
       Generator.ideas();
     });
-    $("#regenIdeas").addEventListener("click", () => Generator.ideas());
+    $("#regenIdeas").addEventListener("click", () => {
+      if (Seq.on() && Seq.writtenCount()) { Store.runtime.confirmPlan = true; View.ideas(); return; }
+      Generator.ideas();
+    });
+    $("#usePlan").addEventListener("click", () => App.usePlan());
+    [["seqCount", "seqCount"], ["seqDays", "seqDays"]].forEach(([id, key]) => {
+      const el = $("#" + id);
+      el.addEventListener("change", () => { Store.set({ [key]: Validate[key](el.value) }); el.value = s()[key]; View.buttons(); });
+    });
+    $("#ideasArea").addEventListener("change", e => {
+      const i = e.target.dataset.planDay;
+      if (i == null || !Seq.has()) return;
+      const d = Math.max(1, Math.min(Config.DAYS_MAX, Math.round(Number(e.target.value)) || 1));
+      e.target.value = d;
+      Seq.q().plan[Number(i)].day = d;
+      if (d > s().seqDays) Store.state.seqDays = d;
+      App.sortPlan();
+      if (Seq.q().accepted) Seq.relink();
+      Store.save(); View.ideas(); View.brief();
+    });
     const ic = $("#ideaCount");
     const setCount = (v) => { Store.set({ ideaCount: Validate.ideaCount(v) }); View.buttons(); };
     ic.addEventListener("input", () => { const n = Number(ic.value); if (n >= Config.IDEAS_MIN && n <= Config.IDEAS_MAX) setCount(n); });
     ic.addEventListener("change", () => { setCount(ic.value); ic.value = s().ideaCount; });
-    $("#genEmail").addEventListener("click", () => Generator.email(Store.currentVersion() ? "regenerate" : "new"));
+    $("#genEmail").addEventListener("click", () => Seq.on() ? App.startSequence() : Generator.email(Store.currentVersion() ? "regenerate" : "new"));
 
     $("#approach").addEventListener("change", e => { Store.set({ approach: e.target.value }); View.settings(); View.brief(); });
     $("#emailType").addEventListener("change", e => { Store.set({ emailType: e.target.value }); View.brief(); });
@@ -1934,6 +2379,10 @@ const App = {
       const t = e.target.closest("button");
       if (!t || t.disabled) return;
       if (t.dataset.go) { App.goTo(Number(t.dataset.go)); return; }
+      if (t.dataset.mode) { App.setMode(t.dataset.mode); return; }
+      if (t.dataset.seq != null) { Seq.select(Number(t.dataset.seq)); View.render(); return; }
+      if (t.dataset.seqcount) { const v = Validate.seqCount(s().seqCount + Number(t.dataset.seqcount)); Store.set({ seqCount: v }); View.buttons(); return; }
+      if (t.dataset.seqdays) { const v = Validate.seqDays(s().seqDays + Number(t.dataset.seqdays)); Store.set({ seqDays: v }); View.buttons(); return; }
       if (t.dataset.open) { Library.open(t.dataset.open); return; }
       if (t.dataset.del) { Library.pendingDelete = t.dataset.del; View.library(); return; }
       if (t.dataset.delYes) { Library.remove(t.dataset.delYes); return; }
@@ -1966,6 +2415,11 @@ const App = {
         case "new-email": App.newEmail(); break;
         case "continue": App.continueEditing(); break;
         case "download": App.download(); break;
+        case "mode-yes": App.confirmMode(); break;
+        case "mode-no": Store.runtime.confirmMode = null; View.buttons(); break;
+        case "plan-replace": Store.runtime.confirmPlan = false; Generator.plan(); break;
+        case "plan-keep": Store.runtime.confirmPlan = false; View.ideas(); break;
+        case "seq-write-next": App.writeNext(); break;
         case "ideas": Generator.ideas(); break;
         case "email-new": Generator.email("new"); break;
         case "email-regenerate": Generator.email("regenerate"); break;
@@ -1999,6 +2453,7 @@ const App = {
     this.bind();
     View.render(); View.status();
     Library.init();
+    window.addEventListener("pagehide", () => Store.flush());
     if (window.claude && typeof window.claude.use === "function")
       Promise.resolve(window.claude.use("downloads")).then(d => { this.downloads = d; if (d) View.email(); }).catch(() => {});
   }
